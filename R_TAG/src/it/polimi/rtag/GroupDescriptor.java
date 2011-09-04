@@ -6,6 +6,8 @@ package it.polimi.rtag;
 import java.io.Serializable;
 import java.util.ArrayList;
 
+import polimi.reds.NodeDescriptor;
+
 /**
  * @author panteha
  * Describes a group within the system
@@ -112,5 +114,10 @@ public class GroupDescriptor implements Serializable{
 	 */
 	public ArrayList<GroupDescriptor> getChildren() {
 		return children;
+	}
+
+	public boolean isLeader(NodeDescriptor currentDescriptor) {
+		// TODO check if the equals methods works as we expect
+		return leader.equals(currentDescriptor);
 	}
 }
