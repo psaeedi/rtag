@@ -28,9 +28,6 @@ import polimi.reds.broker.routing.RoutingStrategy;
 import polimi.reds.broker.routing.SubscriptionForwardingRoutingStrategy;
 import polimi.reds.broker.routing.SubscriptionTable;
 
-
-
-
 public class Node implements Router{
 
     public NodeDescriptor currentDescriptor;
@@ -76,7 +73,7 @@ public class Node implements Router{
 	   * local reply table the reply will be sent to a specific neighbor or dropped if no information
 	   * about its sender is contained in the reply table.
 	   * <p>
-	   * Note that reconfigurators assume that the implementation of this method is synchronized on the
+	   * Note that reconfigurator assume that the implementation of this method is synchronized on the
 	   * router object, so that the reconfigurator can acquire the lock when it needs to make sure that
 	   * no router operations are executed concurrently with reconfiguration actions.
 	   * 
@@ -102,10 +99,25 @@ public class Node implements Router{
 		return subscriptionTable;
 	}
 
+  /**
+   * Publish the given message coming from the specified neighbor. Depending on the routing policy
+   * adopted, this requires to forward the given message to some or any of the neighbors of the
+   * broker this router is part of.<br>
+   * If <code>message</code> is instance of<code>Repliable</code>, the <code>Router</code>
+   * needs to activate the <code>ReplyManager</code> to record the message in the
+   * <code>ReplyTable</code>.
+   * <p>
+   * Note that reconfigurators assume that the implementation of this method is synchronized on the
+   * router object, so that the reconfigurator can acquire the lock when it needs to make sure that
+   * no router operations are executed concurrently with reconfiguration actions.
+   * 
+   * @param neighborID the identifier of the neighbor from which the message was received.
+   * @param message the <code>Message</code> to be published.
+   * 
+   */
 	@Override
-	public void publish(NodeDescriptor arg0, Message arg1) {
-		// TODO Auto-generated method stub
-		
+	public void publish(NodeDescriptor sender, Message message) {
+		//publish the message in the tuple space
 	}
 
 	@Override
@@ -146,7 +158,7 @@ public class Node implements Router{
 			} else {
 				// TODO decide what to do if the current node is not the 
 				// group leader. We could reply with the leader address if known.
-				// Otherwhise we could simply send an error message.
+				// Otherwise we could simply send an error message.
 			}
 			
 		} catch(IllegalArgumentException ex) {
@@ -161,6 +173,14 @@ public class Node implements Router{
 		// TODO the node has to be removed from all the groups
 	}
 
+  /**
+   * This method is called by the <code>Overlay</code> whenever a new packet arrives from a
+   * neighbor of the local node.
+   * 
+   * @param subject the subject the packet was addressed to.
+   * @param source the <code>NodeDescriptor</code> of the neighbor the packet comes from.
+   * @param data the received packet.
+   */
 	@Override
 	public void notifyPacketArrived(String arg0, NodeDescriptor arg1,
 			Serializable arg2) {
@@ -170,8 +190,7 @@ public class Node implements Router{
 	
 	@Override
 	public NodeDescriptor getID() {
-		// TODO Auto-generated method stub
-		return null;
+		return currentDescriptor;
 	}
 
 	public void setStrategy(GroupingStrategy strategy) {
@@ -181,8 +200,6 @@ public class Node implements Router{
 	public GroupingStrategy getStrategy() {
 		return strategy;
 	}
-
-    
 
 	public NodeDescriptor getCurrentDescriptor() {
 		return currentDescriptor;
