@@ -1,12 +1,18 @@
 package it.polimi.rtag;
-
+import it.polimi.rtag.filters.*;
+import it.polimi.rtag.messaging.*;
 
 public class HelloWorld implements Runnable {
 
-	private Node node;
 	
-    public HelloWorld(Node node) {
-    	this.node = node;
+    private LeaderDescriptor node;
+
+	public HelloWorld(LeaderDescriptor leader) {
+    	this.node = leader;
+	}
+
+	public HelloWorld(FollowerDescriptor follower) {
+		// TODO Auto-generated constructor stub
 	}
 
 	/**
@@ -15,8 +21,8 @@ public class HelloWorld implements Runnable {
     public static void main(String[] args) {
     	// TODO Auto-generated method stub
         
-    	LeaderNode leader = new LeaderNode();
-    	FollowerNode follower = new FollowerNode();
+    	LeaderDescriptor leader = new LeaderDescriptor(null);
+    	FollowerDescriptor follower = new FollowerDescriptor(null);
     	
         HelloWorld nodeA = new HelloWorld(leader);
         HelloWorld nodeB = new HelloWorld(follower);
