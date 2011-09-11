@@ -22,6 +22,8 @@ public class JoinGroupRequest extends Message {
 	 */
 	private static final long serialVersionUID = 466668406448425287L;
 
+	// TODO implement factory method
+	
 	/**
 	 * @param groupDescriptor
 	 */
