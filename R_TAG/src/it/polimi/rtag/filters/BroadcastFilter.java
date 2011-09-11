@@ -1,4 +1,4 @@
-package it.polimi.rtag;
+package it.polimi.rtag.filters;
 public class BroadcastFilter extends TupleFilter {
 
 	/**
