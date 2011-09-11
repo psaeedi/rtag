@@ -45,41 +45,27 @@ public class MessageSubjects {
 	 */
 	public static final String JOIN_GROUP_RESPONSE = "JOIN_GROUP_RESPONSE";
 	
-	
-	//Node Migrate from its group to a new group.
-	public static final String MIGRATE_TO_NEW_GROUP = "MIGRATE_TO_NEW_GROUP";
-	
-	//Node leaves its group. It no longer follows its 
-	//group description,e.g. its status is changed
-	public static final String LEAVE_GROUP = "LEAVE_GROUP";
-	
-	//A leader node ask another leader to merge their group.
-	//It also proposes as the new group leader
-	public static final String MERGE_GROUPS = "MERGE_GROUPS";
-	
-	/** The leader of a group notify its followers a group managed by him should
-	 *  be deleted but not its subgroups. 
+	/**
+	 * A group leader send this message to control its followers. 
+	 * 
+	 * This subject is sent with a message of type {@link GroupLeaderCommand}.
 	 */
-	public static final String DELETE_GROUP_ONLY = "DELETE_GROUP_ONLY";
+	public static final String GROUP_LEADER_COMMAND = "GROUP_LEADER_COMMAND";
+	
 	
 	/**
-	 * A leader notify its followers that a group managed by him has to be deleted
-	 * and that all the leaders of its subgroups have to delete their groups as well.
+	 * A group leader receives this message to update its followers list. 
+	 * 
+	 * This subject is sent with a message of type {@link GroupLeaderCommandAck}.
 	 */
-	public static final String DELETE_GROUP_AND_SUBGROUP = "DELETE_GROUP_AND_SUBGROUP";
 	
-	// Divide a group to n groups ,the hierarchy should be updated.
-	// This is who is the father and child.
-	public static final String DIVIDE_GROUP = "DIVIDE_GROUP";
+	public static final String GROUP_LEADER_COMMAND_ACK = "GROUP_LEADER_COMMAND_ACK";
 	
+	
+	// TODO A leader propose another leader to merge their groups
+	//public static final String MERGE_GROUPS = "MERGE_GROUPS";
+
 	// TODO JOIN MY GROUP a leader can invite/suggest a node to join a certain group?
-	
-	
-	
-	
-	
-	
-	
 	
 	/**
 	 * 

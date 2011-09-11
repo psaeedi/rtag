@@ -33,7 +33,13 @@ public class JoinGroupResponse extends Message {
 	 */
 	public static final String KO = "KO";
 	
-
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -7600186796579774020L;
+	private MessageID originalMessageID;
+	private String responseCode;
+	
 	/**
 	 * Factory method to create an {@link JoinGroupResponse#NOT_GROUP_LEADER} message
 	 * 
@@ -79,9 +85,6 @@ public class JoinGroupResponse extends Message {
 					"Original message ID canno be null");
 		}
 	}
-	
-	private MessageID originalMessageID;
-	private String responseCode;
 	
 	/**
 	 * @param originalMessageID
