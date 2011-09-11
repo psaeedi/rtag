@@ -67,9 +67,6 @@ public class MessageSubjects {
 
 	// TODO JOIN MY GROUP a leader can invite/suggest a node to join a certain group?
 	
-	/**
-	 * 
-	 */
 	private MessageSubjects() {
 		// Contant collection. This should not be instantiated.
 	}
