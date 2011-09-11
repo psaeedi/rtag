@@ -12,7 +12,7 @@ import polimi.reds.NodeDescriptor;
  * @author panteha
  * Describes a group within the system
  */
-public class GroupDescriptor implements Serializable{
+public class GroupDescriptor implements Serializable {
 
 	/**
 	 * 

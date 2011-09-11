@@ -10,10 +10,15 @@ import it.polimi.rtag.filters.AnycastFilter;
 import it.polimi.rtag.filters.BroadcastFilter;
 import it.polimi.rtag.filters.GroupcastFilter;
 import it.polimi.rtag.filters.UnicastFilter;
+import it.polimi.rtag.messaging.Ack;
+import it.polimi.rtag.messaging.JoinGroupRequest;
+import it.polimi.rtag.messaging.JoinGroupResponse;
 import it.polimi.rtag.messaging.MessageReport;
+import it.polimi.rtag.messaging.MessageSubjects;
 import it.polimi.rtag.messaging.TupleMessage;
 import polimi.reds.Filter;
 import polimi.reds.Message;
+import polimi.reds.MessageID;
 import polimi.reds.NodeDescriptor;
 import polimi.reds.Reply;
 import polimi.reds.broker.overlay.AlreadyNeighborException;
@@ -33,6 +38,8 @@ import polimi.reds.broker.routing.Router;
 import polimi.reds.broker.routing.RoutingStrategy;
 import polimi.reds.broker.routing.SubscriptionForwardingRoutingStrategy;
 import polimi.reds.broker.routing.SubscriptionTable;
+
+import static it.polimi.rtag.messaging.MessageSubjects.*;
 
 public class Node implements Router{
 
@@ -229,8 +236,16 @@ public class Node implements Router{
 	public void notifyPacketArrived(String subject, NodeDescriptor sender,
 			Serializable packet) {
 		try {
-			TupleMessage message = (TupleMessage)packet;
-			if (message)
+			if (COMMUNICATION.equals(subject)) {
+				handleMessageCommunication(sender, (TupleMessage)packet);
+			} else if (ACK.equals(subject)) {
+				handleMessageAck(sender, (Ack)packet);
+			} else if (JOIN_GROUP_REQUEST.equals(subject)) {
+				handleMessageJoinGroupRequest(sender, (JoinGroupRequest)packet);
+			} else if (JOIN_GROUP_RESPONSE.equals(subject)) {
+				handleMessageJoinGroupResponse(sender, (JoinGroupResponse)packet);
+			}
+			// TODO add other message subjects
 		} catch (ClassCastException ex) {
 			throw new RuntimeException(
 					"Invalid package type. Packages must be of type Tuple message. Found: " + 
@@ -238,6 +253,67 @@ public class Node implements Router{
 		}
 	}
 	
+	/**
+	 * Handles {@link MessageSubjects#JOIN_GROUP_RESPONSE} messages received from a neighbor.
+	 * A node should receive messages of this type only as a response to a join group
+	 * request that it has sent.
+	 * 
+	 * @param sender the sender node
+	 * @param message the join group message
+	 */
+	private void handleMessageJoinGroupResponse(NodeDescriptor sender,
+		JoinGroupResponse packet) {
+		// TODO handle response
+	}
+
+
+	/**
+	 * Handles {@link MessageSubjects#JOIN_GROUP_REQUEST} messages received from a neighbor.
+	 * 
+	 * @param sender the sender node
+	 * @param message the join group message
+	 */
+	private void handleMessageJoinGroupRequest(NodeDescriptor sender, JoinGroupRequest message) {
+		// TODO if the current nod is not the leader of the given group 
+		// then raise an exception	
+		
+		// TODO if we accept the join group request then we need to:
+		// 1 - add the sender to the group
+		// 2 - send him a join group response
+		// 3 - notify the neighbor
+		
+		// TODO if we do not accept the join we can
+		// 1 - simply reject
+		// 2 - suggest another leader (e.g. a subgroup or a parent group leader)
+	}
+
+
+	/**
+	 * Handles {@link MessageSubjects#ACK} messages received from a neighbor.
+	 * 
+	 * @param sender the sender node
+	 * @param ack the acknowledge message
+	 */
+	private void handleMessageAck(NodeDescriptor sender, Ack ack) {
+		// TODO do something depending on the response.
+		// if the response is OK remove the message from the list of pending messages
+		// if the response is not OK update the group descriptor used to compose this message
+		// is probably not up to date and must be updated....
+	}
+
+
+	/**
+	 * Handles {@link MessageSubjects#COMMUNICATION} messages
+	 * 
+	 * @param sender the sender node
+	 * @param message the message content.
+	 */
+	private void handleMessageCommunication(NodeDescriptor sender,
+			TupleMessage message) {
+		// TODO Auto-generated method stub
+	}
+
+
 	@Override
 	public NodeDescriptor getID() {
 		return currentDescriptor;
