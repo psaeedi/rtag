@@ -23,7 +23,7 @@ public class GroupDescriptor implements Serializable {
 	private String friendlyName;
 	
 	private LeaderDescriptor leader;
-	private ArrayList<FollowerDescriptor> followers;
+	private ArrayList<NodeDescriptor> followers;
 	
 	private NodeDescriptor parent;
 	private ArrayList<GroupDescriptor> children;
@@ -106,7 +106,7 @@ public class GroupDescriptor implements Serializable {
 	/**
 	 * @return the members
 	 */
-	public ArrayList<FollowerDescriptor> getFollowers() {
+	public ArrayList<NodeDescriptor> getFollowers() {
 		return followers;
 	}
 	/**
