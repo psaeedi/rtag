@@ -3,6 +3,8 @@
  */
 package it.polimi.rtag.messaging;
 
+import java.util.Date;
+
 import it.polimi.rtag.filters.TupleFilter;
 import lights.Tuple;
 
@@ -13,6 +15,11 @@ import lights.Tuple;
  */
 public class TupleMessage extends polimi.reds.Message {
 
+	/**
+	 * Messages are valid for 5 minutes.
+	 * After that they should not be broadcasted any more. 
+	 */
+	private final static long EXPIRATION_TIME = 60 * 5 * 1000;
 	
 	/**
 	 * 
@@ -21,11 +28,12 @@ public class TupleMessage extends polimi.reds.Message {
 
 	private TupleFilter filter;
 	private Tuple content;
+	private long creationTime;
 	
 	public TupleMessage(TupleFilter filter, Tuple content) {
-		super();
 		this.filter = filter;
 		this.content = content;
+		creationTime = System.currentTimeMillis();
 	}
 
 	/**
@@ -42,5 +50,9 @@ public class TupleMessage extends polimi.reds.Message {
 		return content;
 	}
 	
+	public boolean isExpired() {
+		long now = System.currentTimeMillis();
+		return now - creationTime > EXPIRATION_TIME;
+	}
 }
 
