@@ -25,7 +25,7 @@ public class GroupcastFilter extends TupleFilter {
 		return null;
 	}
 
-	public static GroupDescriptor getGroupDescriptor() {
+	public GroupDescriptor getGroupDescriptor() {
 		// TODO Auto-generated method stub
 		return null;
 	}

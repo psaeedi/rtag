@@ -122,7 +122,6 @@ public class Node implements Router{
 	}
 
   /**
-   * THE APPLICATION IS CALLING THIS!
    * 
    * Publish the given message coming from the specified neighbor. Depending on the routing policy
    * adopted, this requires to forward the given message to some or any of the neighbors of the
@@ -166,20 +165,22 @@ public class Node implements Router{
 		} else if (filter instanceof GroupcastFilter) {
 			// Groupcast
 			GroupcastFilter groupcastFilter = (GroupcastFilter)filter;
-			GroupDescriptor group = GroupcastFilter.getGroupDescriptor();
-			if (group.isLeader(currentDescriptor)) {
-				// TODO add message content to the current tuple space....
-				for (NodeDescriptor recipient: group.getFollowers()) {
-					sendMessageCommunication(recipient, tmessage);
+			GroupDescriptor group = groupcastFilter.getGroupDescriptor();
+			if (group.isMember(currentDescriptor)) {
+				// TODO add to tuplespace
+				if (group.isLeader(currentDescriptor)) {
+					for (NodeDescriptor recipient: group.getFollowers()) {
+						sendMessageCommunication(recipient, tmessage);
+					}
+					// Forward to the parent group
+					NodeDescriptor parent = group.getParent();
+					if (parent != null) {
+						sendMessageCommunication(parent, tmessage);
+					}				
+				} else {
+					// The current node is not leader. Forward this to the leader.
+					sendMessageCommunication(group.getLeader(), tmessage);
 				}
-				// Forward to the parent group
-				NodeDescriptor parent = group.getParent();
-				if (parent != null) {
-					sendMessageCommunication(parent, tmessage);
-				}				
-			} else {
-				// The current node is not leader. Forward this to the leader.
-				sendMessageCommunication(group.getLeader(), tmessage);
 			}
 		} else if (filter instanceof BroadcastFilter) {
 			// Broadcast
@@ -441,12 +442,10 @@ public class Node implements Router{
 		} else if (filter instanceof GroupcastFilter) {
 			// Groupcast
 			GroupcastFilter groupcastFilter = (GroupcastFilter)filter;
-			GroupDescriptor group = GroupcastFilter.getGroupDescriptor();
+			GroupDescriptor group = groupcastFilter.getGroupDescriptor();
 			if (group.isMember(currentDescriptor)) {
 				// TODO add message content to the local tuple space....
 				if (group.isLeader(currentDescriptor)) {
-					
-					
 					// When a leader receives a groupcast it sends it to all
 					// the followers with the exclusion of the one sending it
 					// then it forwards it to the parent group if any.
