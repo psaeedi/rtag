@@ -1,4 +1,4 @@
-package it.polimi.rtag;
+package it.polimi.rtag.filters;
 import polimi.reds.Filter;	
 import polimi.reds.Message;
 
