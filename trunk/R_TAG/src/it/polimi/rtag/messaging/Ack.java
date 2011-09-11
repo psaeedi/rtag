@@ -34,6 +34,16 @@ public class Ack extends Message {
 	public static final String NOT_GROUP_FOLLOWER = "NGF";
 	
 	/**
+	 * The message was received correctly but the recipient is wrong
+	 */
+	public static final String WRONG_RECIPIENT = "WRONG";
+	
+	/**
+	 * The message was received and the recipient was correct.
+	 */
+	public static final String EXPIRED = "EXPIRED";
+	
+	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 328363290154139772L;
@@ -70,6 +80,26 @@ public class Ack extends Message {
 		return createAck(originalMessageID, NOT_GROUP_FOLLOWER);
 	}
 		
+	/**
+	 * Factory method to create an {@link Ack#WRONG_RECIPIENT} message
+	 * 
+	 * @param originalMessageID
+	 * @return
+	 */
+	public static Ack createWrongRecipientAck(MessageID originalMessageID) {
+		return createAck(originalMessageID, WRONG_RECIPIENT);
+	}
+	
+	/**
+	 * Factory method to create an {@link Ack#EXPIRED} message
+	 * 
+	 * @param originalMessageID
+	 * @return
+	 */
+	public static Ack createExpiredAck(MessageID originalMessageID) {
+		return createAck(originalMessageID, EXPIRED);
+	}
+	
 	/**
 	 * Inner implementation of the factory methods.
 	 * 

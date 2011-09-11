@@ -23,9 +23,9 @@ public class GroupDescriptor implements Serializable {
 	private String friendlyName;
 	
 	private LeaderDescriptor leader;
-	private ArrayList<FollowerDescriptor> members;
+	private ArrayList<FollowerDescriptor> followers;
 	
-	private GroupDescriptor parent;
+	private NodeDescriptor parent;
 	private ArrayList<GroupDescriptor> children;
 
 	
@@ -48,7 +48,7 @@ public class GroupDescriptor implements Serializable {
 	 * @param parent
 	 */
 	public GroupDescriptor(String uniqueId, String friendlyName,
-			LeaderDescriptor leader, GroupDescriptor parent) {
+			LeaderDescriptor leader, NodeDescriptor parent) {
 		this.uniqueId = uniqueId;
 		this.friendlyName = friendlyName;
 		this.leader = leader;
@@ -94,20 +94,20 @@ public class GroupDescriptor implements Serializable {
 	/**
 	 * @return the parent
 	 */
-	public GroupDescriptor getParent() {
+	public NodeDescriptor getParent() {
 		return parent;
 	}
 	/**
 	 * @param parent the parent to set
 	 */
-	public void setParent(GroupDescriptor parent) {
+	public void setParent(NodeDescriptor parent) {
 		this.parent = parent;
 	}
 	/**
 	 * @return the members
 	 */
-	public ArrayList<FollowerDescriptor> getMembers() {
-		return members;
+	public ArrayList<FollowerDescriptor> getFollowers() {
+		return followers;
 	}
 	/**
 	 * @return the children
@@ -119,5 +119,18 @@ public class GroupDescriptor implements Serializable {
 	public boolean isLeader(NodeDescriptor currentDescriptor) {
 		// TODO check if the equals methods works as we expect
 		return leader.equals(currentDescriptor);
+	}
+
+	public boolean isMember(NodeDescriptor currentDescriptor) {
+		return isLeader(currentDescriptor) || isFollower(currentDescriptor);
+	}
+	
+	public boolean isFollower(NodeDescriptor currentDescriptor) {
+		for (NodeDescriptor node: followers) {
+			if (node.equals(currentDescriptor)) {
+				return true;
+			}
+		}
+		return false;
 	}
 }
