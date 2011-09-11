@@ -145,6 +145,8 @@ public class Node implements Router{
 					"Can only publish TupleMessages. Found:" + message);
 		}
 		
+		// TODO reimplement this by calling sendMessageCommunication
+		
 		//publish the message in the tuple space
 		TupleMessage tmessage = (TupleMessage)message;
 		Filter filter = tmessage.getFilter();
