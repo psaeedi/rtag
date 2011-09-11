@@ -6,7 +6,7 @@ import polimi.reds.NodeDescriptor;
 
 /**
  * @author panteha
- *
+ * TODO rename this ExtendedNodeDescriptor
  */
 public class LeaderDescriptor extends NodeDescriptor {
 	
@@ -15,7 +15,7 @@ public class LeaderDescriptor extends NodeDescriptor {
 	 */
 	private static final long serialVersionUID = -9013479057481042624L;
 
-	private GroupDescriptor leadedGroup;
+	private GroupDescriptor leadedGroup; // TODO this should be a collection
 	private ArrayList<GroupDescriptor> groupDescriptors;
 	
 	
