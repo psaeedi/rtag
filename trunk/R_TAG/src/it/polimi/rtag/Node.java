@@ -4,21 +4,19 @@ import java.io.Serializable;
 import java.net.ConnectException;
 import java.net.MalformedURLException;
 
-import lights.Tuple;
-
 import it.polimi.rtag.filters.AnycastFilter;
 import it.polimi.rtag.filters.BroadcastFilter;
 import it.polimi.rtag.filters.GroupcastFilter;
 import it.polimi.rtag.filters.UnicastFilter;
 import it.polimi.rtag.messaging.Ack;
+import it.polimi.rtag.messaging.GroupLeaderCommand;
+import it.polimi.rtag.messaging.GroupLeaderCommandAck;
 import it.polimi.rtag.messaging.JoinGroupRequest;
 import it.polimi.rtag.messaging.JoinGroupResponse;
-import it.polimi.rtag.messaging.MessageReport;
 import it.polimi.rtag.messaging.MessageSubjects;
 import it.polimi.rtag.messaging.TupleMessage;
 import polimi.reds.Filter;
 import polimi.reds.Message;
-import polimi.reds.MessageID;
 import polimi.reds.NodeDescriptor;
 import polimi.reds.Reply;
 import polimi.reds.broker.overlay.AlreadyNeighborException;
@@ -244,6 +242,10 @@ public class Node implements Router{
 				handleMessageJoinGroupRequest(sender, (JoinGroupRequest)packet);
 			} else if (JOIN_GROUP_RESPONSE.equals(subject)) {
 				handleMessageJoinGroupResponse(sender, (JoinGroupResponse)packet);
+			} else if (GROUP_LEADER_COMMAND.equals(subject)) {
+				handleMessageGroupLeaderCommand(sender, (GroupLeaderCommand)packet);
+			} else if (GROUP_LEADER_COMMAND_ACK.equals(subject)) {
+				handleMessageGroupLeaderCommandAck(sender, (GroupLeaderCommandAck)packet);
 			}
 			// TODO add other message subjects
 		} catch (ClassCastException ex) {
@@ -253,6 +255,40 @@ public class Node implements Router{
 		}
 	}
 	
+	/**
+	 * Handles {@link MessageSubjects#GROUP_LEADER_COMMAND_ACK} messages
+	 * received from a follower.
+	 * 
+	 * @param sender
+	 * @param message
+	 */
+	private void handleMessageGroupLeaderCommandAck(NodeDescriptor sender,
+		GroupLeaderCommandAck message) {
+		// TODO check if the command was sent by this node
+		// TODO handle the response
+	}
+
+	/**
+	 * Handles {@link MessageSubjects#GROUP_LEADER_COMMAND} messages by performing
+	 * the proper action according to what is commanded by the leader.
+	 * 
+	 * @param sender
+	 * @param message
+	 */
+	private void handleMessageGroupLeaderCommand(NodeDescriptor sender,
+		GroupLeaderCommand message) {
+		GroupDescriptor group = message.getGroupDescriptor();
+		// TODO if the current node is not in the group notify the sender
+		if (!group.isLeader(sender)) {
+			// The sender is not the group leader
+			// TODO do something then return.
+			return;
+		}
+		String command = message.getCommand();
+		// TODO handle the command 
+}
+
+
 	/**
 	 * Handles {@link MessageSubjects#JOIN_GROUP_RESPONSE} messages received from a neighbor.
 	 * A node should receive messages of this type only as a response to a join group
@@ -335,20 +371,4 @@ public class Node implements Router{
 		this.currentDescriptor = currentDescriptor;
 	}
 	
-	/**
-	 * Attempts to join a group and if it does not exist creates a new one
-	 */
-	public boolean joinOrCreate(Tuple groupDescription) {
-		// TODO fix tuple with lights
-		throw new AssertionError("Not yet implemented error.");
-	}
-
-	public MessageReport sendMessage(Message msg, NodeDescriptor... recipients) {
-		throw new AssertionError("Not yet implemented error.");
-	}
-	
-	
-	protected void checkLeaderStatus() {
-		throw new AssertionError("Not yet implemented error.");
-	}
 }
