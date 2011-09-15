@@ -31,19 +31,24 @@ public class MessageSubjects {
 	 */
 	public static final String ACK = "ACK";
 
-	/**
-	 * A node ask the leader to join a group of which it is the leader.
-	 * 
-	 * This subject is sent with a message of type {@link JoinGroupRequest}. 
-	 */
-	public static final String JOIN_GROUP_REQUEST = "JOIN_GROUP_REQUEST";
 	
 	/**
-	 * A node respond to a join group request by sending a join group response.
+	 * A node notify its local universe leader that it has
+	 * created a new group. </p>
+	 * The local universe leader will forward this notification to all its
+	 * followers and to its parent. If a group leader of a group with the same
+	 * tuple definition is reached then that group leader may invite the new leader
+	 * to join its group sending a {@link GroupLeaderCommand#MERGE_GROUPS}
+	 * message.</p>
 	 * 
-	 * This subject is sent with a message of type {@link JoinGroupResponse}. 
+	 * Beside further group re-organization this message has no direct
+	 * acknowledgment.
+	 * 
+	 * TODO create a class to encapsulate this message with the creator descriptor
+	 * TODO add methods to handle this class in the Node
 	 */
-	public static final String JOIN_GROUP_RESPONSE = "JOIN_GROUP_RESPONSE";
+	public static final String GROUP_CREATED_NOTIFICATION = "G_CREATED_N";
+	
 	
 	/**
 	 * A group leader send this message to control its followers. 
@@ -52,20 +57,24 @@ public class MessageSubjects {
 	 */
 	public static final String GROUP_LEADER_COMMAND = "GROUP_LEADER_COMMAND";
 	
-	
 	/**
-	 * A group leader receives this message to update its followers list. 
+	 * A group leader receives this message as a response to an issued command.
 	 * 
 	 * This subject is sent with a message of type {@link GroupLeaderCommandAck}.
 	 */
-	
 	public static final String GROUP_LEADER_COMMAND_ACK = "GROUP_LEADER_COMMAND_ACK";
 	
+	/**
+	 * A group follower uses this message either to notify its leader or to
+	 * communicate with its peer. 
+	 */
+	public static final String GROUP_FOLLOWER_COMMAND = "GROUP_FOLLOWER_COMMAND";
 	
-	// TODO A leader propose another leader to merge their groups
-	//public static final String MERGE_GROUPS = "MERGE_GROUPS";
-
-	// TODO JOIN MY GROUP a leader can invite/suggest a node to join a certain group?
+	/**
+	 * A group leader or a group follower which has received a follower command
+	 * has to reply with its response.
+	 */
+	public static final String GROUP_FOLLOWER_COMMAND_ACK = "GROUP_FOLLOWER_COMMAND_ACK";
 	
 	private MessageSubjects() {
 		// Contant collection. This should not be instantiated.
