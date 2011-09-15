@@ -5,6 +5,9 @@ package it.polimi.rtag;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashSet;
+
+import lights.Tuple;
 
 import polimi.reds.NodeDescriptor;
 
@@ -21,13 +24,26 @@ public class GroupDescriptor implements Serializable {
 
 	private String uniqueId;
 	private String friendlyName;
+	private boolean universe;
+	private Tuple description;
 	
-	private LeaderDescriptor leader;
-	private ArrayList<NodeDescriptor> followers;
+	/**
+	 * The group leader.
+	 */
+	private ExtendedNodeDescriptor leader;
 	
-	private NodeDescriptor parent;
-	private ArrayList<GroupDescriptor> children;
+	/**
+	 * All the followers. 
+	 */
+	private HashSet<ExtendedNodeDescriptor> followers;
+	
+	/**
+	 * The parent group or null if the group is top level. 
+	 */
+	private GroupDescriptor parentGroup;
 
+	
+	//TODO add a constructor to create universe groups
 	
 	/**
 	 * @param uniqueId
@@ -35,7 +51,7 @@ public class GroupDescriptor implements Serializable {
 	 * @param leader
 	 */
 	public GroupDescriptor(String uniqueId, String friendlyName,
-			LeaderDescriptor leader) {
+			ExtendedNodeDescriptor leader) {
 		this.uniqueId = uniqueId;
 		this.friendlyName = friendlyName;
 		this.leader = leader;
@@ -45,14 +61,14 @@ public class GroupDescriptor implements Serializable {
 	 * @param uniqueId
 	 * @param friendlyName
 	 * @param leader
-	 * @param parent
+	 * @param parentGroup
 	 */
 	public GroupDescriptor(String uniqueId, String friendlyName,
-			LeaderDescriptor leader, NodeDescriptor parent) {
+			ExtendedNodeDescriptor leader, GroupDescriptor parentGroup) {
 		this.uniqueId = uniqueId;
 		this.friendlyName = friendlyName;
 		this.leader = leader;
-		this.parent = parent;
+		this.parentGroup = parentGroup;
 	}	
 	
 	/**
@@ -82,39 +98,16 @@ public class GroupDescriptor implements Serializable {
 	/**
 	 * @return the leader
 	 */
-	public LeaderDescriptor getLeader() {
+	public ExtendedNodeDescriptor getLeader() {
 		return leader;
 	}
 	/**
 	 * @param leader the leader to set
 	 */
-	public void setLeader(LeaderDescriptor leader) {
+	public void setLeader(ExtendedNodeDescriptor leader) {
 		this.leader = leader;
 	}
-	/**
-	 * @return the parent
-	 */
-	public NodeDescriptor getParent() {
-		return parent;
-	}
-	/**
-	 * @param parent the parent to set
-	 */
-	public void setParent(NodeDescriptor parent) {
-		this.parent = parent;
-	}
-	/**
-	 * @return the members
-	 */
-	public ArrayList<NodeDescriptor> getFollowers() {
-		return followers;
-	}
-	/**
-	 * @return the children
-	 */
-	public ArrayList<GroupDescriptor> getChildren() {
-		return children;
-	}
+
 
 	public boolean isLeader(NodeDescriptor currentDescriptor) {
 		// TODO check if the equals methods works as we expect
@@ -132,5 +125,33 @@ public class GroupDescriptor implements Serializable {
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * @return the universe
+	 */
+	public boolean isUniverse() {
+		return universe;
+	}
+
+	/**
+	 * @return the followers
+	 */
+	public HashSet<ExtendedNodeDescriptor> getFollowers() {
+		return followers;
+	}
+
+	/**
+	 * @return the parentGroup
+	 */
+	public GroupDescriptor getParentGroup() {
+		return parentGroup;
+	}
+
+	/**
+	 * @return the description
+	 */
+	public Tuple getDescription() {
+		return description;
 	}
 }

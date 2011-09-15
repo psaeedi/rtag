@@ -3,8 +3,6 @@
  */
 package it.polimi.rtag.messaging;
 
-import java.util.Date;
-
 import it.polimi.rtag.filters.TupleFilter;
 import lights.Tuple;
 

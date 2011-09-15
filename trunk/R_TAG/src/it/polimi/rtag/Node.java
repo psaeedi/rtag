@@ -54,12 +54,13 @@ public class Node implements Router{
     private Overlay overlay;
     private RoutingStrategy routingStrategy;
 	private ReplyManager replyManager;
-	SubscriptionTable subscriptionTable;
-	ReplyTable replyTable;
+	private SubscriptionTable subscriptionTable;
+	private ReplyTable replyTable;
 	private Object nodeReply;
     
 	private HashMultimap<NodeDescriptor, MessageID> pendingCommunicationMessages = HashMultimap.create();
 	private HashSet<TupleMessage> recentlyReceivedMessages = new HashSet<TupleMessage>();
+	
 	
 	public Node(String address, int port) {
 		/**
@@ -175,9 +176,9 @@ public class Node implements Router{
 						sendMessageCommunication(recipient, tmessage);
 					}
 					// Forward to the parent group
-					NodeDescriptor parent = group.getParent();
-					if (parent != null) {
-						sendMessageCommunication(parent, tmessage);
+					GroupDescriptor parentGroup = group.getParentGroup();
+					if (parentGroup != null) {
+						sendMessageCommunication(parentGroup.getLeader(), tmessage);
 					}				
 				} else {
 					// The current node is not leader. Forward this to the leader.
@@ -459,9 +460,9 @@ public class Node implements Router{
 						sendMessageCommunication(recipient, message);
 					}
 					// Forward to the parent group
-					NodeDescriptor parent = group.getParent();
-					if (parent != null) {
-						sendMessageCommunication(parent, message);
+					GroupDescriptor parentGroup = group.getParentGroup();
+					if (parentGroup != null) {
+						sendMessageCommunication(parentGroup.getLeader(), message);
 					}
 					
 				} else {
