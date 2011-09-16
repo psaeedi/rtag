@@ -1,12 +1,9 @@
 package it.polimi.rtag;
 
-import java.io.IOException;
+
 import java.io.Serializable;
-import java.net.ConnectException;
-import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 
 import com.google.common.collect.HashMultimap;
 
@@ -15,10 +12,10 @@ import it.polimi.rtag.filters.BroadcastFilter;
 import it.polimi.rtag.filters.GroupcastFilter;
 import it.polimi.rtag.filters.UnicastFilter;
 import it.polimi.rtag.messaging.Ack;
+import it.polimi.rtag.messaging.GroupFollowerCommand;
+import it.polimi.rtag.messaging.GroupFollowerCommandAck;
 import it.polimi.rtag.messaging.GroupLeaderCommand;
 import it.polimi.rtag.messaging.GroupLeaderCommandAck;
-import it.polimi.rtag.messaging.JoinGroupRequest;
-import it.polimi.rtag.messaging.JoinGroupResponse;
 import it.polimi.rtag.messaging.MessageSubjects;
 import it.polimi.rtag.messaging.TupleMessage;
 import polimi.reds.Filter;
@@ -28,6 +25,7 @@ import polimi.reds.NodeDescriptor;
 import polimi.reds.Reply;
 import polimi.reds.broker.overlay.AlreadyNeighborException;
 import polimi.reds.broker.overlay.GenericOverlay;
+import polimi.reds.broker.overlay.NeighborhoodChangeListener;
 import polimi.reds.broker.overlay.NotConnectedException;
 import polimi.reds.broker.overlay.NotRunningException;
 import polimi.reds.broker.overlay.Overlay;
@@ -47,7 +45,7 @@ import polimi.reds.broker.routing.SubscriptionTable;
 
 import static it.polimi.rtag.messaging.MessageSubjects.*;
 
-public class Node implements Router{
+public class Node implements Router, NeighborhoodChangeListener {
 
     public NodeDescriptor currentDescriptor;
     private GroupingStrategy strategy;
@@ -77,17 +75,28 @@ public class Node implements Router{
 		TopologyManager topologyManager = new SimpleTopologyManager();
 		Transport transport = new TCPTransport(port);
 		
-		overlay = new GenericOverlay(topologyManager, transport);
+		setOverlay(new GenericOverlay(topologyManager, transport));
+
 		
 		// TODO implement a new routing strategy
 		routingStrategy = new SubscriptionForwardingRoutingStrategy();
 		
-		// TODO implement a new reply strategy
-		replyManager = new ImmediateForwardReplyManager();
+		setReplyManager();
 		
 		subscriptionTable = new GenericTable();
 		
 		replyTable = new HashReplyTable();
+	}
+
+
+	/**
+	 * 
+	 */
+	private void setReplyManager() {
+		// TODO implement a new reply strategy
+		replyManager = new ImmediateForwardReplyManager();
+		replyManager.setRouter(this);
+	  	
 	}
     
     
@@ -96,8 +105,8 @@ public class Node implements Router{
 	   * local reply table the reply will be sent to a specific neighbor or dropped if no information
 	   * about its sender is contained in the reply table.
 	   * <p>
-	   * Note that reconfigurator assume that the implementation of this method is synchronized on the
-	   * router object, so that the reconfigurator can acquire the lock when it needs to make sure that
+	   * Note that re-configurator assume that the implementation of this method is synchronized on the
+	   * router object, so that the re-configurator can acquire the lock when it needs to make sure that
 	   * no router operations are executed concurrently with reconfiguration actions.
 	   * 
 	   * @param reply the reply to be sent.
@@ -203,10 +212,24 @@ public class Node implements Router{
 			throw new AssertionError("Overlay already configured");
 		}
 		this.overlay = overlay;
+		// TODO we want the ExtendedNodeDescriptor not the NodeDescriptor
+		currentDescriptor = overlay.getNodeDescriptor();
+		// Set listeners
+		overlay.addNeighborhoodChangeListener(this);
+		overlay.addPacketListener(this, PUBLISH);
+		overlay.addPacketListener(this, REPLY);
+		overlay.addPacketListener(this, GROUP_CREATED_NOTIFICATION);
+		overlay.addPacketListener(this, GROUP_FOLLOWER_COMMAND);
+		overlay.addPacketListener(this, GROUP_FOLLOWER_COMMAND_ACK);
+		overlay.addPacketListener(this, GROUP_LEADER_COMMAND);
+		overlay.addPacketListener(this, GROUP_LEADER_COMMAND_ACK);
+		
+	    overlay.setTrafficClass(Router.REPLY, Router.MESSAGE_CLASS);
 	}
 
 	@Override
 	public void subscribe(NodeDescriptor node, Filter filter) {
+		// TODO implement a routing strategy and move this code there
 		// Check if the filter represents a group
 		try {
 			GroupcastFilter groupFilter = GroupcastFilter.createFromFilter(filter);
@@ -223,7 +246,7 @@ public class Node implements Router{
 			} else {
 				// TODO decide what to do if the current node is not the 
 				// group leader. We could reply with the leader address if known.
-				// Otherwhise we could simply send an error message.
+				// Otherwise we could simply send an error message.
 			}
 			
 		} catch(IllegalArgumentException ex) {
@@ -234,6 +257,7 @@ public class Node implements Router{
 
 	@Override
 	public void unsubscribe(NodeDescriptor node, Filter filter) {
+		// TODO implement a routing strategy and move this code there
 		// Check if the filter represents a group
 		try {
 			GroupcastFilter groupFilter = GroupcastFilter.createFromFilter(filter);
@@ -256,6 +280,7 @@ public class Node implements Router{
 
 	@Override
 	public void unsubscribeAll(NodeDescriptor node) {
+		// TODO implement a routing strategy and move this code there
 		// Invoked before a node is quitting or if a node has collapsed
 		overlay.removeNeighbor(node);
 		// TODO the node has to be removed from all the groups
@@ -274,14 +299,14 @@ public class Node implements Router{
 			Serializable packet) {
 		try {
 			// Handle each received message according to its subject
-			if (COMMUNICATION.equals(subject)) {
-				handleMessageCommunication(sender, (TupleMessage)packet);
-			} else if (ACK.equals(subject)) {
+			if (PUBLISH.equals(subject)) {
+				handleMessagePublish(sender, (TupleMessage)packet);
+			} else if (REPLY.equals(subject)) {
 				handleMessageAck(sender, (Ack)packet);
-			} else if (JOIN_GROUP_REQUEST.equals(subject)) {
-				handleMessageJoinGroupRequest(sender, (JoinGroupRequest)packet);
-			} else if (JOIN_GROUP_RESPONSE.equals(subject)) {
-				handleMessageJoinGroupResponse(sender, (JoinGroupResponse)packet);
+			} else if (GROUP_FOLLOWER_COMMAND.equals(subject)) {
+				handleMessageGroupFollowerCommand(sender, (GroupFollowerCommand)packet);
+			} else if (GROUP_FOLLOWER_COMMAND_ACK.equals(subject)) {
+				handleMessageGroupFollowerCommandAck(sender, (GroupFollowerCommandAck)packet);
 			} else if (GROUP_LEADER_COMMAND.equals(subject)) {
 				handleMessageGroupLeaderCommand(sender, (GroupLeaderCommand)packet);
 			} else if (GROUP_LEADER_COMMAND_ACK.equals(subject)) {
@@ -297,6 +322,20 @@ public class Node implements Router{
 		}
 	}
 	
+	private void handleMessageGroupFollowerCommandAck(NodeDescriptor sender,
+		GroupFollowerCommandAck packet) {
+	// TODO Auto-generated method stub
+	
+}
+
+
+	private void handleMessageGroupFollowerCommand(NodeDescriptor sender,
+		GroupFollowerCommand packet) {
+	// TODO Auto-generated method stub
+	
+}
+
+
 	/**
 	 * Handles {@link MessageSubjects#GROUP_LEADER_COMMAND_ACK} messages
 	 * received from a follower.
@@ -331,43 +370,9 @@ public class Node implements Router{
 }
 
 
-	/**
-	 * Handles {@link MessageSubjects#JOIN_GROUP_RESPONSE} messages received from a neighbor.
-	 * A node should receive messages of this type only as a response to a join group
-	 * request that it has sent.
-	 * 
-	 * @param sender the sender node
-	 * @param message the join group message
-	 */
-	private void handleMessageJoinGroupResponse(NodeDescriptor sender,
-		JoinGroupResponse packet) {
-		// TODO handle response
-	}
-
 
 	/**
-	 * Handles {@link MessageSubjects#JOIN_GROUP_REQUEST} messages received from a neighbor.
-	 * 
-	 * @param sender the sender node
-	 * @param message the join group message
-	 */
-	private void handleMessageJoinGroupRequest(NodeDescriptor sender, JoinGroupRequest message) {
-		// TODO if the current nod is not the leader of the given group 
-		// then raise an exception	
-		
-		// TODO if we accept the join group request then we need to:
-		// 1 - add the sender to the group
-		// 2 - send him a join group response
-		// 3 - notify the neighbor
-		
-		// TODO if we do not accept the join we can
-		// 1 - simply reject
-		// 2 - suggest another leader (e.g. a subgroup or a parent group leader)
-	}
-
-
-	/**
-	 * Handles {@link MessageSubjects#ACK} messages received from a neighbor.
+	 * Handles {@link MessageSubjects#REPLY} messages received from a neighbor.
 	 * 
 	 * @param sender the sender node
 	 * @param ack the acknowledge message
@@ -385,12 +390,12 @@ public class Node implements Router{
 
 
 	/**
-	 * Handles {@link MessageSubjects#COMMUNICATION} messages
+	 * Handles {@link MessageSubjects#PUBLISH} messages
 	 * 
 	 * @param sender the sender node
 	 * @param message the message content.
 	 */
-	private void handleMessageCommunication(NodeDescriptor sender,
+	private void handleMessagePublish(NodeDescriptor sender,
 			TupleMessage message) {
 		
 		// Check if we have already received the message.
@@ -495,7 +500,7 @@ public class Node implements Router{
 
 	private void sendMessageAck(NodeDescriptor recipient, Ack ack) {
 		try {
-			overlay.send(ACK, ack, recipient);
+			overlay.send(REPLY, ack, recipient);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -511,7 +516,7 @@ public class Node implements Router{
 	public void sendMessageCommunication(NodeDescriptor recipient, TupleMessage message) {
 		// TODO check if message and recipient matches
 		try {
-			overlay.send(COMMUNICATION, message, recipient);
+			overlay.send(PUBLISH, message, recipient);
 			synchronized (pendingCommunicationMessages) {
 				pendingCommunicationMessages.put(recipient, message.getID());	
 			}
@@ -560,6 +565,27 @@ public class Node implements Router{
 
 	public void setCurrentDescriptor(NodeDescriptor currentDescriptor) {
 		this.currentDescriptor = currentDescriptor;
+	}
+
+
+	@Override
+	public void notifyNeighborAdded(NodeDescriptor arg0, Serializable arg1) {
+		// TODO Auto-generated method stub
+		
+	}
+
+
+	@Override
+	public void notifyNeighborDead(NodeDescriptor arg0, Serializable arg1) {
+		// TODO Auto-generated method stub
+		
+	}
+
+
+	@Override
+	public void notifyNeighborRemoved(NodeDescriptor arg0) {
+		// TODO Auto-generated method stub
+		
 	}
 	
 }

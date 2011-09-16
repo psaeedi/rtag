@@ -3,6 +3,7 @@
  */
 package it.polimi.rtag.messaging;
 
+import polimi.reds.broker.routing.Router;
 import it.polimi.rtag.GroupDescriptor;
 
 /**
@@ -21,15 +22,15 @@ public class MessageSubjects {
 	 * 
 	 * This subject is sent with a message of type {@link TupleMessage}.
 	 */
-	public static final String COMMUNICATION = "COMM";
+	public static final String PUBLISH = Router.PUBLISH;
 	
 	/**
-	 * A node which has received a message with subject {@link MessageSubjects#COMMUNICATION}
+	 * A node which has received a message with subject {@link MessageSubjects#PUBLISH}
 	 * has to respond with an ack to the sender.
 	 * 
 	 * This subject is sent with a message of type {@link Ack}.
 	 */
-	public static final String ACK = "ACK";
+	public static final String REPLY = Router.REPLY;
 
 	
 	/**
