@@ -30,12 +30,12 @@ public class GroupDescriptor implements Serializable {
 	/**
 	 * The group leader.
 	 */
-	private ExtendedNodeDescriptor leader;
+	private NodeDescriptor leader;
 	
 	/**
 	 * All the followers. 
 	 */
-	private HashSet<ExtendedNodeDescriptor> followers;
+	private HashSet<NodeDescriptor> followers;
 	
 	/**
 	 * The parent group or null if the group is top level. 
@@ -51,10 +51,11 @@ public class GroupDescriptor implements Serializable {
 	 * @param leader
 	 */
 	public GroupDescriptor(String uniqueId, String friendlyName,
-			ExtendedNodeDescriptor leader) {
+			NodeDescriptor leader, Tuple description) {
 		this.uniqueId = uniqueId;
 		this.friendlyName = friendlyName;
 		this.leader = leader;
+		this.description = description;
 	}
 	
 	/**
@@ -64,7 +65,7 @@ public class GroupDescriptor implements Serializable {
 	 * @param parentGroup
 	 */
 	public GroupDescriptor(String uniqueId, String friendlyName,
-			ExtendedNodeDescriptor leader, GroupDescriptor parentGroup) {
+			NodeDescriptor leader, GroupDescriptor parentGroup) {
 		this.uniqueId = uniqueId;
 		this.friendlyName = friendlyName;
 		this.leader = leader;
@@ -98,13 +99,13 @@ public class GroupDescriptor implements Serializable {
 	/**
 	 * @return the leader
 	 */
-	public ExtendedNodeDescriptor getLeader() {
+	public NodeDescriptor getLeader() {
 		return leader;
 	}
 	/**
 	 * @param leader the leader to set
 	 */
-	public void setLeader(ExtendedNodeDescriptor leader) {
+	public void setLeader(NodeDescriptor leader) {
 		this.leader = leader;
 	}
 
@@ -137,7 +138,7 @@ public class GroupDescriptor implements Serializable {
 	/**
 	 * @return the followers
 	 */
-	public HashSet<ExtendedNodeDescriptor> getFollowers() {
+	public HashSet<NodeDescriptor> getFollowers() {
 		return followers;
 	}
 
@@ -153,5 +154,31 @@ public class GroupDescriptor implements Serializable {
 	 */
 	public Tuple getDescription() {
 		return description;
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof Tuple) {
+			return description.equals(obj);
+		} else if (obj instanceof GroupDescriptor) {
+			return description.equals(((GroupDescriptor)obj).description);
+		} else {
+			return super.equals(obj);
+		}
+	}
+
+	public HashSet<NodeDescriptor> getMembers() {
+		HashSet<NodeDescriptor> memebers = new HashSet<NodeDescriptor>(followers);
+		memebers.add(leader);
+		return memebers;
+		
+	}
+
+	public static GroupDescriptor createUniverse(Node node) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }
