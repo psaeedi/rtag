@@ -5,47 +5,29 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashSet;
 
+import lights.Tuple;
+
 import com.google.common.collect.HashMultimap;
 
-import it.polimi.rtag.filters.AnycastFilter;
-import it.polimi.rtag.filters.BroadcastFilter;
 import it.polimi.rtag.filters.GroupcastFilter;
 import it.polimi.rtag.filters.UnicastFilter;
 import it.polimi.rtag.messaging.Ack;
-import it.polimi.rtag.messaging.GroupFollowerCommand;
-import it.polimi.rtag.messaging.GroupFollowerCommandAck;
-import it.polimi.rtag.messaging.GroupLeaderCommand;
-import it.polimi.rtag.messaging.GroupLeaderCommandAck;
 import it.polimi.rtag.messaging.MessageSubjects;
 import it.polimi.rtag.messaging.TupleMessage;
 import polimi.reds.Filter;
-import polimi.reds.Message;
 import polimi.reds.MessageID;
 import polimi.reds.NodeDescriptor;
-import polimi.reds.Reply;
-import polimi.reds.broker.overlay.AlreadyNeighborException;
 import polimi.reds.broker.overlay.GenericOverlay;
-import polimi.reds.broker.overlay.NeighborhoodChangeListener;
-import polimi.reds.broker.overlay.NotConnectedException;
-import polimi.reds.broker.overlay.NotRunningException;
 import polimi.reds.broker.overlay.Overlay;
+import polimi.reds.broker.overlay.PacketListener;
 import polimi.reds.broker.overlay.SimpleTopologyManager;
 import polimi.reds.broker.overlay.TCPTransport;
 import polimi.reds.broker.overlay.TopologyManager;
 import polimi.reds.broker.overlay.Transport;
-import polimi.reds.broker.routing.GenericTable;
-import polimi.reds.broker.routing.HashReplyTable;
-import polimi.reds.broker.routing.ImmediateForwardReplyManager;
-import polimi.reds.broker.routing.ReplyManager;
-import polimi.reds.broker.routing.ReplyTable;
-import polimi.reds.broker.routing.Router;
-import polimi.reds.broker.routing.RoutingStrategy;
-import polimi.reds.broker.routing.SubscriptionForwardingRoutingStrategy;
-import polimi.reds.broker.routing.SubscriptionTable;
 
 import static it.polimi.rtag.messaging.MessageSubjects.*;
 
-public class Node implements Router {
+public class Node implements PacketListener {
 
 	/**
 	 * The local universe to which this node belongs.
@@ -74,13 +56,8 @@ public class Node implements Router {
 			new ArrayList<GroupCommunicationManager>();
 	
     public NodeDescriptor currentDescriptor;
-    private GroupingStrategy strategy;
+    TopologyManager topologyManager;
     private Overlay overlay;
-    private RoutingStrategy routingStrategy;
-	private ReplyManager replyManager;
-	private SubscriptionTable subscriptionTable;
-	private ReplyTable replyTable;
-	private Object nodeReply;
     
 	private HashMultimap<NodeDescriptor, MessageID> pendingCommunicationMessages = HashMultimap.create();
 	private HashSet<TupleMessage> recentlyReceivedMessages = new HashSet<TupleMessage>();
@@ -98,141 +75,60 @@ public class Node implements Router {
 		 */
 		
 		// TODO implement a new routing topology manager
-		TopologyManager topologyManager = new SimpleTopologyManager();
+		topologyManager = new SimpleTopologyManager();
 		Transport transport = new TCPTransport(port);
 			
 		setOverlay(new GenericOverlay(topologyManager, transport));
-
-		// TODO implement a new routing strategy
-		routingStrategy = new SubscriptionForwardingRoutingStrategy();
 		
-		setReplyManager(new ImmediateForwardReplyManager());
-		
-		subscriptionTable = new GenericTable();
-		replyTable = new HashReplyTable();
-		
-		GroupCommunicationManager.createUniverse(this);
+		GroupCommunicationManager manager = GroupCommunicationManager.createUniverse(this);
+		groupCommunicationManagers.add(manager);
+		leadedUniverse = manager.getGroupDescriptor();
 	}
 
-
-	/**
-	 * 
-	 */
-	private void setReplyManager(ReplyManager replyManager) {
-		// TODO implement a new reply strategy
-		this.replyManager = replyManager;
-		replyManager.setRouter(this);
-	  	
-	}
-    
-    
-	  /**
-	   * Forwards the given reply to to its sender. According to the informations contained into the
-	   * local reply table the reply will be sent to a specific neighbor or dropped if no information
-	   * about its sender is contained in the reply table.
-	   * <p>
-	   * Note that re-configurator assume that the implementation of this method is synchronized on the
-	   * router object, so that the re-configurator can acquire the lock when it needs to make sure that
-	   * no router operations are executed concurrently with reconfiguration actions.
-	   * 
-	   * @param reply the reply to be sent.
-	   */
-	@Override
-	public void forwardReply(Reply reply) {
-		replyManager.forwardReply(reply);
-	  }
-
-	@Override
 	public Overlay getOverlay() {
 		return overlay;
 	}
-
-	@Override
-	public ReplyTable getReplyTable() {
-		return replyTable;
-	}
-
-	@Override
-	public SubscriptionTable getSubscriptionTable() {
-		return subscriptionTable;
-	}
-
-  /**
-   * 
-   * Publish the given message coming from the specified neighbor. Depending on the routing policy
-   * adopted, this requires to forward the given message to some or any of the neighbors of the
-   * broker this router is part of.<br>
-   * If <code>message</code> is instance of<code>Repliable</code>, the <code>Router</code>
-   * needs to activate the <code>ReplyManager</code> to record the message in the
-   * <code>ReplyTable</code>.
-   * <p>
-   * Note that reconfigurators assume that the implementation of this method is synchronized on the
-   * router object, so that the reconfigurator can acquire the lock when it needs to make sure that
-   * no router operations are executed concurrently with reconfiguration actions.
-   * 
-   * @param neighborID the identifier of the neighbor from which the message was received.
-   * @param message the <code>Message</code> to be published.
-   * 
-   */
-	@Override
-	public void publish(NodeDescriptor sender, Message message) {
-		if (!(message instanceof TupleMessage)) {
-			throw new RuntimeException(
-					"Can only publish TupleMessages. Found:" + message);
-		}
-		
-		// TODO reimplement this by calling sendMessageCommunication
-		
-		//publish the message in the tuple space
-		TupleMessage tmessage = (TupleMessage)message;
-		Filter filter = tmessage.getFilter();
-		if (filter instanceof UnicastFilter) {
-			// Unicast
-			UnicastFilter unicastFilter = (UnicastFilter)filter;
-			NodeDescriptor recipient = unicastFilter.getRecipient();
-			if (recipient.equals(currentDescriptor)) {
-				// TODO add message content to the current tuple space....
-			} else {
-				// Note: followers of the same leader know each other.
-				sendMessageCommunication(recipient, tmessage);
-			}
-		} else if (filter instanceof AnycastFilter){
-			// Anycast
-			// TODO select a recipient matching the criteria
-			// TODO overlay.send(title, tmessage, recipient);
-		} else if (filter instanceof GroupcastFilter) {
-			// Groupcast
-			GroupcastFilter groupcastFilter = (GroupcastFilter)filter;
-			GroupDescriptor group = groupcastFilter.getGroupDescriptor();
-			if (group.isMember(currentDescriptor)) {
-				// TODO add to tuplespace
-				if (group.isLeader(currentDescriptor)) {
-					for (NodeDescriptor recipient: group.getFollowers()) {
-						sendMessageCommunication(recipient, tmessage);
-					}
-					// Forward to the parent group
-					GroupDescriptor parentGroup = group.getParentGroup();
-					if (parentGroup != null) {
-						sendMessageCommunication(parentGroup.getLeader(), tmessage);
-					}				
-				} else {
-					// The current node is not leader. Forward this to the leader.
-					sendMessageCommunication(group.getLeader(), tmessage);
+	
+	/**
+	 * @param tmessage
+	 * @param filter
+	 */
+	public void sendGroupcast(TupleMessage tmessage, Filter filter) {
+		GroupcastFilter groupcastFilter = (GroupcastFilter)filter;
+		GroupDescriptor group = groupcastFilter.getGroupDescriptor();
+		if (group.isMember(currentDescriptor)) {
+			// TODO add to tuplespace
+			if (group.isLeader(currentDescriptor)) {
+				for (NodeDescriptor recipient: group.getFollowers()) {
+					sendMessageCommunication(recipient, tmessage);
 				}
+				// Forward to the parent group
+				NodeDescriptor parentLeader = group.getParentLeader();
+				if (parentLeader != null) {
+					sendMessageCommunication(parentLeader, tmessage);
+				}				
+			} else {
+				// The current node is not leader. Forward this to the leader.
+				sendMessageCommunication(group.getLeader(), tmessage);
 			}
-		} else if (filter instanceof BroadcastFilter) {
-			// Broadcast
-			// TODO add to tuplespace?
-			for (NodeDescriptor recipient: overlay.getNeighbors()) {
-				sendMessageCommunication(recipient, tmessage);
-				// TODO how do we prevent duplicated messages from being sent?
-			}
-		} else {
-			throw new AssertionError("Unrecognizer filter type: " + filter);
 		}
 	}
 
-	@Override
+	/**
+	 * @param tmessage
+	 * @param filter
+	 */
+	public void sendUnicast(TupleMessage tmessage, Filter filter) {
+		UnicastFilter unicastFilter = (UnicastFilter)filter;
+		NodeDescriptor recipient = unicastFilter.getRecipient();
+		if (recipient.equals(currentDescriptor)) {
+			// TODO add message content to the current tuple space....
+		} else {
+			// Note: followers of the same leader know each other.
+			sendMessageCommunication(recipient, tmessage);
+		}
+	}
+
 	public void setOverlay(Overlay overlay) {
 		if (this.overlay != null) {
 			throw new AssertionError("Overlay already configured");
@@ -241,70 +137,9 @@ public class Node implements Router {
 		// TODO we want the ExtendedNodeDescriptor not the NodeDescriptor
 		currentDescriptor = overlay.getNodeDescriptor();
 		// Set listeners
-		overlay.addPacketListener(this, PUBLISH);
-		overlay.addPacketListener(this, REPLY);
-	    overlay.setTrafficClass(Router.REPLY, Router.MESSAGE_CLASS);
-	}
-
-	@Override
-	public void subscribe(NodeDescriptor node, Filter filter) {
-		// TODO implement a routing strategy and move this code there
-		// Check if the filter represents a group
-		try {
-			GroupcastFilter groupFilter = GroupcastFilter.createFromFilter(filter);
-			// Check if this node is the right group leader
-			GroupDescriptor groupDescriptor = groupFilter.getDescriptor();
-			if (groupDescriptor.isLeader(currentDescriptor)) {
-				try {
-					overlay.addNeighbor(node.getUrls()[0]);
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				// TODO Add node to the group and notify all the other followers
-			} else {
-				// TODO decide what to do if the current node is not the 
-				// group leader. We could reply with the leader address if known.
-				// Otherwise we could simply send an error message.
-			}
-			
-		} catch(IllegalArgumentException ex) {
-			// Not a valid group filter: return
-			return;
-		}
-	}
-
-	@Override
-	public void unsubscribe(NodeDescriptor node, Filter filter) {
-		// TODO implement a routing strategy and move this code there
-		// Check if the filter represents a group
-		try {
-			GroupcastFilter groupFilter = GroupcastFilter.createFromFilter(filter);
-			// Check if this node is the right group leader
-			GroupDescriptor groupDescriptor = groupFilter.getDescriptor();
-			if (groupDescriptor.isLeader(currentDescriptor)) {
-				// TODO Remove node to the group and notify all the other followers
-				overlay.removeNeighbor(node);
-			} else {
-				// TODO decide what to do if the current node is not the 
-				// group leader. We could reply with the leader address if known.
-				// Otherwise we could simply send an error message.
-			}
-			
-		} catch(IllegalArgumentException ex) {
-			// Not a valid group filter: return
-			return;
-		}
-	}
-
-	@Override
-	public void unsubscribeAll(NodeDescriptor node) {
-		// TODO implement a routing strategy and move this code there
-		// Invoked before a node is quitting or if a node has collapsed
-		overlay.removeNeighbor(node);
-		
-		// TODO the node has to be removed from all the groups
-		
+		overlay.addPacketListener(this, COMMUNICATION);
+		overlay.addPacketListener(this, COMMUNICATION_ACK);
+	    overlay.setTrafficClass(COMMUNICATION_ACK, COMMUNICATION_ACK);
 	}
 
   /**
@@ -320,9 +155,9 @@ public class Node implements Router {
 			Serializable packet) {
 		try {
 			// Handle each received message according to its subject
-			if (PUBLISH.equals(subject)) {
+			if (COMMUNICATION.equals(subject)) {
 				handleMessagePublish(sender, (TupleMessage)packet);
-			} else if (REPLY.equals(subject)) {
+			} else if (COMMUNICATION_ACK.equals(subject)) {
 				handleMessageAck(sender, (Ack)packet);
 			} else {
 				// All the message subjects should be handled
@@ -339,7 +174,7 @@ public class Node implements Router {
 
 
 	/**
-	 * Handles {@link MessageSubjects#REPLY} messages received from a neighbor.
+	 * Handles {@link MessageSubjects#COMMUNICATION_ACK} messages received from a neighbor.
 	 * 
 	 * @param sender the sender node
 	 * @param ack the acknowledge message
@@ -357,7 +192,7 @@ public class Node implements Router {
 
 
 	/**
-	 * Handles {@link MessageSubjects#PUBLISH} messages
+	 * Handles {@link MessageSubjects#COMMUNICATION} messages
 	 * 
 	 * @param sender the sender node
 	 * @param message the message content.
@@ -403,17 +238,6 @@ public class Node implements Router {
 				sendMessageAck(sender, Ack.createWrongRecipientAck(message.getID()));
 				return;
 			}
-		} else if (filter instanceof AnycastFilter){
-			// Anycast
-			AnycastFilter anycastFilter = (AnycastFilter)filter;
-			GroupDescriptor group = anycastFilter.getGroup();
-			if (!group.isMember(currentDescriptor)) {
-				sendMessageAck(sender, Ack.createNotGroupFollowerAck(message.getID()));
-				return;
-			} else {
-				sendMessageAck(sender, Ack.createOkAck(message.getID()));
-				return;
-			}
 		} else if (filter instanceof GroupcastFilter) {
 			// Groupcast
 			GroupcastFilter groupcastFilter = (GroupcastFilter)filter;
@@ -432,9 +256,9 @@ public class Node implements Router {
 						sendMessageCommunication(recipient, message);
 					}
 					// Forward to the parent group
-					GroupDescriptor parentGroup = group.getParentGroup();
-					if (parentGroup != null) {
-						sendMessageCommunication(parentGroup.getLeader(), message);
+					NodeDescriptor parentLeader = group.getParentLeader();
+					if (parentLeader != null) {
+						sendMessageCommunication(parentLeader, message);
 					}
 					
 				} else {
@@ -448,17 +272,6 @@ public class Node implements Router {
 				sendMessageAck(sender, Ack.createNotGroupFollowerAck(message.getID()));
 				return;
 			}
-		} else if (filter instanceof BroadcastFilter) {
-			// Broadcast
-			for (NodeDescriptor recipient: overlay.getNeighbors()) {
-				if (sender.equals(recipient)) {
-					// We do not send the message to the sender
-					continue;
-				}
-				sendMessageCommunication(recipient, message);
-			}
-			sendMessageAck(sender, Ack.createOkAck(message.getID()));
-			return;
 		} else {
 			// TODO shall we send an ack saying that sth went wrong?
 			throw new AssertionError("Unrecognizer filter type: " + filter);
@@ -467,7 +280,7 @@ public class Node implements Router {
 
 	private void sendMessageAck(NodeDescriptor recipient, Ack ack) {
 		try {
-			overlay.send(REPLY, ack, recipient);
+			overlay.send(COMMUNICATION_ACK, ack, recipient);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -480,10 +293,10 @@ public class Node implements Router {
 	 * @param recipient
 	 * @param message
 	 */
-	public void sendMessageCommunication(NodeDescriptor recipient, TupleMessage message) {
+	private void sendMessageCommunication(NodeDescriptor recipient, TupleMessage message) {
 		// TODO check if message and recipient matches
 		try {
-			overlay.send(PUBLISH, message, recipient);
+			overlay.send(COMMUNICATION, message, recipient);
 			synchronized (pendingCommunicationMessages) {
 				pendingCommunicationMessages.put(recipient, message.getID());	
 			}
@@ -493,12 +306,12 @@ public class Node implements Router {
 		}
 	}
 	
-	private void cleanPendingMessages() {
+	protected void cleanPendingMessages() {
 		// TODO clean the pendingCommunicationMessages map to avoid storing 
 		// values for undelievered messages by removing all the expired ones.
 	}
 
-	private void cleanRecentlyReceivedMessages() {
+	protected void cleanRecentlyReceivedMessages() {
 		// TODO empty the recently received messages collection by 
 		// removing all the expired ones.
 		synchronized(recentlyReceivedMessages) {
@@ -513,7 +326,6 @@ public class Node implements Router {
 		}
 	}
 	
-	@Override
 	public NodeDescriptor getID() {
 		return currentDescriptor;
 	}
@@ -521,11 +333,8 @@ public class Node implements Router {
 	/**
 	 * @param manager
 	 * 
-	 * @see GroupCommunicationManager#createGroup(Node, GroupDescriptor)
-	 * @see GroupCommunicationManager#createGroup(Node, String, String, lights.Tuple)
-	 * @see GroupCommunicationManager#createUniverse(Node)
 	 */
-	public void addGroup(GroupCommunicationManager manager) {
+	private void addGroupCommunicationManager(GroupCommunicationManager manager) {
 		this.groupCommunicationManagers.add(manager);
 		GroupDescriptor descriptor = manager.getGroupDescriptor();
 		if (descriptor.isLeader(currentDescriptor)) {
@@ -535,4 +344,17 @@ public class Node implements Router {
 		}
 	}
 
+	
+	public GroupDescriptor createGroupAndNotifyUniverse(String uniqueId,
+			String friendlyName, Tuple description) {
+		// Check if we already know a group leader for that group
+		GroupCommunicationManager manager = GroupCommunicationManager.createGroup(this, uniqueId, friendlyName, description);
+		addGroupCommunicationManager(manager);
+		GroupDescriptor groupDescriptor = manager.getGroupDescriptor();
+		
+		// TODO send message to the universe leader or parent
+		
+		
+		return groupDescriptor;
+	}
 }

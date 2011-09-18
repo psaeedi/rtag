@@ -23,15 +23,15 @@ public class MessageSubjects {
 	 * 
 	 * This subject is sent with a message of type {@link TupleMessage}.
 	 */
-	public static final String PUBLISH = Router.PUBLISH;
+	public static final String COMMUNICATION = "COMMUNICATION";
 	
 	/**
-	 * A node which has received a message with subject {@link MessageSubjects#PUBLISH}
+	 * A node which has received a message with subject {@link MessageSubjects#COMMUNICATION}
 	 * has to respond with an ack to the sender.
 	 * 
 	 * This subject is sent with a message of type {@link Ack}.
 	 */
-	public static final String REPLY = Router.REPLY;
+	public static final String COMMUNICATION_ACK = "COMMUNICATION_ACK";
 
 	
 	/**

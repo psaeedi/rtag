@@ -14,8 +14,6 @@ import java.io.Serializable;
 import lights.Tuple;
 
 import polimi.reds.NodeDescriptor;
-import polimi.reds.broker.overlay.DataListener;
-import polimi.reds.broker.overlay.Link;
 import polimi.reds.broker.overlay.NeighborhoodChangeListener;
 import polimi.reds.broker.overlay.Overlay;
 import polimi.reds.broker.overlay.PacketListener;
@@ -49,7 +47,6 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener, Pa
 		
 		GroupCommunicationManager manager = new GroupCommunicationManager(
 				node.getID(), groupDescriptor, node.getOverlay());
-		node.addGroup(manager);
 		return manager;
 	}
 	
@@ -58,7 +55,6 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener, Pa
 		
 		GroupCommunicationManager manager = new GroupCommunicationManager(
 				node.getID(), groupDescriptor, node.getOverlay());
-		node.addGroup(manager);
 		return manager;
 	}
 	
@@ -68,7 +64,6 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener, Pa
 		
 		GroupCommunicationManager manager = new GroupCommunicationManager(
 				node.getID(), groupDescriptor, node.getOverlay());
-		node.addGroup(manager);
 		return manager;
 	}
 	
@@ -131,7 +126,8 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener, Pa
 		for (String subject: SUBJECTS) {
 			overlay.addPacketListener(this, subject);
 		}
-
+		overlay.setTrafficClass(groupDescriptor.getFriendlyName(),
+				groupDescriptor.getFriendlyName());
 	}
 
 
