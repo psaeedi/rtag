@@ -40,7 +40,7 @@ public class GroupDescriptor implements Serializable {
 	/**
 	 * The parent group or null if the group is top level. 
 	 */
-	private GroupDescriptor parentGroup;
+	private NodeDescriptor parentLeader;
 
 	
 	//TODO add a constructor to create universe groups
@@ -65,11 +65,11 @@ public class GroupDescriptor implements Serializable {
 	 * @param parentGroup
 	 */
 	public GroupDescriptor(String uniqueId, String friendlyName,
-			NodeDescriptor leader, GroupDescriptor parentGroup) {
+			NodeDescriptor leader, NodeDescriptor parentLeader) {
 		this.uniqueId = uniqueId;
 		this.friendlyName = friendlyName;
 		this.leader = leader;
-		this.parentGroup = parentGroup;
+		this.parentLeader = parentLeader;
 	}	
 	
 	/**
@@ -145,8 +145,8 @@ public class GroupDescriptor implements Serializable {
 	/**
 	 * @return the parentGroup
 	 */
-	public GroupDescriptor getParentGroup() {
-		return parentGroup;
+	public NodeDescriptor getParentLeader() {
+		return parentLeader;
 	}
 
 	/**

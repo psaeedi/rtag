@@ -10,7 +10,7 @@ import polimi.reds.MessageID;
  * @author Panteha Saeedi (saeedi@elet.polimi.it)
  *
  * Defines the content of an acknowledge message sent to notify the reception of a communication.
- * @see MessageSubjects#REPLY
+ * @see MessageSubjects#COMMUNICATION_ACK
  */
 public class Ack extends Message {
 
