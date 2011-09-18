@@ -45,8 +45,34 @@ import polimi.reds.broker.routing.SubscriptionTable;
 
 import static it.polimi.rtag.messaging.MessageSubjects.*;
 
-public class Node implements Router, NeighborhoodChangeListener {
+public class Node implements Router {
 
+	/**
+	 * The local universe to which this node belongs.
+	 * Each node can only belong to a single universe 
+	 * which would be its local universe!
+	 */
+	private GroupDescriptor followedUniverse;
+	
+	/***
+	 * If the node is a universe leader then this
+	 * is the universe it leads.
+	 */
+	private GroupDescriptor leadedUniverse;
+	
+	/**
+	 * All the groups of which this node is leader. 
+	 */
+	private HashSet<GroupDescriptor> leadedGroups = new HashSet<GroupDescriptor>();
+	
+	/**
+	 * All the groups of which this node is follower. 
+	 */
+	private HashSet<GroupDescriptor> followedGroups = new HashSet<GroupDescriptor>();
+	
+	private ArrayList<GroupCommunicationManager> groupCommunicationManagers =
+			new ArrayList<GroupCommunicationManager>();
+	
     public NodeDescriptor currentDescriptor;
     private GroupingStrategy strategy;
     private Overlay overlay;
@@ -74,27 +100,27 @@ public class Node implements Router, NeighborhoodChangeListener {
 		// TODO implement a new routing topology manager
 		TopologyManager topologyManager = new SimpleTopologyManager();
 		Transport transport = new TCPTransport(port);
-		
+			
 		setOverlay(new GenericOverlay(topologyManager, transport));
 
-		
 		// TODO implement a new routing strategy
 		routingStrategy = new SubscriptionForwardingRoutingStrategy();
 		
-		setReplyManager();
+		setReplyManager(new ImmediateForwardReplyManager());
 		
 		subscriptionTable = new GenericTable();
-		
 		replyTable = new HashReplyTable();
+		
+		GroupCommunicationManager.createUniverse(this);
 	}
 
 
 	/**
 	 * 
 	 */
-	private void setReplyManager() {
+	private void setReplyManager(ReplyManager replyManager) {
 		// TODO implement a new reply strategy
-		replyManager = new ImmediateForwardReplyManager();
+		this.replyManager = replyManager;
 		replyManager.setRouter(this);
 	  	
 	}
@@ -215,15 +241,8 @@ public class Node implements Router, NeighborhoodChangeListener {
 		// TODO we want the ExtendedNodeDescriptor not the NodeDescriptor
 		currentDescriptor = overlay.getNodeDescriptor();
 		// Set listeners
-		overlay.addNeighborhoodChangeListener(this);
 		overlay.addPacketListener(this, PUBLISH);
 		overlay.addPacketListener(this, REPLY);
-		overlay.addPacketListener(this, GROUP_CREATED_NOTIFICATION);
-		overlay.addPacketListener(this, GROUP_FOLLOWER_COMMAND);
-		overlay.addPacketListener(this, GROUP_FOLLOWER_COMMAND_ACK);
-		overlay.addPacketListener(this, GROUP_LEADER_COMMAND);
-		overlay.addPacketListener(this, GROUP_LEADER_COMMAND_ACK);
-		
 	    overlay.setTrafficClass(Router.REPLY, Router.MESSAGE_CLASS);
 	}
 
@@ -283,7 +302,9 @@ public class Node implements Router, NeighborhoodChangeListener {
 		// TODO implement a routing strategy and move this code there
 		// Invoked before a node is quitting or if a node has collapsed
 		overlay.removeNeighbor(node);
+		
 		// TODO the node has to be removed from all the groups
+		
 	}
 
   /**
@@ -303,14 +324,6 @@ public class Node implements Router, NeighborhoodChangeListener {
 				handleMessagePublish(sender, (TupleMessage)packet);
 			} else if (REPLY.equals(subject)) {
 				handleMessageAck(sender, (Ack)packet);
-			} else if (GROUP_FOLLOWER_COMMAND.equals(subject)) {
-				handleMessageGroupFollowerCommand(sender, (GroupFollowerCommand)packet);
-			} else if (GROUP_FOLLOWER_COMMAND_ACK.equals(subject)) {
-				handleMessageGroupFollowerCommandAck(sender, (GroupFollowerCommandAck)packet);
-			} else if (GROUP_LEADER_COMMAND.equals(subject)) {
-				handleMessageGroupLeaderCommand(sender, (GroupLeaderCommand)packet);
-			} else if (GROUP_LEADER_COMMAND_ACK.equals(subject)) {
-				handleMessageGroupLeaderCommandAck(sender, (GroupLeaderCommandAck)packet);
 			} else {
 				// All the message subjects should be handled
 				throw new RuntimeException("Unrecognized message subject: " + subject);
@@ -322,53 +335,7 @@ public class Node implements Router, NeighborhoodChangeListener {
 		}
 	}
 	
-	private void handleMessageGroupFollowerCommandAck(NodeDescriptor sender,
-		GroupFollowerCommandAck packet) {
-	// TODO Auto-generated method stub
 	
-}
-
-
-	private void handleMessageGroupFollowerCommand(NodeDescriptor sender,
-		GroupFollowerCommand packet) {
-	// TODO Auto-generated method stub
-	
-}
-
-
-	/**
-	 * Handles {@link MessageSubjects#GROUP_LEADER_COMMAND_ACK} messages
-	 * received from a follower.
-	 * 
-	 * @param sender
-	 * @param message
-	 */
-	private void handleMessageGroupLeaderCommandAck(NodeDescriptor sender,
-		GroupLeaderCommandAck message) {
-		// TODO check if the command was sent by this node
-		// TODO handle the response
-	}
-
-	/**
-	 * Handles {@link MessageSubjects#GROUP_LEADER_COMMAND} messages by performing
-	 * the proper action according to what is commanded by the leader.
-	 * 
-	 * @param sender
-	 * @param message
-	 */
-	private void handleMessageGroupLeaderCommand(NodeDescriptor sender,
-		GroupLeaderCommand message) {
-		GroupDescriptor group = message.getGroupDescriptor();
-		// TODO if the current node is not in the group notify the sender
-		if (!group.isLeader(sender)) {
-			// The sender is not the group leader
-			// TODO do something then return.
-			return;
-		}
-		String command = message.getCommand();
-		// TODO handle the command 
-}
-
 
 
 	/**
@@ -384,7 +351,7 @@ public class Node implements Router, NeighborhoodChangeListener {
 			pendingCommunicationMessages.remove(sender, ack.getOriginalMessageID());
 		}
 		
-		// if the response is not OK update the group descriptor used to compose this message
+		// TODO if the response is not OK update the group descriptor used to compose this message
 		// is probably not up to date and must be updated....
 	}
 
@@ -551,41 +518,21 @@ public class Node implements Router, NeighborhoodChangeListener {
 		return currentDescriptor;
 	}
 
-	public void setStrategy(GroupingStrategy strategy) {
-		this.strategy = strategy;
+	/**
+	 * @param manager
+	 * 
+	 * @see GroupCommunicationManager#createGroup(Node, GroupDescriptor)
+	 * @see GroupCommunicationManager#createGroup(Node, String, String, lights.Tuple)
+	 * @see GroupCommunicationManager#createUniverse(Node)
+	 */
+	public void addGroup(GroupCommunicationManager manager) {
+		this.groupCommunicationManagers.add(manager);
+		GroupDescriptor descriptor = manager.getGroupDescriptor();
+		if (descriptor.isLeader(currentDescriptor)) {
+			leadedGroups.add(descriptor);
+		} else if (descriptor.isFollower(currentDescriptor)) {
+			followedGroups.add(descriptor);
+		}
 	}
 
-	public GroupingStrategy getStrategy() {
-		return strategy;
-	}
-
-	public NodeDescriptor getCurrentDescriptor() {
-		return currentDescriptor;
-	}
-
-	public void setCurrentDescriptor(NodeDescriptor currentDescriptor) {
-		this.currentDescriptor = currentDescriptor;
-	}
-
-
-	@Override
-	public void notifyNeighborAdded(NodeDescriptor arg0, Serializable arg1) {
-		// TODO Auto-generated method stub
-		
-	}
-
-
-	@Override
-	public void notifyNeighborDead(NodeDescriptor arg0, Serializable arg1) {
-		// TODO Auto-generated method stub
-		
-	}
-
-
-	@Override
-	public void notifyNeighborRemoved(NodeDescriptor arg0) {
-		// TODO Auto-generated method stub
-		
-	}
-	
 }

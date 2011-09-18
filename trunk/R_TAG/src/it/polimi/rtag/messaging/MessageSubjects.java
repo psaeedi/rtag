@@ -4,6 +4,7 @@
 package it.polimi.rtag.messaging;
 
 import polimi.reds.broker.routing.Router;
+import it.polimi.rtag.GroupCommunicationManager;
 import it.polimi.rtag.GroupDescriptor;
 
 /**
@@ -47,6 +48,8 @@ public class MessageSubjects {
 	 * 
 	 * TODO create a class to encapsulate this message with the creator descriptor
 	 * TODO add methods to handle this class in the Node
+	 * 
+	 * @see {@link GroupCommunicationManager#notifyPacketArrived(String, polimi.reds.NodeDescriptor, java.io.Serializable)}
 	 */
 	public static final String GROUP_CREATED_NOTIFICATION = "G_CREATED_N";
 	
