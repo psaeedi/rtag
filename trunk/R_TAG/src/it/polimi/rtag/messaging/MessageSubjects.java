@@ -1,18 +1,19 @@
-/**
- * 
- */
+ 
 package it.polimi.rtag.messaging;
+
+
 
 import polimi.reds.broker.routing.Router;
 import it.polimi.rtag.GroupCommunicationManager;
 import it.polimi.rtag.GroupDescriptor;
 
 /**
- * @author panteha
- * Dfeine a set of possible message subjects.
+ * @author Panteha Saeedi (saeedi@elet.polimi.it). </p>
+ * 
+ * * Define a set of possible message subjects.
  * Message subjects are used to identify which kind of message
- * was sent or received.
- */
+ *  was sent or received.
+ **/
 public class MessageSubjects {
 
 	/**

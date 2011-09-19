@@ -12,20 +12,23 @@ import lights.Tuple;
 import polimi.reds.NodeDescriptor;
 
 /**
- * @author panteha
+ * @author Panteha Saeedi (saeedi@elet.polimi.it)</p>.
+ * 
  * Describes a group within the system
  */
 public class GroupDescriptor implements Serializable {
+
+	
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = -598794056247356570L;
-
+	private static final String UNIVERSE = "__UNIVERSE";
 	private String uniqueId;
 	private String friendlyName;
-	private boolean universe;
 	private Tuple description;
+	private boolean universe = false;
 	
 	/**
 	 * The group leader.
@@ -65,12 +68,33 @@ public class GroupDescriptor implements Serializable {
 	 * @param parentGroup
 	 */
 	public GroupDescriptor(String uniqueId, String friendlyName,
-			NodeDescriptor leader, NodeDescriptor parentLeader) {
+			NodeDescriptor leader, Tuple description, NodeDescriptor parentLeader) {
 		this.uniqueId = uniqueId;
 		this.friendlyName = friendlyName;
 		this.leader = leader;
+		this.description = description;
 		this.parentLeader = parentLeader;
-	}	
+	}
+	
+	/**
+	 * @param uniqueId
+	 * @param friendlyName
+	 * @param description
+	 * @param universe
+	 * @param leader
+	 * @param parentLeader
+	 */
+	private GroupDescriptor(String uniqueId, String friendlyName,
+			Tuple description, boolean universe, NodeDescriptor leader,
+			NodeDescriptor parentLeader) {
+		super();
+		this.uniqueId = uniqueId;
+		this.friendlyName = friendlyName;
+		this.description = description;
+		this.universe = universe;
+		this.leader = leader;
+		this.parentLeader = parentLeader;
+	}
 	
 	/**
 	 * @return the uniqueId
@@ -178,7 +202,7 @@ public class GroupDescriptor implements Serializable {
 	}
 
 	public static GroupDescriptor createUniverse(Node node) {
-		// TODO Auto-generated method stub
-		return null;
+		// TODO think of a unique id
+		return new GroupDescriptor("uniqueid", UNIVERSE, null, true, node.getID(), null);
 	}
 }

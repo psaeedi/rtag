@@ -6,7 +6,7 @@ package it.polimi.rtag.messaging;
 import polimi.reds.Message;
 
 /**
- * @author Panteha Saeedi (saeedi@elet.polimi.it)
+ * @author Panteha Saeedi (saeedi@elet.polimi.it)</p>.
  *
  */
 public class GroupFollowerCommandAck extends Message {

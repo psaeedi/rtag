@@ -7,7 +7,7 @@ import polimi.reds.Message;
 import polimi.reds.MessageID;
 
 /**
- * @author Panteha Saeedi (saeedi@elet.polimi.it)
+ * @author Panteha Saeedi (saeedi@elet.polimi.it)</p>.
  *
  * Defines the content of an acknowledge message sent to notify the reception of a communication.
  * @see MessageSubjects#COMMUNICATION_ACK
