@@ -4,6 +4,7 @@
 package it.polimi.rtag.messaging;
 
 import polimi.reds.Message;
+import polimi.reds.MessageID;
 
 /**
  * @author Panteha Saeedi (saeedi@elet.polimi.it)</p>.
@@ -11,6 +12,10 @@ import polimi.reds.Message;
  */
 public class GroupLeaderCommandAck extends Message {
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 5153927215535614233L;
 	
 	/**
 	 * The {@link GroupLeaderCommandAck} message was received correctly 
@@ -30,15 +35,55 @@ public class GroupLeaderCommandAck extends Message {
 	 * In this case the follower should leave the group. 
 	 */
 	public static final String KO = "KO";
+		
+	private MessageID originalMessage;
+	private String response;
 	
+	
+	public static GroupLeaderCommandAck createKoCommand(MessageID originalMessageID) {
+		if (originalMessageID == null) {
+			throw new IllegalArgumentException("Message id cannot be null.");
+		}
+		return new GroupLeaderCommandAck(originalMessageID, KO);
+	}
+	
+	public static GroupLeaderCommandAck createOkCommand(MessageID originalMessageID) {
+		if (originalMessageID == null) {
+			throw new IllegalArgumentException("Message id cannot be null.");
+		}
+		return new GroupLeaderCommandAck(originalMessageID, OK);
+	}
+	
+	public static GroupLeaderCommandAck createNotGroupFollowerCommand(MessageID originalMessageID) {
+		if (originalMessageID == null) {
+			throw new IllegalArgumentException("Message id cannot be null.");
+		}
+		return new GroupLeaderCommandAck(originalMessageID, NOT_GROUP_FOLLOWER);
+	}
 
 	/**
-	 * 
+	 * @param originalMessage
+	 * @param response
 	 */
-	private static final long serialVersionUID = 5153927215535614233L;
-	
-	// TODO implement this as Ack
-	
-	//
+	public GroupLeaderCommandAck(MessageID originalMessage, String response) {
+		this.originalMessage = originalMessage;
+		this.response = response;
+	}
+
+
+	/**
+	 * @return the originalMessage
+	 */
+	public MessageID getOriginalMessage() {
+		return originalMessage;
+	}
+
+
+	/**
+	 * @return the response
+	 */
+	public String getResponse() {
+		return response;
+	}
 
 }

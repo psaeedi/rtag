@@ -42,23 +42,19 @@ public class GroupLeaderCommand extends Message {
 	 * TODO implement this in the Node
 	 */
 	public static final String MERGE_GROUPS = "MERGE_GROUPS";
+
+	/**
+	 * The group leader ask a remote node to join its group.
+	 * If the remote node leads a group matching the current one
+	 * the remote group should leave its group and join this one. 
+	 */
+	public static final String JOIN_MY_GROUP = "JOIN_MY_GROUP";
 	
 	/**
-	 * A group leader send a leave notification every time a node
-	 * has left or will leave the group. The recipients use this
-	 * message to update their node descriptor by removing the node
-	 * leaving. Leaders are notified of a leaving node by receiving a
-	 * {@link GroupFollowerCommand#LEAVING_NOTICE} message and
-	 * will receive events from REDS for collapsed nodes.</p>
-	 * 
-	 * If the leader is the one leaving then the followers will have either
-	 * to join the parent group if it exists or to select a new leader.
-	 * The same procedure will be performed when a group leader collapses.</p>
-	 * 
-	 * TODO implement this in the node
-	 * TODO define an election/bet interface
+	 * Sent by the group leader to notify its followers that
+	 * something has changed in the group descriptor. 
 	 */
-	public static final String LEAVE_NOTIFICATION = "LEAVE_NOTIFICATION";
+	public static final String UPDATE_DESCRIPTOR = "UPDATE_DESCRIPTOR";
 	
 	// TODO add other actions
 	
@@ -70,6 +66,27 @@ public class GroupLeaderCommand extends Message {
 	private static final long serialVersionUID = -4659012389818436165L;
 	private GroupDescriptor groupDescriptor;
 	private String command;
+	
+	public static GroupLeaderCommand createMergeGroupCommand(GroupDescriptor groupDescriptor) {
+		if (groupDescriptor == null) {
+			throw new IllegalArgumentException("Group descriptor cannot be null.");
+		}
+		return new GroupLeaderCommand(groupDescriptor, MERGE_GROUPS);
+	}
+	
+	public static GroupLeaderCommand createJoinMyGroupCommand(GroupDescriptor groupDescriptor) {
+		if (groupDescriptor == null) {
+			throw new IllegalArgumentException("Group descriptor cannot be null.");
+		}
+		return new GroupLeaderCommand(groupDescriptor, JOIN_MY_GROUP);
+	}
+	
+	public static GroupLeaderCommand createUpdateCommand(GroupDescriptor groupDescriptor) {
+		if (groupDescriptor == null) {
+			throw new IllegalArgumentException("Group descriptor cannot be null.");
+		}
+		return new GroupLeaderCommand(groupDescriptor, UPDATE_DESCRIPTOR);
+	}
 	
 	/**
 	 * @param groupDescriptor

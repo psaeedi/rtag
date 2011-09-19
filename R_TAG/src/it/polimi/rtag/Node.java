@@ -30,8 +30,9 @@ import static it.polimi.rtag.messaging.MessageSubjects.*;
 
 /**
  * @author Panteha Saeedi (saeedi@elet.polimi.it)</p>.
+ * 
+ * TODO this should handle a collection of {@link GroupDiscoveredNotificationListener}
  */
-
 public class Node implements PacketListener {
 
 	/**

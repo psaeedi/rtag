@@ -54,6 +54,13 @@ public class MessageSubjects {
 	 */
 	public static final String GROUP_CREATED_NOTIFICATION = "G_CREATED_N";
 	
+	/**
+	 * When a new node is added to a group leader the group leader inform the
+	 * new node of the existence of a group.</p>
+	 * The new node can then reply either by joining this group or by
+	 * merging its group with that one. 
+	 */
+	public static final String GROUP_DISCOVERED_NOTIFICATION = "G_DISCOVERED_N";
 	
 	/**
 	 * A group leader send this message to control its followers. 

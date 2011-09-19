@@ -13,18 +13,16 @@ import polimi.reds.Message;
 public class GroupFollowerCommand extends Message {
 
 	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 4481850960336362688L;
+	
+	/**
 	 * A node notify its leader that it will leave a certain group. 
 	 * TODO add a {@link GroupDescriptor} field to this class.
 	 */
 	public static final String LEAVING_NOTICE = "LEAVING_NOTICE";
 	
-	
-	
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 4481850960336362688L;
-
 	/**
 	 * 
 	 */
