@@ -205,4 +205,16 @@ public class GroupDescriptor implements Serializable {
 		// TODO think of a unique id
 		return new GroupDescriptor("uniqueid", UNIVERSE, null, true, node.getID(), null);
 	}
+
+	public boolean matches(GroupDescriptor remoteGroupDescriptor) {
+		// TODO provide a serious implementation using tuples
+		return friendlyName.equals(remoteGroupDescriptor.friendlyName);
+	}
+
+	/**
+	 * @param parentLeader the parentLeader to set
+	 */
+	public void setParentLeader(NodeDescriptor parentLeader) {
+		this.parentLeader = parentLeader;
+	}
 }
