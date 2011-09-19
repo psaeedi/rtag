@@ -27,6 +27,11 @@ import polimi.reds.broker.overlay.Transport;
 
 import static it.polimi.rtag.messaging.MessageSubjects.*;
 
+
+/**
+ * @author Panteha Saeedi (saeedi@elet.polimi.it)</p>.
+ */
+
 public class Node implements PacketListener {
 
 	/**
@@ -83,6 +88,7 @@ public class Node implements PacketListener {
 		GroupCommunicationManager manager = GroupCommunicationManager.createUniverse(this);
 		groupCommunicationManagers.add(manager);
 		leadedUniverse = manager.getGroupDescriptor();
+		
 	}
 
 	public Overlay getOverlay() {
@@ -356,5 +362,13 @@ public class Node implements PacketListener {
 		
 		
 		return groupDescriptor;
+	}
+
+	public void start() {
+		overlay.start();
+	}
+
+	public void stop() {
+		overlay.stop();
 	}
 }

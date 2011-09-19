@@ -1,6 +1,6 @@
 /**
- * 
  */
+
 package it.polimi.rtag;
 
 import it.polimi.rtag.messaging.GroupFollowerCommand;
@@ -21,8 +21,11 @@ import polimi.reds.broker.overlay.PacketListener;
 import static it.polimi.rtag.messaging.MessageSubjects.*;
 
 /**
- * @author Panteha Saeedi (saeedi@elet.polimi.it)
- *
+ * Handles the communication of a group and also keep the group descriptor updated.
+ * 
+ * @see {@link NeighborhoodChangeListener, PacketListener}
+ * 
+ * @author Panteha Saeedi (saeedi@elet.polimi.it).
  */
 public class GroupCommunicationManager implements NeighborhoodChangeListener, PacketListener {
 
@@ -39,6 +42,15 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener, Pa
 	};
 	
 	
+	/**
+	 * Create a new group and the current node becomes a leader.
+	 * 
+	 * @param node
+	 * @param uniqueId
+	 * @param friendlyName
+	 * @param description
+	 * @return
+	 */
 	public static GroupCommunicationManager createGroup(Node node, 
 			 String uniqueId, String friendlyName, Tuple description) {
 		
@@ -50,6 +62,14 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener, Pa
 		return manager;
 	}
 	
+	
+	/**
+	 * Wraps a given group for communicatin manager for the given node.
+	 * 
+	 * @param node
+	 * @param groupDescriptor
+	 * @return
+	 */
 	public static GroupCommunicationManager createGroup(Node node, 
 			GroupDescriptor groupDescriptor) {
 		

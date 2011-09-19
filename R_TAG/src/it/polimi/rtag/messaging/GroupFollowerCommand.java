@@ -7,7 +7,7 @@ import it.polimi.rtag.GroupDescriptor;
 import polimi.reds.Message;
 
 /**
- * @author Panteha Saeedi (saeedi@elet.polimi.it)
+ * @author Panteha Saeedi (saeedi@elet.polimi.it)</p>.
  *
  */
 public class GroupFollowerCommand extends Message {

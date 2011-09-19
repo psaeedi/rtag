@@ -1,50 +1,42 @@
 package it.polimi.rtag;
+
 import polimi.reds.NodeDescriptor;
 import it.polimi.rtag.filters.*;
 import it.polimi.rtag.messaging.*;
 
-public class HelloWorld implements Runnable {
+public class HelloWorld {
 
-	
-    private LeaderDescriptor node;
+	  public static void main(String args[]) throws Exception {
+		    int localPort1 = 10001;
+		    int localPort2 = 10002;
+		    int localPort3 = 10003;
+		    String host = "localhost";
 
-	public HelloWorld(LeaderDescriptor leader) {
-    	this.node = leader;
-	}
-
-	public HelloWorld(NodeDescriptor follower) {
-		// TODO Auto-generated constructor stub
-	}
-
-	/**
-     *
-     */
-    public static void main(String[] args) {
-    	// TODO Auto-generated method stub
-        
-    	LeaderDescriptor leader = new LeaderDescriptor(null);
-    	NodeDescriptor follower = new NodeDescriptor(null, false);
-    	
-        HelloWorld nodeA = new HelloWorld(leader);
-        HelloWorld nodeB = new HelloWorld(follower);
-       
-        new Thread(nodeA).start(); 
-        new Thread(nodeB).start();
-        
-        try {
-            Thread.sleep(10000);
-        } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-           
-       
-    }
-
-	@Override
-	public void run() {
-		// TODO Auto-generated method stub
-		
-	}
+		    // start
+		    Node node1 = new Node(host, localPort1);
+		    Node node2 = new Node(host, localPort2);
+		    Node node3= new Node(host, localPort3);
+		    
+		    node1.start();
+		    node2.start();
+		    node3.start();
+		    
+		    node1.getOverlay().addNeighbor("reds-tcp:"+ host + ":" + localPort2);
+		    node1.getOverlay().addNeighbor("reds-tcp:"+ host + ":" + localPort3);
+		    
+		    System.out.println("Going to sleep");
+		    // wait forever
+		    synchronized(HelloWorld.class) {
+		    	HelloWorld.class.wait();
+		    }
+	  }
 }
      
+
+
+
+
+
+
+
+

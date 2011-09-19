@@ -7,7 +7,7 @@ import it.polimi.rtag.filters.TupleFilter;
 import lights.Tuple;
 
 /**
- * @author panteha
+ * @author Panteha Saeedi (saeedi@elet.polimi.it)</p>.
  * 
  * 
  */

@@ -8,7 +8,7 @@ import polimi.reds.Message;
 import polimi.reds.broker.overlay.REDSMarshaller;
 
 /**
- * @author Panteha Saeedi (saeedi@elet.polimi.it)
+ * @author Panteha Saeedi (saeedi@elet.polimi.it)</p>.
  * 
  * Defines all the commands that a group leader can send to
  * its followers or to other leaders.

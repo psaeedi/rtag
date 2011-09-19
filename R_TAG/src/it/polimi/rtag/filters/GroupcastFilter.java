@@ -4,7 +4,7 @@ import it.polimi.rtag.GroupDescriptor;
 import polimi.reds.Filter;
 
 /**
- * @author panteha
+ * @author Panteha Saeedi (saeedi@elet.polimi.it)</p>.
  *
  *	This can both represent multicast and geocast depending on the group topology.
  */

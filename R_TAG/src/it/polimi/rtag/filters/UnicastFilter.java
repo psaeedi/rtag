@@ -6,7 +6,7 @@ package it.polimi.rtag.filters;
 import polimi.reds.NodeDescriptor;
 
 /**
- * @author panteha
+ * @author Panteha Saeedi (saeedi@elet.polimi.it)</p>.
  *
  */
 public class UnicastFilter extends TupleFilter {
