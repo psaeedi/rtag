@@ -24,7 +24,7 @@ public class GroupDescriptor implements Serializable {
 	 * 
 	 */
 	private static final long serialVersionUID = -598794056247356570L;
-	private static final String UNIVERSE = "__UNIVERSE";
+	public static final String UNIVERSE = "__UNIVERSE";
 	private String uniqueId;
 	private String friendlyName;
 	private Tuple description;
@@ -38,7 +38,7 @@ public class GroupDescriptor implements Serializable {
 	/**
 	 * All the followers. 
 	 */
-	private HashSet<NodeDescriptor> followers;
+	private HashSet<NodeDescriptor> followers = new HashSet<NodeDescriptor>();
 	
 	/**
 	 * The parent group or null if the group is top level. 

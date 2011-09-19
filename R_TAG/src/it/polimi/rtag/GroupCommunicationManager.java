@@ -21,8 +21,6 @@ import polimi.reds.Message;
 import polimi.reds.MessageID;
 import polimi.reds.NodeDescriptor;
 import polimi.reds.broker.overlay.NeighborhoodChangeListener;
-import polimi.reds.broker.overlay.NotConnectedException;
-import polimi.reds.broker.overlay.NotRunningException;
 import polimi.reds.broker.overlay.Overlay;
 import polimi.reds.broker.overlay.PacketListener;
 
@@ -129,6 +127,8 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 	 */
 	@Override
 	public void notifyNeighborAdded(NodeDescriptor addedNode, Serializable reconfigurationInfo) {
+		System.out.println("GM for " + currentNodeDescriptor + " notifyNeighborAdded " + addedNode);
+		
 		if (!leader) {
 			// Does nothing.
 			return;
@@ -189,12 +189,16 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 		}
 		overlay.setTrafficClass(groupDescriptor.getFriendlyName(),
 				groupDescriptor.getFriendlyName());
+		overlay.addNeighborhoodChangeListener(this);
 	}
 
 
 	@Override
 	public void notifyPacketArrived(String subject, NodeDescriptor sender,
 			Serializable packet) {
+		
+		System.out.println("GM for " + currentNodeDescriptor + " has received " + subject);
+		
 		if (GROUP_FOLLOWER_COMMAND.equals(subject)) {
 			handleMessageGroupFollowerCommand(sender, (GroupFollowerCommand)packet);
 		} else if (GROUP_FOLLOWER_COMMAND_ACK.equals(subject)) {
@@ -332,8 +336,14 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 	
 	private void sendMessageToFollowers(GroupLeaderCommand message) {
 		for (NodeDescriptor follower: groupDescriptor.getFollowers()) {
+			System.out.println("GM for " + currentNodeDescriptor + " sending to follower " + follower);
 			sendLeaderCommand(message, follower);
 		}
+	}
+	
+	protected void cleanPendingMessages() {
+		// TODO clean the pendingCommunicationMessages map to avoid storing 
+		// values for undelievered messages by removing all the expired ones.
 	}
 	
 	/**

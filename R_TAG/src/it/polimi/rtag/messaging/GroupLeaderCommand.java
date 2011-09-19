@@ -93,6 +93,7 @@ public class GroupLeaderCommand extends Message {
 	 * @param command
 	 */
 	private GroupLeaderCommand(GroupDescriptor groupDescriptor, String command) {
+		createID();
 		this.groupDescriptor = groupDescriptor;
 		this.command = command;
 	}

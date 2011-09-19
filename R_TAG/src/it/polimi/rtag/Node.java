@@ -372,4 +372,11 @@ public class Node implements PacketListener {
 	public void stop() {
 		overlay.stop();
 	}
+
+	/**
+	 * @return the groupCommunicationManagers
+	 */
+	public ArrayList<GroupCommunicationManager> getGroupCommunicationManagers() {
+		return groupCommunicationManagers;
+	}
 }

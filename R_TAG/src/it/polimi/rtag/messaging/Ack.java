@@ -123,6 +123,7 @@ public class Ack extends Message {
 	 * reception of the given message.
 	 */
 	private Ack(MessageID originalMessageID, String response) {
+		createID();
 		this.originalMessageID = originalMessageID;
 		this.response = response;
 	}

@@ -54,6 +54,7 @@ public class GroupFollowerCommandAck extends Message {
 	 * @param response
 	 */
 	public GroupFollowerCommandAck(MessageID originalMessage, String response) {
+		createID();
 		this.originalMessage = originalMessage;
 		this.response = response;
 	}
