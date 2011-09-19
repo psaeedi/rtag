@@ -29,6 +29,7 @@ public class TupleMessage extends polimi.reds.Message {
 	private long creationTime;
 	
 	public TupleMessage(TupleFilter filter, Tuple content) {
+		createID();
 		this.filter = filter;
 		this.content = content;
 		creationTime = System.currentTimeMillis();

@@ -27,6 +27,7 @@ public class GroupFollowerCommand extends Message {
 	 * 
 	 */
 	public GroupFollowerCommand() {
+		createID();
 		// TODO Auto-generated constructor stub
 	}
 

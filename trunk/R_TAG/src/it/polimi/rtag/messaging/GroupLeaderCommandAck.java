@@ -66,6 +66,7 @@ public class GroupLeaderCommandAck extends Message {
 	 * @param response
 	 */
 	public GroupLeaderCommandAck(MessageID originalMessage, String response) {
+		createID();
 		this.originalMessage = originalMessage;
 		this.response = response;
 	}
