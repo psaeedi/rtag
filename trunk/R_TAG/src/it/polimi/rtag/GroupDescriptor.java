@@ -4,8 +4,8 @@
 package it.polimi.rtag;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.UUID;
 
 import lights.Tuple;
 
@@ -18,14 +18,12 @@ import polimi.reds.NodeDescriptor;
  */
 public class GroupDescriptor implements Serializable {
 
-	
-
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = -598794056247356570L;
 	public static final String UNIVERSE = "__UNIVERSE";
-	private String uniqueId;
+	private UUID uniqueId;
 	private String friendlyName;
 	private Tuple description;
 	private boolean universe = false;
@@ -53,7 +51,7 @@ public class GroupDescriptor implements Serializable {
 	 * @param friendlyName
 	 * @param leader
 	 */
-	public GroupDescriptor(String uniqueId, String friendlyName,
+	public GroupDescriptor(UUID uniqueId, String friendlyName,
 			NodeDescriptor leader, Tuple description) {
 		this.uniqueId = uniqueId;
 		this.friendlyName = friendlyName;
@@ -67,7 +65,7 @@ public class GroupDescriptor implements Serializable {
 	 * @param leader
 	 * @param parentGroup
 	 */
-	public GroupDescriptor(String uniqueId, String friendlyName,
+	public GroupDescriptor(UUID uniqueId, String friendlyName,
 			NodeDescriptor leader, Tuple description, NodeDescriptor parentLeader) {
 		this.uniqueId = uniqueId;
 		this.friendlyName = friendlyName;
@@ -77,18 +75,18 @@ public class GroupDescriptor implements Serializable {
 	}
 	
 	/**
-	 * @param uniqueId
+	 * @param uuid
 	 * @param friendlyName
 	 * @param description
 	 * @param universe
 	 * @param leader
 	 * @param parentLeader
 	 */
-	private GroupDescriptor(String uniqueId, String friendlyName,
+	private GroupDescriptor(UUID uuid, String friendlyName,
 			Tuple description, boolean universe, NodeDescriptor leader,
 			NodeDescriptor parentLeader) {
 		super();
-		this.uniqueId = uniqueId;
+		this.uniqueId = uuid;
 		this.friendlyName = friendlyName;
 		this.description = description;
 		this.universe = universe;
@@ -99,13 +97,13 @@ public class GroupDescriptor implements Serializable {
 	/**
 	 * @return the uniqueId
 	 */
-	public String getUniqueId() {
+	public UUID getUniqueId() {
 		return uniqueId;
 	}
 	/**
 	 * @param uniqueId the uniqueId to set
 	 */
-	public void setUniqueId(String uniqueId) {
+	public void setUniqueId(UUID uniqueId) {
 		this.uniqueId = uniqueId;
 	}
 	/**
@@ -188,25 +186,28 @@ public class GroupDescriptor implements Serializable {
 		if (obj instanceof Tuple) {
 			return description.equals(obj);
 		} else if (obj instanceof GroupDescriptor) {
-			return description.equals(((GroupDescriptor)obj).description);
+			return uniqueId.equals(((GroupDescriptor)obj).uniqueId);
 		} else {
 			return super.equals(obj);
 		}
 	}
 
 	public HashSet<NodeDescriptor> getMembers() {
-		HashSet<NodeDescriptor> memebers = new HashSet<NodeDescriptor>(followers);
-		memebers.add(leader);
-		return memebers;
+		HashSet<NodeDescriptor> members = new HashSet<NodeDescriptor>(followers);
+		members.add(leader);
+		return members;
 		
 	}
 
 	public static GroupDescriptor createUniverse(Node node) {
 		// TODO think of a unique id
-		return new GroupDescriptor("uniqueid", UNIVERSE, null, true, node.getID(), null);
+		return new GroupDescriptor(UUID.randomUUID(), UNIVERSE, null, true, node.getID(), null);
 	}
 
 	public boolean matches(GroupDescriptor remoteGroupDescriptor) {
+		if (remoteGroupDescriptor == null) {
+			throw new RuntimeException("Remote descriptor cannot be null.");
+		}
 		// TODO provide a serious implementation using tuples
 		return friendlyName.equals(remoteGroupDescriptor.friendlyName);
 	}
@@ -216,5 +217,36 @@ public class GroupDescriptor implements Serializable {
 	 */
 	public void setParentLeader(NodeDescriptor parentLeader) {
 		this.parentLeader = parentLeader;
+	}
+
+	/**
+	 * @param e
+	 * @return
+	 * @see java.util.HashSet#add(java.lang.Object)
+	 */
+	public boolean addFollower(NodeDescriptor descriptor) {
+		return followers.add(descriptor);
+	}
+
+	/**
+	 * @param o
+	 * @return
+	 * @see java.util.HashSet#remove(java.lang.Object)
+	 */
+	public boolean removeFollower(NodeDescriptor descriptor) {
+		return followers.remove(descriptor);
+	}
+	
+	public GroupVisitor acceptVisitor(GroupVisitor visitor) {
+		visitor.visit(this);
+		return visitor;
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return acceptVisitor(new GroupToStringVisitor()).toString();
 	}
 }

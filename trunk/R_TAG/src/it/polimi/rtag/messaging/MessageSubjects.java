@@ -88,6 +88,17 @@ public class MessageSubjects {
 	 */
 	public static final String GROUP_FOLLOWER_COMMAND_ACK = "GROUP_FOLLOWER_COMMAND_ACK";
 	
+	/**
+	 * Used by a group leader to coordinate with other leaders of matching groups. 
+	 */
+	public static final String GROUP_COORDINATION_COMMAND = "GROUP_COORDINATION_COMMAND";
+	
+	/**
+	 * Used to reply to a coordination message.
+	 */
+	public static final String GROUP_COORDINATION_COMMAND_ACK = "GROUP_COORDINATION_COMMAND_ACK";
+	
+	
 	private MessageSubjects() {
 		// Contant collection. This should not be instantiated.
 	}

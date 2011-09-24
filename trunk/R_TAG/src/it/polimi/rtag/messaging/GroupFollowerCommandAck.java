@@ -33,29 +33,38 @@ public class GroupFollowerCommandAck extends Message {
 	
 	private MessageID originalMessage;
 	private String response;
+	private GroupDescriptor groupDescriptor;
 	
 	
-	public static GroupFollowerCommandAck createKoCommand(MessageID originalMessageID) {
+	public static GroupFollowerCommandAck createKoCommand(
+			MessageID originalMessageID,
+			GroupDescriptor groupDescriptor) {
 		if (originalMessageID == null) {
 			throw new IllegalArgumentException("Message id cannot be null.");
 		}
-		return new GroupFollowerCommandAck(originalMessageID, KO);
+		return new GroupFollowerCommandAck(
+				originalMessageID, groupDescriptor, KO);
 	}
 	
-	public static GroupFollowerCommandAck createOkCommand(MessageID originalMessageID) {
+	public static GroupFollowerCommandAck createOkCommand(
+			MessageID originalMessageID,
+			GroupDescriptor groupDescriptor) {
 		if (originalMessageID == null) {
 			throw new IllegalArgumentException("Message id cannot be null.");
 		}
-		return new GroupFollowerCommandAck(originalMessageID, OK);
+		return new GroupFollowerCommandAck(
+				originalMessageID, groupDescriptor, OK);
 	}
 
 	/**
 	 * @param originalMessage
 	 * @param response
 	 */
-	public GroupFollowerCommandAck(MessageID originalMessage, String response) {
+	public GroupFollowerCommandAck(MessageID originalMessage,
+			GroupDescriptor groupDescriptor, String response) {
 		createID();
 		this.originalMessage = originalMessage;
+		this.groupDescriptor = groupDescriptor;
 		this.response = response;
 	}
 
@@ -73,6 +82,10 @@ public class GroupFollowerCommandAck extends Message {
 	 */
 	public String getResponse() {
 		return response;
+	}
+
+	public GroupDescriptor getGroupDescriptor() {
+		return groupDescriptor;
 	}
 	
 
