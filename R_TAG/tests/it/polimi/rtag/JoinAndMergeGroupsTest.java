@@ -8,6 +8,8 @@ import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 
+import javax.swing.text.StyledEditorKit.ForegroundAction;
+
 import junit.framework.Assert;
 
 import org.junit.After;
@@ -24,39 +26,38 @@ import polimi.reds.broker.overlay.NotRunningException;
  */
 public class JoinAndMergeGroupsTest {
 
-    int localPort1 = 10001;
-    int localPort2 = 10002;
+    private static final int NUMBER_OF_NODE = 11;
+
+	int localPort=10001;
+    /*int localPort2 = 10002;
     int localPort3 = 10003;
-    int localPort4 = 10004;
+    int localPort4 = 10004;*/
     
     String host = "localhost";
     
-    Node node1;
-    Node node2;
-    Node node3;
-    Node node4;
+    ArrayList<Node> nodes = new ArrayList<Node>();
+    ArrayList<String> urls = new ArrayList<String>();
     
-    String node1Url = "reds-tcp:"+ host + ":" + localPort1;
+    /*String node1Url = "reds-tcp:"+ host + ":" + localPort1;
     String node2Url = "reds-tcp:"+ host + ":" + localPort2;
     String node3Url = "reds-tcp:"+ host + ":" + localPort3;
-    String node4Url = "reds-tcp:"+ host + ":" + localPort4;
+    String node4Url = "reds-tcp:"+ host + ":" + localPort4;*/
+    
+  
 	
 	/**
 	 * @throws java.lang.Exception
 	 */
 	@Before
 	public void setUp() throws Exception {
-	    node1 = new Node(host, localPort1);
-	    node2 = new Node(host, localPort2);
-	    node3 = new Node(host, localPort3);
-	    node4 = new Node(host, localPort4);
-	    
-	    node1.start();
-	    node2.start();
-	    node3.start();
-	    node4.start();
-	    //node1.getOverlay().addNeighbor("reds-tcp:"+ host + ":" + localPort2);
-	    //node1.getOverlay().addNeighbor("reds-tcp:"+ host + ":" + localPort3);
+		
+		for (int i = 0; i < NUMBER_OF_NODE; i++) {
+			int port = localPort ++;
+			Node node = new Node(host, port);
+			node.start();
+			nodes.add(node);
+			urls.add("reds-tcp:"+ host + ":" + port);
+		}
 	}
 
 	/**
@@ -64,17 +65,16 @@ public class JoinAndMergeGroupsTest {
 	 */
 	@After
 	public void tearDown() throws Exception {
-		node1.stop();
-		node2.stop();
-		node3.stop();
-		node4.stop();
+		for (Node node: nodes) {
+			node.stop();
+		}
 	}
 
 	@Test
 	public void testEachNodeIsInAUniverseAfterCreation() {
-		innerTestEachNodeIsInAUniverseAfterCreation(node1);
-		innerTestEachNodeIsInAUniverseAfterCreation(node2);
-		innerTestEachNodeIsInAUniverseAfterCreation(node3);
+		innerTestEachNodeIsInAUniverseAfterCreation(nodes.get(0));
+		innerTestEachNodeIsInAUniverseAfterCreation(nodes.get(1));
+		innerTestEachNodeIsInAUniverseAfterCreation(nodes.get(2));
 	}
 	
 	private void innerTestEachNodeIsInAUniverseAfterCreation(Node node) {
@@ -95,13 +95,13 @@ public class JoinAndMergeGroupsTest {
 			throws AlreadyNeighborException, ConnectException, 
 					MalformedURLException, NotRunningException, 
 					InterruptedException {
-		node1.getOverlay().addNeighbor(node2Url);
+		nodes.get(0).getOverlay().addNeighbor(urls.get(1));
 		
 		Thread.sleep(1000);
 		
-		GroupDescriptor universe1 = node1.getGroupCommunicationDispatcher().
+		GroupDescriptor universe1 = nodes.get(0).getGroupCommunicationDispatcher().
 				getGroupMatching(GroupDescriptor.UNIVERSE);
-		GroupDescriptor universe2 = node2.getGroupCommunicationDispatcher().
+		GroupDescriptor universe2 = nodes.get(1).getGroupCommunicationDispatcher().
 				getGroupMatching(GroupDescriptor.UNIVERSE);
 		
 		Assert.assertEquals(universe1.toString(), universe2.toString());
@@ -109,7 +109,7 @@ public class JoinAndMergeGroupsTest {
 		Assert.assertEquals(2, universe1.getMembers().size());
 		Assert.assertEquals(2, universe2.getMembers().size());
 		Assert.assertEquals(universe1.getLeader(), universe2.getLeader());
-		Assert.assertTrue( node1.getOverlay().isNeighborOf(node2.getID()));
+		Assert.assertTrue( nodes.get(0).getOverlay().isNeighborOf(nodes.get(1).getID()));
 	}
 	
 	@Test
@@ -117,23 +117,23 @@ public class JoinAndMergeGroupsTest {
 			throws AlreadyNeighborException, ConnectException,
 					MalformedURLException, NotRunningException,
 					InterruptedException {
-		node1.getOverlay().addNeighbor(node2Url);
-		node3.getOverlay().addNeighbor(node4Url);
+		nodes.get(0).getOverlay().addNeighbor(urls.get(1));
+		nodes.get(2).getOverlay().addNeighbor(urls.get(3));
 		Thread.sleep(1000);
 		
 		// Node 1 and 3 should be leaders
 		// (1,2) (3,4) are in the same universes
 		GroupDescriptor universe1 = 
-				node1.getGroupCommunicationDispatcher().
+				nodes.get(0).getGroupCommunicationDispatcher().
 				getLocalUniverse();
 		GroupDescriptor universe2 = 
-				node2.getGroupCommunicationDispatcher().
+			    nodes.get(1).getGroupCommunicationDispatcher().
 				getLocalUniverse();
 		GroupDescriptor universe3 = 
-				node3.getGroupCommunicationDispatcher().
+			    nodes.get(2).getGroupCommunicationDispatcher().
 				getLocalUniverse();
 		GroupDescriptor universe4 = 
-				node4.getGroupCommunicationDispatcher().
+			    nodes.get(3).getGroupCommunicationDispatcher().
 				getLocalUniverse();
 		
 		Assert.assertEquals(universe1.toString(), universe2.toString());
@@ -142,24 +142,24 @@ public class JoinAndMergeGroupsTest {
 		NodeDescriptor leaderA = universe1.getLeader();
 		NodeDescriptor leaderB = universe3.getLeader();
 		
-		Node nodeLeaderA = leaderA == node1.getID() ? node1 : node2;
-		String urlB = leaderB == node3.getID() ? node3Url : node4Url;
+		Node nodeLeaderA = leaderA == nodes.get(0).getID() ? nodes.get(0) : nodes.get(1);
+		String urlB = leaderB == nodes.get(2).getID() ? urls.get(2) : urls.get(3);
 		
 		// We add the two leaders together
 		nodeLeaderA.getOverlay().addNeighbor(urlB);
 		Thread.sleep(1000);
 		
 		universe1 = 
-			node1.getGroupCommunicationDispatcher().
+			nodes.get(0).getGroupCommunicationDispatcher().
 			getLocalUniverse();
 		universe2 = 
-			node2.getGroupCommunicationDispatcher().
+			nodes.get(1).getGroupCommunicationDispatcher().
 			getLocalUniverse();
 		universe3 = 
-			node3.getGroupCommunicationDispatcher().
+			nodes.get(2).getGroupCommunicationDispatcher().
 			getLocalUniverse();
 		universe4 = 
-			node4.getGroupCommunicationDispatcher().
+			nodes.get(3).getGroupCommunicationDispatcher().
 			getLocalUniverse();
 		
 		Assert.assertEquals(universe1.toString(), universe2.toString());
@@ -174,6 +174,36 @@ public class JoinAndMergeGroupsTest {
 		}
 		
 		System.out.println(universe1.acceptVisitor(new GroupToStringVisitor()));
+	}
+	
+	@Test
+	public void testTenFollowersJoinGroup() 
+			throws AlreadyNeighborException, ConnectException, 
+					MalformedURLException, NotRunningException, 
+					InterruptedException {
+		
+		nodes.get(0).getOverlay().addNeighbor(urls.get(1));	
+		Thread.sleep(1000);
+		
+		GroupDescriptor universe1 = nodes.get(0).getGroupCommunicationDispatcher().
+				getGroupMatching(GroupDescriptor.UNIVERSE);
+		
+		Node leader = universe1.getLeader() == nodes.get(0).getID() ? nodes.get(0) : nodes.get(1);
+		
+		for (int i = 2; i < NUMBER_OF_NODE; i++) {
+			leader.getOverlay().addNeighbor(urls.get(i));
+			Thread.sleep(1000);
+		}
+		Thread.sleep(1000);
+		universe1 = nodes.get(0).getGroupCommunicationDispatcher().
+		getGroupMatching(GroupDescriptor.UNIVERSE);
+		for (int i = 1; i < 11; i++) {
+			GroupDescriptor universe2 = nodes.get(0).getGroupCommunicationDispatcher().
+			getGroupMatching(GroupDescriptor.UNIVERSE);
+			
+			Assert.assertEquals(universe1.toString(), universe2.toString());
+		}
+		
 	}
 	
 }
