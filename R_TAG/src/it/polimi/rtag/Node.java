@@ -4,6 +4,7 @@ package it.polimi.rtag;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.UUID;
 
 import lights.Tuple;
 
@@ -35,35 +36,13 @@ import static it.polimi.rtag.messaging.MessageSubjects.*;
  */
 public class Node implements PacketListener {
 
-	/**
-	 * The local universe to which this node belongs.
-	 * Each node can only belong to a single universe 
-	 * which would be its local universe!
-	 */
-	private GroupDescriptor followedUniverse;
 	
-	/***
-	 * If the node is a universe leader then this
-	 * is the universe it leads.
-	 */
-	private GroupDescriptor leadedUniverse;
-	
-	/**
-	 * All the groups of which this node is leader. 
-	 */
-	private HashSet<GroupDescriptor> leadedGroups = new HashSet<GroupDescriptor>();
-	
-	/**
-	 * All the groups of which this node is follower. 
-	 */
-	private HashSet<GroupDescriptor> followedGroups = new HashSet<GroupDescriptor>();
-	
-	private ArrayList<GroupCommunicationManager> groupCommunicationManagers =
-			new ArrayList<GroupCommunicationManager>();
-	
-    public NodeDescriptor currentDescriptor;
-    TopologyManager topologyManager;
+    private NodeDescriptor currentDescriptor;
+    
+    private TopologyManager topologyManager;
     private Overlay overlay;
+    
+    private GroupCommunicationDispatcher groupCommunicationDispatcher;
     
 	private HashMultimap<NodeDescriptor, MessageID> pendingCommunicationMessages = HashMultimap.create();
 	private HashSet<TupleMessage> recentlyReceivedMessages = new HashSet<TupleMessage>();
@@ -86,10 +65,9 @@ public class Node implements PacketListener {
 			
 		setOverlay(new GenericOverlay(topologyManager, transport));
 		
-		GroupCommunicationManager manager = GroupCommunicationManager.createUniverse(this);
-		groupCommunicationManagers.add(manager);
-		leadedUniverse = manager.getGroupDescriptor();
+		groupCommunicationDispatcher = new GroupCommunicationDispatcher(this);
 		
+		groupCommunicationDispatcher.addGroupManager(GroupCommunicationManager.createUniverse(this));
 	}
 
 	public Overlay getOverlay() {
@@ -337,34 +315,6 @@ public class Node implements PacketListener {
 		return currentDescriptor;
 	}
 
-	/**
-	 * @param manager
-	 * 
-	 */
-	private void addGroupCommunicationManager(GroupCommunicationManager manager) {
-		this.groupCommunicationManagers.add(manager);
-		GroupDescriptor descriptor = manager.getGroupDescriptor();
-		if (descriptor.isLeader(currentDescriptor)) {
-			leadedGroups.add(descriptor);
-		} else if (descriptor.isFollower(currentDescriptor)) {
-			followedGroups.add(descriptor);
-		}
-	}
-
-	
-	public GroupDescriptor createGroupAndNotifyUniverse(String uniqueId,
-			String friendlyName, Tuple description) {
-		// Check if we already know a group leader for that group
-		GroupCommunicationManager manager = GroupCommunicationManager.createGroup(this, uniqueId, friendlyName, description);
-		addGroupCommunicationManager(manager);
-		GroupDescriptor groupDescriptor = manager.getGroupDescriptor();
-		
-		// TODO send message to the universe leader or parent
-		
-		
-		return groupDescriptor;
-	}
-
 	public void start() {
 		overlay.start();
 	}
@@ -374,9 +324,11 @@ public class Node implements PacketListener {
 	}
 
 	/**
-	 * @return the groupCommunicationManagers
+	 * @return the groupCommunicationDispatcher
 	 */
-	public ArrayList<GroupCommunicationManager> getGroupCommunicationManagers() {
-		return groupCommunicationManagers;
+	public GroupCommunicationDispatcher getGroupCommunicationDispatcher() {
+		return groupCommunicationDispatcher;
 	}
+
+
 }

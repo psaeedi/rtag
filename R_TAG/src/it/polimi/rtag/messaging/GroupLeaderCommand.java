@@ -23,36 +23,11 @@ public class GroupLeaderCommand extends Message {
 	*/
 	
 	/**
-	 * A leader suggests another leader to merge their groups.</p>
-	 * This normally happens as a result of a 
-	 * {@link MessageSubjects#GROUP_CREATED_NOTIFICATION} message or
-	 * if the leader wants to re-order its group.</p>
-	 * 
-	 * The recipient will reply with {@link GroupLeaderCommandAck#KO} if
-	 * it rejects the merge, if it is not the group leader or
-	 * if it has already a parent group.</p>
-	 * The recipient will reply with {@link GroupLeaderCommandAck#OK}
-	 * if it has accepted the caller as it new group parent.</p>
-	 * 
-	 * Note that since the two leaders are managing two
-	 * different group they will have a different group id.
-	 * The merge its possible only if the two groups tuple
-	 * description matches.
-	 * 
-	 * TODO implement this in the Node
-	 */
-	public static final String MERGE_GROUPS = "MERGE_GROUPS";
-
-	/**
-	 * The group leader ask a remote node to join its group.
-	 * If the remote node leads a group matching the current one
-	 * the remote group should leave its group and join this one. 
-	 */
-	public static final String JOIN_MY_GROUP = "JOIN_MY_GROUP";
-	
-	/**
 	 * Sent by the group leader to notify its followers that
-	 * something has changed in the group descriptor. 
+	 * something has changed in the group descriptor.</p>
+	 * 
+	 * TODO Followers should NOT send an ACK to this message for
+	 * performance reasons.
 	 */
 	public static final String UPDATE_DESCRIPTOR = "UPDATE_DESCRIPTOR";
 	
@@ -66,20 +41,6 @@ public class GroupLeaderCommand extends Message {
 	private static final long serialVersionUID = -4659012389818436165L;
 	private GroupDescriptor groupDescriptor;
 	private String command;
-	
-	public static GroupLeaderCommand createMergeGroupCommand(GroupDescriptor groupDescriptor) {
-		if (groupDescriptor == null) {
-			throw new IllegalArgumentException("Group descriptor cannot be null.");
-		}
-		return new GroupLeaderCommand(groupDescriptor, MERGE_GROUPS);
-	}
-	
-	public static GroupLeaderCommand createJoinMyGroupCommand(GroupDescriptor groupDescriptor) {
-		if (groupDescriptor == null) {
-			throw new IllegalArgumentException("Group descriptor cannot be null.");
-		}
-		return new GroupLeaderCommand(groupDescriptor, JOIN_MY_GROUP);
-	}
 	
 	public static GroupLeaderCommand createUpdateCommand(GroupDescriptor groupDescriptor) {
 		if (groupDescriptor == null) {

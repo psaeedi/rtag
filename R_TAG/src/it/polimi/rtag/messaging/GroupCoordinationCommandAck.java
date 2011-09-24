@@ -11,25 +11,25 @@ import polimi.reds.MessageID;
  * @author Panteha Saeedi (saeedi@elet.polimi.it)</p>.
  *
  */
-public class GroupLeaderCommandAck extends Message {
-	
+public class GroupCoordinationCommandAck extends Message {
+
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = 5153927215535614233L;
-	
+	private static final long serialVersionUID = 6000726290090237034L;
+
 	/**
-	 * The {@link GroupLeaderCommandAck} message was received correctly 
+	 * The {@link GroupCoordinationCommandAck} message was received correctly 
 	 * and the sender fulfilled the command.
 	 */
 	public static final String OK = "OK";
 	
 	/**
-	 * The message was received but the recipient was not that group follower
+	 * The message was received but the recipient was not that group leader
 	 * or no longer the group follower.</p>
 	 * and therefore it is not allowed to perform the required action.
 	 */
-	public static final String NOT_GROUP_FOLLOWER = "NGF";
+	public static final String NOT_GROUP_LEADER = "NGL";
 	
 	/**
 	 * The Follower has declined the command. 
@@ -42,36 +42,38 @@ public class GroupLeaderCommandAck extends Message {
 	private String response;
 	
 	
-	public static GroupLeaderCommandAck createKoCommand(
+	public static GroupCoordinationCommandAck createKoCommand(
 			MessageID originalMessageID, GroupDescriptor groupDescriptor) {
 		if (originalMessageID == null) {
 			throw new IllegalArgumentException("Message id cannot be null.");
 		}
-		return new GroupLeaderCommandAck(originalMessageID, groupDescriptor, KO);
+		return new GroupCoordinationCommandAck(
+				originalMessageID, groupDescriptor, KO);
 	}
 	
-	public static GroupLeaderCommandAck createOkCommand(
+	public static GroupCoordinationCommandAck createOkCommand(
 			MessageID originalMessageID, GroupDescriptor groupDescriptor) {
 		if (originalMessageID == null) {
 			throw new IllegalArgumentException("Message id cannot be null.");
 		}
-		return new GroupLeaderCommandAck(originalMessageID, groupDescriptor, OK);
+		return new GroupCoordinationCommandAck(
+				originalMessageID, groupDescriptor, OK);
 	}
 	
-	public static GroupLeaderCommandAck createNotGroupFollowerCommand(
+	public static GroupCoordinationCommandAck createNotGroupLeaderCommand(
 			MessageID originalMessageID, GroupDescriptor groupDescriptor) {
 		if (originalMessageID == null) {
 			throw new IllegalArgumentException("Message id cannot be null.");
 		}
-		return new GroupLeaderCommandAck(originalMessageID, groupDescriptor,
-				NOT_GROUP_FOLLOWER);
+		return new GroupCoordinationCommandAck(
+				originalMessageID, groupDescriptor, NOT_GROUP_LEADER);
 	}
 
 	/**
 	 * @param originalMessage
 	 * @param response
 	 */
-	public GroupLeaderCommandAck(MessageID originalMessage,
+	public GroupCoordinationCommandAck(MessageID originalMessage,
 			GroupDescriptor groupDescriptor, String response) {
 		createID();
 		this.originalMessage = originalMessage;
@@ -86,6 +88,7 @@ public class GroupLeaderCommandAck extends Message {
 	public MessageID getOriginalMessage() {
 		return originalMessage;
 	}
+
 
 	/**
 	 * @return the response

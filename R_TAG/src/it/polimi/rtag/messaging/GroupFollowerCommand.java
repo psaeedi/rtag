@@ -31,4 +31,9 @@ public class GroupFollowerCommand extends Message {
 		// TODO Auto-generated constructor stub
 	}
 
+	public GroupDescriptor getGroupDescriptor() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }
