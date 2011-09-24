@@ -102,6 +102,7 @@ public class TestJoinAndMergeGroups {
 		Assert.assertEquals(2, universe1.getMembers().size());
 		Assert.assertEquals(2, universe2.getMembers().size());
 		Assert.assertEquals(universe1.getLeader(), universe2.getLeader());
+		Assert.assertTrue( node1.getOverlay().isNeighborOf(node2.currentDescriptor));
 	}
 	
 }
