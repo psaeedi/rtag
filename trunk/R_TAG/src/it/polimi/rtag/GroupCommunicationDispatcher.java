@@ -42,6 +42,9 @@ public class GroupCommunicationDispatcher implements
 	
 	private Node node;
 	private Overlay overlay;
+	
+	// TODO use a better collection
+	// TODO syncronize them
 	private ArrayList<GroupCommunicationManager> leadedGroups = new ArrayList<GroupCommunicationManager>();
 	private ArrayList<GroupCommunicationManager> followedGroups = new ArrayList<GroupCommunicationManager>();
 	
@@ -147,6 +150,7 @@ public class GroupCommunicationDispatcher implements
 
 	private void handleMessageGroupCoordinationCommandAck(
 			NodeDescriptor sender, GroupCoordinationCommandAck packet) {
+		// Only a leader can receive an ack
 		for (GroupCommunicationManager manager: leadedGroups) {
 			GroupDescriptor localGroup = manager.getGroupDescriptor();
 			if (localGroup.matches(packet.getGroupDescriptor())) {
@@ -163,6 +167,17 @@ public class GroupCommunicationDispatcher implements
 	private void handleMessageGroupCoordinationCommand(
 			NodeDescriptor sender, GroupCoordinationCommand packet) {
 		for (GroupCommunicationManager manager: leadedGroups) {
+			GroupDescriptor localGroup = manager.getGroupDescriptor();
+			if (localGroup.matches(packet.getGroupDescriptor())) {
+				// A group matching a leaded group has been found.
+				// The manager will attempt to create a hierarchy.
+				manager.handleMessageGroupCoordinationCommand(sender, packet);
+				// Only one group should match
+				return;
+			}
+		}
+		// also a follower can receive a coordination command
+		for (GroupCommunicationManager manager: followedGroups) {
 			GroupDescriptor localGroup = manager.getGroupDescriptor();
 			if (localGroup.matches(packet.getGroupDescriptor())) {
 				// A group matching a leaded group has been found.
@@ -249,22 +264,48 @@ public class GroupCommunicationDispatcher implements
 		return followedGroups;
 	}
 
+	public void reassignGroup(GroupCommunicationManager manager) {
+		if (manager.getGroupDescriptor().isLeader(node.getID())) {
+			if (followedGroups.contains(manager)) {
+				followedGroups.remove(manager);
+				leadedGroups.add(manager);
+			}
+			else {
+				addGroupManager(manager);
+			}
+		} else  {
+			if (leadedGroups.contains(manager)) {
+				leadedGroups.remove(manager);
+				followedGroups.add(manager);
+			}
+			else {
+				addGroupManager(manager);
+			}
+		}
+	}
+	
 	public void removeGroup(GroupCommunicationManager groupCommunicationManager) {
 		if (followedGroups.contains(groupCommunicationManager)) {
 			followedGroups.remove(groupCommunicationManager);
-		} else if (leadedGroups.contains(groupCommunicationManager)) {
+		}
+		if (leadedGroups.contains(groupCommunicationManager)) {
 			leadedGroups.remove(groupCommunicationManager);
 		}
 		overlay.removeNeighborhoodChangeListener(groupCommunicationManager);
 	}
 	
-	public GroupDescriptor getGroupMatching(String friendlyName) {
+	
+	public GroupDescriptor leadedGroupMathing(String friendlyName) {
 		for (GroupCommunicationManager manager: leadedGroups) {
 			GroupDescriptor localGroup = manager.getGroupDescriptor();
 			if (localGroup.getFriendlyName().equals(friendlyName)) {
 				return localGroup;
 			}
 		}
+		return null;
+	}
+	
+	public GroupDescriptor followedGroupMathing(String friendlyName) {
 		for (GroupCommunicationManager manager: followedGroups) {
 			GroupDescriptor localGroup = manager.getGroupDescriptor();
 			if (localGroup.getFriendlyName().equals(friendlyName)) {
@@ -274,16 +315,25 @@ public class GroupCommunicationDispatcher implements
 		return null;
 	}
 	
+	public GroupDescriptor getGroupMatching(String friendlyName) {
+		GroupDescriptor localGroup = null;
+		if ((localGroup = leadedGroupMathing(friendlyName)) != null) {
+			return localGroup;
+		} else {
+			return followedGroupMathing(friendlyName);
+		}
+	}
+	
 	public GroupDescriptor getLocalUniverse() {
 		for (GroupCommunicationManager manager: leadedGroups) {
 			GroupDescriptor localGroup = manager.getGroupDescriptor();
-			if (localGroup.getFriendlyName().equals(GroupDescriptor.UNIVERSE)) {
+			if (localGroup.isUniverse()) {
 				return localGroup;
 			}
 		}
 		for (GroupCommunicationManager manager: followedGroups) {
 			GroupDescriptor localGroup = manager.getGroupDescriptor();
-			if (localGroup.getFriendlyName().equals(GroupDescriptor.UNIVERSE)) {
+			if (localGroup.isUniverse()) {
 				return localGroup;
 			}
 		}

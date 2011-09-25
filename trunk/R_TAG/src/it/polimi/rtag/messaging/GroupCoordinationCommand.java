@@ -5,7 +5,6 @@ package it.polimi.rtag.messaging;
 
 import it.polimi.rtag.GroupDescriptor;
 import polimi.reds.Message;
-import polimi.reds.broker.overlay.REDSMarshaller;
 
 /**
  * @author Panteha Saeedi (saeedi@elet.polimi.it)</p>.
@@ -43,8 +42,6 @@ public class GroupCoordinationCommand extends Message {
 	 * different group they will have a different group id.
 	 * The merge its possible only if the two groups tuple
 	 * description matches.
-	 * 
-	 * TODO implement this in the Node
 	 */
 	public static final String MERGE_GROUPS = "MERGE_GROUPS";
 
@@ -53,8 +50,21 @@ public class GroupCoordinationCommand extends Message {
 	 * If the remote node leads a group matching the current one
 	 * the remote group should leave its group and join this one. 
 	 */
-	public static final String JOIN_MY_GROUP = "JOIN_MY_GROUP";
+	public static final String JOIN_MY_GROUP = "JOIN_MY_GROUP";	
+
+	/**
+	 * A leader ask a follower of a group in the same hierarchy to move 
+	 * to a different child group.
+	 */
+	public static final String MIGRATE_TO_GROUP = "MIGRATE_TO_GROUP";
 	
+	/**
+	 * A group leader is asking another group leader to 
+	 * become its parent group. This often happens when a leader
+	 * is collapsed and the new leader wants to rejoin the
+	 * previous hierarchy.
+	 */
+	public static final String ADOPT_GROUP = "ADOPT_GROUP";
 
 	private GroupDescriptor groupDescriptor;
 	private String command;

@@ -41,11 +41,10 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener, Gr
 	private GroupDescriptor groupDescriptor;
 	private NodeDescriptor currentNodeDescriptor;
 	private Overlay overlay;
+	private GroupCoordinationStrategy coordinationStrategy;
 	
 	private boolean leader;
 	private HashMap<MessageID, Message> pendingMessages = new HashMap<MessageID, Message>();
-	
-
 	
 	
 	/**
@@ -84,6 +83,16 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener, Gr
 		return manager;
 	}
 	
+	public static GroupCommunicationManager createChildGroup(Node node,
+			GroupDescriptor parentGroupDescriptor) {
+		GroupDescriptor group = new GroupDescriptor(UUID.randomUUID(), parentGroupDescriptor.getFriendlyName(),
+				node.getID(), parentGroupDescriptor.getDescription(), parentGroupDescriptor.getLeader());
+		if (parentGroupDescriptor.isUniverse()) {
+				group.isUniverse();
+		}
+		return createGroup(node, group);
+	}
+	
 	public static GroupCommunicationManager createUniverse(Node node) {
 		
 		GroupDescriptor groupDescriptor = GroupDescriptor.createUniverse(node);
@@ -103,10 +112,10 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener, Gr
 			GroupDescriptor groupDescriptor,
 			Overlay overlay) {
 		this.node = node;
-		this.groupDescriptor = groupDescriptor;
 		this.currentNodeDescriptor = node.getID();
 		this.setOverlay(overlay);
 		leader = groupDescriptor.isLeader(currentNodeDescriptor);
+		setGroupDescriptor(groupDescriptor);
 	}
 	
 	
@@ -145,19 +154,36 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener, Gr
 	
 	@Override
 	public void notifyNeighborDead(NodeDescriptor deadNode, Serializable reconfigurationInfo) {
-		if (!deadNode.equals(groupDescriptor.getLeader())) {
-			groupDescriptor.getFollowers().remove(deadNode);
-		} else {
-			// TODO promote a new leader!
-		}
+		notifyNeighborRemoved(deadNode);
 	}
 	
 	@Override
 	public void notifyNeighborRemoved(NodeDescriptor removedNode) {
+		if (!groupDescriptor.isMember(removedNode)) {
+			// Not a group member
+			return;
+		}
+		
 		if (!removedNode.equals(groupDescriptor.getLeader())) {
 			groupDescriptor.getFollowers().remove(removedNode);
+			if (leader) {
+				GroupLeaderCommand command = GroupLeaderCommand.createUpdateCommand(groupDescriptor);
+				sendMessageToFollowers(command);
+			}
 		} else {
-			// TODO promote a new leader!
+			// promote a new leader!
+			groupDescriptor.setLeader(null);
+			NodeDescriptor newLeader = coordinationStrategy.electNewLeader();
+			groupDescriptor.setLeader(newLeader);
+			if (currentNodeDescriptor.equals(newLeader)) {
+				node.getGroupCommunicationDispatcher().reassignGroup(this);
+				// if the dead leader was part of a hierarchy
+				// the current node should join the parent group
+				NodeDescriptor parent = groupDescriptor.getParentLeader();
+				if (groupDescriptor.getParentLeader() != null) {
+					
+				}
+			}
 		}
 	}
 
@@ -231,7 +257,6 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener, Gr
 			return;
 		}
 		
-		
 		// TODO check if the command was sent by this node
 		Message msg = pendingMessages.get(message.getOriginalMessage());
 		if (msg == null) {
@@ -249,6 +274,15 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener, Gr
 		if (UPDATE_DESCRIPTOR.equals(commandType)) {
 			// Nothing to be done
 			return;
+		} else if (CREATE_CHILD_GROUP.equals(commandType)) {
+			if (GroupLeaderCommandAck.OK.equals(responseType)) {
+				// The other node will create a new group and will ask
+				// the other followers to migrate.
+				return;
+			} else if (GroupLeaderCommandAck.KO.equals(responseType)) {
+				createChildIfNecessary();
+				return;
+			}
 		} else {
 			// unhandled commands..
 		}
@@ -320,62 +354,52 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener, Gr
 		}
 		
 		String commandType = message.getCommand();
-		if (MERGE_GROUPS.equals(commandType)) {
-			// If the parent is null OK otherwise KO
-			if (groupDescriptor.getParentLeader() != null) {
-				commandAck = GroupLeaderCommandAck.createKoCommand(
-						message.getID(), groupDescriptor);
-				sendMessage(GROUP_LEADER_COMMAND_ACK, commandAck, sender);
-				return;
-			} else {
-				// The current node has accepted the remote as a parent node
-				// From now on the current node will be both leader of his current
-				// group and follower of his parent group.
-				remoteGroup.addFollower(currentNodeDescriptor);
-				node.getGroupCommunicationDispatcher().addGroupManager(
-						GroupCommunicationManager.createGroup(node, remoteGroup));
-				commandAck = GroupLeaderCommandAck.createOkCommand(
-						message.getID(), groupDescriptor);
-				sendMessage(GROUP_LEADER_COMMAND_ACK, commandAck, sender);
-				
-				// Update the descriptor and send updates to all his followers
-				groupDescriptor.setParentLeader(sender);
-				GroupLeaderCommand updateCommand = GroupLeaderCommand.
-				createUpdateCommand(groupDescriptor);
-				sendMessageToFollowers(updateCommand);
-				return;
-			}	
-		} else if (JOIN_MY_GROUP.equals(commandType)) {
-			if (groupDescriptor.getFollowers().size() > 0) {
-				// A remote node has asked this node do dismantle this group
-				// And join its group but this group is not empty...
-				commandAck = GroupLeaderCommandAck.createKoCommand(
-						message.getID(), groupDescriptor);
-				sendMessage(MessageSubjects.GROUP_LEADER_COMMAND_ACK, commandAck, sender);
-			} else {
-				node.getGroupCommunicationDispatcher().removeGroup(this);
-				node.getGroupCommunicationDispatcher().addGroupManager(
-						GroupCommunicationManager.createGroup(node, remoteGroup));
-				commandAck = GroupLeaderCommandAck.createOkCommand(
-						message.getID(), groupDescriptor);
-				sendMessage(GROUP_LEADER_COMMAND_ACK, commandAck, sender);
-				// The leader will then groupcast an updated descriptor
-				return;
-			}
-		} else if (UPDATE_DESCRIPTOR.equals(commandType)) {
+		if (UPDATE_DESCRIPTOR.equals(commandType)) {
 			System.out.println(currentNodeDescriptor + " updating node " + remoteGroup);
 			// update the descriptor
-			groupDescriptor = remoteGroup;
+			setGroupDescriptor(remoteGroup);
 			
 			// TODO if this is a universe group we should change the network topology
 			// TODO We should probably add or remove some node...
 			commandAck = GroupLeaderCommandAck.createOkCommand(
 					message.getID(), groupDescriptor);
 			sendMessage(GROUP_LEADER_COMMAND_ACK, commandAck, sender);
+		} else if (CREATE_CHILD_GROUP.equals(commandType)) {
+			// This follower has been suggested to create a child
+			GroupDescriptor leadedGroup = node.getGroupCommunicationDispatcher().
+				leadedGroupMathing(groupDescriptor.getFriendlyName());
+			if (leadedGroup == null && coordinationStrategy.shouldAcceptToCreateAChild()) {
+				commandAck = GroupLeaderCommandAck.createOkCommand(
+						message.getID(), groupDescriptor);
+				sendMessage(GROUP_LEADER_COMMAND_ACK, commandAck, sender);
+				// This node has accepted to create a child group
+				GroupCommunicationManager childManager =
+						GroupCommunicationManager.createChildGroup(node, groupDescriptor);
+				node.getGroupCommunicationDispatcher().addGroupManager(childManager);
+				// The new manager should invite the other follower to join it
+				childManager.inviteFollowersToMigrate(groupDescriptor);
+			} else {
+				commandAck = GroupLeaderCommandAck.createKoCommand(
+						message.getID(), groupDescriptor);
+				sendMessage(GROUP_LEADER_COMMAND_ACK, commandAck, sender);
+			}
 		} else {
 			// unhandled commands..
 		}
 	}
+
+
+	private void inviteFollowersToMigrate(GroupDescriptor remoteGroup) {
+		for (NodeDescriptor follower: remoteGroup.getFollowers()) {
+			if (remoteGroup.getLeader() == null || 
+					coordinationStrategy.shouldSuggestToMigrate(remoteGroup, follower)) {
+				GroupCoordinationCommand command = 
+					GroupCoordinationCommand.createJoinMyGroupCommand(groupDescriptor);
+				sendCoordinationCommand(command, follower);
+			}
+		}
+	}
+
 
 	/**
 	 * When a group leader receives a group discovered message and the
@@ -396,70 +420,17 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener, Gr
 			return;
 		}
 		
-		// This and the received group matches therefore we need
-		// to merge them
-		NodeDescriptor localParent = groupDescriptor.getParentLeader();
-		NodeDescriptor remoteParent = remoteGroupDescriptor.getParentLeader();
-		NodeDescriptor remoteLeader = remoteGroupDescriptor.getLeader();
-		
-		if (localParent != null && remoteParent == null) {
-			if (localParent.equals(remoteGroupDescriptor.getLeader())) {
-				// The remote leader was the local parent.
-				// This should not be happening
-				// TODO think how to avoid the creation of rings
-				return;
-			}
-			// The local group is already part of a chain while the remote one is not
-			GroupCoordinationCommand command = null;
-			if (remoteGroupDescriptor.getFollowers().size() == 0) {
-				command = GroupCoordinationCommand.createJoinMyGroupCommand(groupDescriptor);
-			} else {
-				command = GroupCoordinationCommand.createMergeGroupCommand(groupDescriptor);
-			}
-			sendCoordinationCommand(command, remoteLeader);
-			return;
-		} else if (localParent == null && remoteParent != null) {
-			// This node will wait for the remote node to invite it
-			// since the remote node is part of a chain.
-			return;
-		} else if (localParent != null && remoteParent != null) {
-			// They are both part of chain
-			// Either we forward the events to their parents or we do nothing.
-			// TODO think which one will be the best solution.
-			return;
-		} else { // localParent == null && remoteParent == null
-			// Neither the local or the remote group are part of a hierarchy
-			// Therefore we can select what to do depending on the number
-			// of followers
-			int localFollowersCount = groupDescriptor.getFollowers().size();
-			int remoteFollowersCount = remoteGroupDescriptor.getFollowers().size();
-			if (localFollowersCount < remoteFollowersCount) {
-				GroupCoordinationCommand command = 
+		// We first attempt to merge then to join
+		if (coordinationStrategy.shouldInviteToMerge(remoteGroupDescriptor)) {
+			GroupCoordinationCommand command = 
 					GroupCoordinationCommand.createMergeGroupCommand(groupDescriptor);
-				sendCoordinationCommand(command, remoteLeader);
-			} else if (localFollowersCount > remoteFollowersCount) {
-				// The current leader wait for the other one to invite it
-				return;
-			} else { 
-				// they have the same number of followers or no followers
-				// we need another logic to decide whom will invite the other
-				
-				// The one with the higher id will send the invitation
-				if (currentNodeDescriptor.getID().compareTo(remoteGroupDescriptor.getLeader().getID()) > 0) {
-					return;
-				}
-				
-				GroupCoordinationCommand command = null;
-				if (remoteFollowersCount == 0) {
-					// They are both empty: one should join the other
-					command = GroupCoordinationCommand.createJoinMyGroupCommand(groupDescriptor);
-				} else {
-					// they are both full: merge
-					command = GroupCoordinationCommand.createMergeGroupCommand(groupDescriptor);
-				}
-				sendCoordinationCommand(command, remoteLeader);
-			}	
+			sendCoordinationCommand(command, remoteGroupDescriptor.getLeader());
+		} else if (coordinationStrategy.shouldInviteToJoin(remoteGroupDescriptor)) {
+			GroupCoordinationCommand command = 
+					GroupCoordinationCommand.createJoinMyGroupCommand(groupDescriptor);
+			sendCoordinationCommand(command, remoteGroupDescriptor.getLeader());
 		}
+		
 	}
 	
 	/**
@@ -496,9 +467,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener, Gr
 			if (GroupCoordinationCommandAck.OK.equals(responseType)) {
 				// The remote leader has accepted to become a child.
 				// We add it to the followers and notify the other followers
-				groupDescriptor.addFollower(sender);
-				GroupLeaderCommand updateCommand = GroupLeaderCommand.createUpdateCommand(groupDescriptor);
-				sendMessageToFollowers(updateCommand);
+				handleFollowerJustJoined(sender);
 				return;
 			} else if (GroupLeaderCommandAck.KO.equals(responseType)) {
 				// It refused
@@ -510,9 +479,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener, Gr
 			if (GroupCoordinationCommandAck.OK.equals(responseType)) {
 				// The remote leader has accepted to become a child.
 				// We add it to the followers and notify the other followers
-				groupDescriptor.addFollower(sender);
-				GroupLeaderCommand updateCommand = GroupLeaderCommand.createUpdateCommand(groupDescriptor);
-				sendMessageToFollowers(updateCommand);
+				handleFollowerJustJoined(sender);
 				return;
 			} else if (GroupLeaderCommandAck.KO.equals(responseType)) {
 				// It refused.
@@ -521,11 +488,53 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener, Gr
 				sendCoordinationCommand(sendAttempt, sender);
 				return;
 			}
-		} else {
+		} else if (MIGRATE_TO_GROUP.equals(commandType)) {
+			if (GroupCoordinationCommandAck.OK.equals(responseType)) {
+				// The remote leader has accepted to become a child.
+				// We add it to the followers and notify the other followers
+				handleFollowerJustJoined(sender);
+				return;
+			} else if (GroupLeaderCommandAck.KO.equals(responseType)) {
+				// It refused
+				return;
+			}
+		} else if (ADOPT_GROUP.equals(commandType)) {
+			if (GroupCoordinationCommandAck.OK.equals(responseType)) {
+				// The remote leader has adopted this group
+				groupDescriptor.setParentLeader(sender);
+			} else if (GroupLeaderCommandAck.KO.equals(responseType)) {
+				// It refused
+				groupDescriptor.setParentLeader(null);
+			}
+			GroupLeaderCommand updateCommand = GroupLeaderCommand.createUpdateCommand(groupDescriptor);
+			sendMessageToFollowers(updateCommand);
+			return;
+		}else {
 			// unhandled commands..
 		}
 	}
 
+	
+	/**
+	 * The current leader is about to add a new follower to the group.
+	 * 
+	 * 
+	 * @param follower
+	 */
+	private void handleFollowerJustJoined(NodeDescriptor follower) {
+		groupDescriptor.addFollower(follower);
+		GroupLeaderCommand command = GroupLeaderCommand.createUpdateCommand(groupDescriptor);
+		sendMessageToFollowers(command);
+		createChildIfNecessary();
+	}
+	
+	private void createChildIfNecessary() {
+		NodeDescriptor recipient = coordinationStrategy.shouldSplitToNode();
+		if (recipient != null) {
+			GroupLeaderCommand command = GroupLeaderCommand.createCreateChildCommand(groupDescriptor);
+			sendLeaderCommand(command, recipient);
+		}
+	}
 
 	public void handleMessageGroupCoordinationCommand(NodeDescriptor sender,
 			GroupCoordinationCommand message) {
@@ -540,12 +549,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener, Gr
 		
 		String commandType = message.getCommand();
 		if (MERGE_GROUPS.equals(commandType)) {
-			// If the parent is null OK otherwise KO
-			if (groupDescriptor.getParentLeader() != null) {
-				commandAck = GroupCoordinationCommandAck.createKoCommand(message.getID(), groupDescriptor);
-				sendMessage(GROUP_COORDINATION_COMMAND_ACK, commandAck, sender);
-				return;
-			} else {
+			if (coordinationStrategy.shouldAcceptToMerge(remoteGroup)) {
 				// The current node has accepted the remote as a parent node
 				// From now on the current node will be both leader of his current
 				// group and follower of his parent group.
@@ -560,16 +564,17 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener, Gr
 				GroupLeaderCommand updateCommand = GroupLeaderCommand.createUpdateCommand(groupDescriptor);
 				sendMessageToFollowers(updateCommand);
 				return;
+			} else {
+				commandAck = GroupCoordinationCommandAck.createKoCommand(message.getID(), groupDescriptor);
+				sendMessage(GROUP_COORDINATION_COMMAND_ACK, commandAck, sender);
+				return;
 			}	
 		} else if (JOIN_MY_GROUP.equals(commandType)) {
-			if (groupDescriptor.getFollowers().size() > 0) {
-				// A remote node has asked this node do dismantle this group
-				// And join its group but this group is not empty...
-				commandAck = GroupCoordinationCommandAck.createKoCommand(message.getID(), groupDescriptor);
-				sendMessage(MessageSubjects.GROUP_COORDINATION_COMMAND_ACK, commandAck, sender);
-			} else {
+			if (coordinationStrategy.shouldAcceptToJoin(remoteGroup)) {
 				// Destroy this group and join the other one as member
 				node.getGroupCommunicationDispatcher().removeGroup(this);
+				
+				remoteGroup.addFollower(currentNodeDescriptor);
 				node.getGroupCommunicationDispatcher().addGroupManager(
 						GroupCommunicationManager.createGroup(node, remoteGroup));
 				
@@ -577,10 +582,55 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener, Gr
 				sendMessage(GROUP_COORDINATION_COMMAND_ACK, commandAck, sender);
 				// The leader will then groupcast an updated descriptor
 				return;
+			} else {
+				// A remote node has asked this node do dismantle this group
+				// And join its group but this group is not empty...
+				commandAck = GroupCoordinationCommandAck.createKoCommand(message.getID(), groupDescriptor);
+				sendMessage(MessageSubjects.GROUP_COORDINATION_COMMAND_ACK, commandAck, sender);
+				return;
+			}
+		} else if (MIGRATE_TO_GROUP.equals(commandType)) {
+			if (!groupDescriptor.isLeader(currentNodeDescriptor) && 
+					coordinationStrategy.shouldAcceptToMigrate(remoteGroup)) {
+				node.getGroupCommunicationDispatcher().removeGroup(this);
+				
+				remoteGroup.addFollower(currentNodeDescriptor);
+				node.getGroupCommunicationDispatcher().addGroupManager(
+						GroupCommunicationManager.createGroup(node, remoteGroup));
+				
+				commandAck = GroupCoordinationCommandAck.createOkCommand(message.getID(), groupDescriptor);
+				sendMessage(GROUP_COORDINATION_COMMAND_ACK, commandAck, sender);
+				// The leader will then groupcast an updated descriptor
+				return;
+			} else {
+				// A remote node has asked this node do migrate to its group
+				commandAck = GroupCoordinationCommandAck.createKoCommand(message.getID(), groupDescriptor);
+				sendMessage(MessageSubjects.GROUP_COORDINATION_COMMAND_ACK, commandAck, sender);
+				return;
+			}
+		} else if (ADOPT_GROUP.equals(commandType)) {
+			if (leader) {
+				handleFollowerJustJoined(sender);
+				commandAck = GroupCoordinationCommandAck.createOkCommand(message.getID(), groupDescriptor);
+				sendMessage(GROUP_COORDINATION_COMMAND_ACK, commandAck, sender);
+				return;
+			} else {
+				commandAck = GroupCoordinationCommandAck.createKoCommand(message.getID(), groupDescriptor);
+				sendMessage(MessageSubjects.GROUP_COORDINATION_COMMAND_ACK, commandAck, sender);
+				return;
 			}
 		} else {
 			// unhandled commands..
 		}
+	}
+
+
+	/**
+	 * @param groupDescriptor the groupDescriptor to set
+	 */
+	private void setGroupDescriptor(GroupDescriptor groupDescriptor) {
+		this.groupDescriptor = groupDescriptor;
+		coordinationStrategy = new ProbabilisticLoadBalancingGroupCoordinationStrategy(groupDescriptor);
 	}
 
 }

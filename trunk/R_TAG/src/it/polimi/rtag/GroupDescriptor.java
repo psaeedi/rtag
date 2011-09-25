@@ -4,6 +4,7 @@
 package it.polimi.rtag;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.UUID;
 
@@ -36,7 +37,7 @@ public class GroupDescriptor implements Serializable {
 	/**
 	 * All the followers. 
 	 */
-	private HashSet<NodeDescriptor> followers = new HashSet<NodeDescriptor>();
+	private ArrayList<NodeDescriptor> followers = new ArrayList<NodeDescriptor>();
 	
 	/**
 	 * The parent group or null if the group is top level. 
@@ -160,7 +161,7 @@ public class GroupDescriptor implements Serializable {
 	/**
 	 * @return the followers
 	 */
-	public HashSet<NodeDescriptor> getFollowers() {
+	public ArrayList<NodeDescriptor> getFollowers() {
 		return followers;
 	}
 
@@ -192,8 +193,8 @@ public class GroupDescriptor implements Serializable {
 		}
 	}
 
-	public HashSet<NodeDescriptor> getMembers() {
-		HashSet<NodeDescriptor> members = new HashSet<NodeDescriptor>(followers);
+	public ArrayList<NodeDescriptor> getMembers() {
+		ArrayList<NodeDescriptor> members = new ArrayList<NodeDescriptor>(followers);
 		members.add(leader);
 		return members;
 		
