@@ -26,7 +26,7 @@ import polimi.reds.broker.overlay.NotRunningException;
  */
 public class JoinAndMergeGroupsTest {
 
-    private static final int NUMBER_OF_NODE = 11;
+    private static final int NUMBER_OF_NODE = 5;
 
 	int localPort=10001;
     /*int localPort2 = 10002;

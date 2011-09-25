@@ -31,6 +31,12 @@ public class GroupLeaderCommand extends Message {
 	 */
 	public static final String UPDATE_DESCRIPTOR = "UPDATE_DESCRIPTOR";
 	
+	/**
+	 * A leader ask one of is follower to create a child group. This is
+	 * useful if the current group has became too big.
+	 */
+	public static final String CREATE_CHILD_GROUP = "CREATE_CHILD_GROUP";
+
 	// TODO add other actions
 	
 	// TODO create static factory methods
@@ -47,6 +53,13 @@ public class GroupLeaderCommand extends Message {
 			throw new IllegalArgumentException("Group descriptor cannot be null.");
 		}
 		return new GroupLeaderCommand(groupDescriptor, UPDATE_DESCRIPTOR);
+	}
+	
+	public static GroupLeaderCommand createCreateChildCommand(GroupDescriptor groupDescriptor) {
+		if (groupDescriptor == null) {
+			throw new IllegalArgumentException("Group descriptor cannot be null.");
+		}
+		return new GroupLeaderCommand(groupDescriptor, CREATE_CHILD_GROUP);
 	}
 	
 	/**
