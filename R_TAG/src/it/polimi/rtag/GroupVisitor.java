@@ -6,7 +6,8 @@ package it.polimi.rtag;
 /**
  * @author Panteha Saeedi (saeedi@elet.polimi.it)
  * 
- * Visits a group and performs acertain action on it.
+ * Visits a group and performs ascertain action on it.
+ * Used for printout
  */
 public interface GroupVisitor {
 

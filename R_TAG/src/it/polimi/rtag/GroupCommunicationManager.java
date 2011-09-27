@@ -34,7 +34,8 @@ import static it.polimi.rtag.messaging.GroupCoordinationCommand.*;
  * 
  * @author Panteha Saeedi (saeedi@elet.polimi.it).
  */
-public class GroupCommunicationManager implements NeighborhoodChangeListener, GroupDiscoveredNotificationListener {
+public class GroupCommunicationManager implements NeighborhoodChangeListener, 
+GroupDiscoveredNotificationListener {
 
 	private Node node;
 	
@@ -69,7 +70,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener, Gr
 	
 	
 	/**
-	 * Wraps a given group for communicatin manager for the given node.
+	 * Wraps a given group for communication manager for the given node.
 	 * 
 	 * @param node
 	 * @param groupDescriptor
@@ -121,7 +122,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener, Gr
 	
 	/**
 	 * Notify this group manager that a new node has been discovered. If the
-	 * current node is a follower then nothing has to be done.
+	 * current node is a follower then nothing has to be done.</p>
 	 * If the node is a leader then it depends. If the new discovered node is
 	 * already a group member (which can happen in case of internal delay)
 	 * nothing is done. Otherwise if the new node is not a member of the group
@@ -157,6 +158,16 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener, Gr
 		notifyNeighborRemoved(deadNode);
 	}
 	
+	/** 
+	 * Notify this group manager that a new node has been removed. If the
+	 * current node is not a follower of this group, then ignore the message.</p>
+	 * If the removed node is not a leader, we remove the node from the descriptor.
+	 * If the current node is a leader it sends the updated group descriptor.</p>
+	 * 
+	 * If the removed node was the leader, a new leader is required to be selected.</p>
+	 * 
+	 * @see polimi.reds.broker.overlay.NeighborhoodChangeListener#notifyNeighborRemoved(polimi.reds.NodeDescriptor)
+	 */
 	@Override
 	public void notifyNeighborRemoved(NodeDescriptor removedNode) {
 		if (!groupDescriptor.isMember(removedNode)) {
@@ -477,8 +488,9 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener, Gr
 			// This node has sent a join group request
 			// to another leader.
 			if (GroupCoordinationCommandAck.OK.equals(responseType)) {
-				// The remote leader has accepted to become a child.
+				// The remote leader has accepted to become a follower.
 				// We add it to the followers and notify the other followers
+				// its group becomes the child group.
 				handleFollowerJustJoined(sender);
 				return;
 			} else if (GroupLeaderCommandAck.KO.equals(responseType)) {
@@ -490,8 +502,9 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener, Gr
 			}
 		} else if (MIGRATE_TO_GROUP.equals(commandType)) {
 			if (GroupCoordinationCommandAck.OK.equals(responseType)) {
-				// The remote leader has accepted to become a child.
+				// The remote leader has accepted to become a follower.
 				// We add it to the followers and notify the other followers
+				//it should leave its other group
 				handleFollowerJustJoined(sender);
 				return;
 			} else if (GroupLeaderCommandAck.KO.equals(responseType)) {
