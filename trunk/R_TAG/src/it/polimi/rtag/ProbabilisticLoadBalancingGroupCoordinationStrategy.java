@@ -76,12 +76,7 @@ public class ProbabilisticLoadBalancingGroupCoordinationStrategy implements
 			int remoteFollowersCount = remoteGroup.getFollowers().size();
 			
 			if (localFollowersCount == 0 && remoteFollowersCount == 0) {
-				// The one with the higher id will send the invitation
-				if (localLeader.getID().compareTo(remoteLeader.getID()) > 0) {
-					return false;
-				} else {
-					return true;
-				}
+				return selectLowerId(localLeader, remoteLeader);
 			} else if (localFollowersCount != 0 && remoteFollowersCount == 0) {
 				return true;
 			} else if (localFollowersCount == 0 && remoteFollowersCount != 0) {
@@ -124,7 +119,11 @@ public class ProbabilisticLoadBalancingGroupCoordinationStrategy implements
 			// They are both part of chain
 			// Either we forward the events to their parents or we do nothing.
 			// TODO think which one will be the best solution.
-			return false;
+			if (localParent.equals(remoteParent)) {
+				return selectLowerId(localLeader, remoteLeader);
+			} else {
+				return false;
+			}
 		} else { // localParent == null && remoteParent == null
 			// Neither the local or the remote group are part of a hierarchy
 			// Therefore we can select what to do depending on the number
@@ -145,14 +144,24 @@ public class ProbabilisticLoadBalancingGroupCoordinationStrategy implements
 					// they have the same number of followers or no followers
 					// we need another logic to decide whom will invite the other
 					
-					// The one with the higher id will send the invitation
-					if (localLeader.getID().compareTo(remoteLeader.getID()) > 0) {
-						return false;
-					} else {
-						return true;
-					}
+					return selectLowerId(localLeader, remoteLeader);
 				}	
 			}
+		}
+	}
+
+	/**
+	 * @param nodeA
+	 * @param nodeB
+	 * @return
+	 */
+	private boolean selectLowerId(NodeDescriptor nodeA,
+			NodeDescriptor nodeB) {
+		// The one with the higher id will send the invitation
+		if (nodeA.getID().compareTo(nodeB.getID()) > 0) {
+			return false;
+		} else {
+			return true;
 		}
 	}
 
