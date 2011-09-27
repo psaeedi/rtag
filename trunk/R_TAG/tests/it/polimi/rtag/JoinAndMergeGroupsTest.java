@@ -8,7 +8,6 @@ import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 
-import javax.swing.text.StyledEditorKit.ForegroundAction;
 
 import junit.framework.Assert;
 
@@ -196,10 +195,10 @@ public class JoinAndMergeGroupsTest {
 		}
 		Thread.sleep(1000);
 		universe1 = nodes.get(0).getGroupCommunicationDispatcher().
-		getGroupMatching(GroupDescriptor.UNIVERSE);
-		for (int i = 1; i < 11; i++) {
-			GroupDescriptor universe2 = nodes.get(0).getGroupCommunicationDispatcher().
 			getGroupMatching(GroupDescriptor.UNIVERSE);
+		for (int i = 1; i < NUMBER_OF_NODE; i++) {
+			GroupDescriptor universe2 = nodes.get(i).getGroupCommunicationDispatcher().
+				getGroupMatching(GroupDescriptor.UNIVERSE);
 			
 			Assert.assertEquals(universe1.toString(), universe2.toString());
 		}

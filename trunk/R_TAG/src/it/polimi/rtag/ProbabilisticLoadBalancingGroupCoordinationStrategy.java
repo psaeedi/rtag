@@ -6,6 +6,8 @@ package it.polimi.rtag;
 import polimi.reds.NodeDescriptor;
 
 /**
+ * To distribute load on groups, avoid congestion.
+ * 
  * @author Panteha Saeedi (saeedi@elet.polimi.it)
  *
  */
@@ -72,28 +74,22 @@ public class ProbabilisticLoadBalancingGroupCoordinationStrategy implements
 			// of followers
 			int localFollowersCount = groupDescriptor.getFollowers().size();
 			int remoteFollowersCount = remoteGroup.getFollowers().size();
-			if (localFollowersCount < remoteFollowersCount) {
-				return false;
-			} else if (localFollowersCount > remoteFollowersCount) {
-				// The current leader wait for the other one to invite it
-				return false;
-			} else { 
-				// they have the same number of followers or no followers
-				// we need another logic to decide whom will invite the other
-				
+			
+			if (localFollowersCount == 0 && remoteFollowersCount == 0) {
 				// The one with the higher id will send the invitation
 				if (localLeader.getID().compareTo(remoteLeader.getID()) > 0) {
 					return false;
-				}
-				
-				if (remoteFollowersCount == 0) {
-					// They are both empty: one should join the other
-					return true;
 				} else {
-					// they are both full: merge
-					return false;
+					return true;
 				}
-			}	
+			} else if (localFollowersCount != 0 && remoteFollowersCount == 0) {
+				return true;
+			} else if (localFollowersCount == 0 && remoteFollowersCount != 0) {
+				return false;
+			} else {
+				// Both of them have followers
+				return false;
+			}
 		}
 	}
 
@@ -135,28 +131,28 @@ public class ProbabilisticLoadBalancingGroupCoordinationStrategy implements
 			// of followers
 			int localFollowersCount = groupDescriptor.getFollowers().size();
 			int remoteFollowersCount = remoteGroup.getFollowers().size();
-			if (localFollowersCount < remoteFollowersCount) {
-				return true;
-			} else if (localFollowersCount > remoteFollowersCount) {
-				// The current leader wait for the other one to invite it
+			if (localFollowersCount == 0 && remoteFollowersCount == 0) {
 				return false;
-			} else { 
-				// they have the same number of followers or no followers
-				// we need another logic to decide whom will invite the other
-				
-				// The one with the higher id will send the invitation
-				if (localLeader.getID().compareTo(remoteLeader.getID()) > 0) {
-					return false;
-				}
-
-				if (remoteFollowersCount == 0) {
-					// They are both empty: one should join the other
-					return false;
-				} else {
-					// they are both full: merge
+			} else {
+			
+				//----------
+				if (localFollowersCount < remoteFollowersCount) {
 					return true;
-				}
-			}	
+				} else if (localFollowersCount > remoteFollowersCount) {
+					// The current leader wait for the other one to invite it
+					return false;
+				} else { 
+					// they have the same number of followers or no followers
+					// we need another logic to decide whom will invite the other
+					
+					// The one with the higher id will send the invitation
+					if (localLeader.getID().compareTo(remoteLeader.getID()) > 0) {
+						return false;
+					} else {
+						return true;
+					}
+				}	
+			}
 		}
 	}
 

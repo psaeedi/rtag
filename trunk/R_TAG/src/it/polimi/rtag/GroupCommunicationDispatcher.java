@@ -20,10 +20,13 @@ import polimi.reds.broker.overlay.Overlay;
 import polimi.reds.broker.overlay.PacketListener;
 
 /**
- * @author Panteha Saeedi (saeedi@elet.polimi.it)
- *
+ * 
  * This class receives all the group communications and forward
- * them to the most suitable {@link GroupCommunicationManager}.
+ * them to the most suitable {@link GroupCommunicationManager}.</p>
+ * 
+ * Each node has a dispatcher , and overlay is connected to the dispatcher.
+ * 
+ * @author Panteha Saeedi (saeedi@elet.polimi.it)
  *
  */
 public class GroupCommunicationDispatcher implements 
@@ -44,7 +47,7 @@ public class GroupCommunicationDispatcher implements
 	private Overlay overlay;
 	
 	// TODO use a better collection
-	// TODO syncronize them
+	// TODO synchronize them
 	private ArrayList<GroupCommunicationManager> leadedGroups = new ArrayList<GroupCommunicationManager>();
 	private ArrayList<GroupCommunicationManager> followedGroups = new ArrayList<GroupCommunicationManager>();
 	
@@ -92,7 +95,8 @@ public class GroupCommunicationDispatcher implements
 	 * @param sender the node sending the group notification
 	 * @param groupDescriptor the remote group descriptor
 	 * 
-	 * @see it.polimi.rtag.GroupDiscoveredNotificationListener#handleGroupDiscovered(polimi.reds.NodeDescriptor, it.polimi.rtag.GroupDescriptor)
+	 * @see it.polimi.rtag.GroupDiscoveredNotificationListener#handleGroupDiscovered
+	 * (polimi.reds.NodeDescriptor, it.polimi.rtag.GroupDescriptor)
 	 */
 	@Override
 	public void handleGroupDiscovered(NodeDescriptor sender,
