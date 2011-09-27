@@ -3,6 +3,7 @@
  */
 package it.polimi.rtag.messaging;
 
+import it.polimi.rtag.GroupCoordinationStrategy;
 import it.polimi.rtag.GroupDescriptor;
 import polimi.reds.Message;
 import polimi.reds.broker.overlay.REDSMarshaller;
@@ -33,7 +34,14 @@ public class GroupLeaderCommand extends Message {
 	
 	/**
 	 * A leader ask one of is follower to create a child group. This is
-	 * useful if the current group has became too big.
+	 * useful if the current group has became too big.</p>
+	 * 
+	 * If the recipient accepts it will then create a new child group
+	 * and it will invite some of its peer follower to join its new group.</p>
+	 * 
+	 * The logic with which nodes will decide and accept to create a new child and
+	 * with which the new leader will select which peer to invite is defined
+	 * in an implementation of {@link GroupCoordinationStrategy}.
 	 */
 	public static final String CREATE_CHILD_GROUP = "CREATE_CHILD_GROUP";
 

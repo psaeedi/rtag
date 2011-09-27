@@ -49,7 +49,7 @@ public class ProbabilisticLoadBalancingGroupCoordinationStrategyTest {
 				friendlyGroupName, remoteLeader, null);
 		
 		otherNodes = new ArrayList<NodeDescriptor>();
-		for (int i = 0; i < 10; i++) {
+		for (int i = 0; i < 50; i++) {
 			otherNodes.add(new NodeDescriptor(false));
 		}
 		
@@ -90,6 +90,20 @@ public class ProbabilisticLoadBalancingGroupCoordinationStrategyTest {
 		Assert.assertFalse(localStrategy.shouldInviteToJoin(remoteGroup));
 		Assert.assertTrue(remoteStrategy.shouldInviteToJoin(localGroup));
 	}
+
+	/**
+	 * Even if empty if they are part of a hierarchy they do not join
+	 * 
+	 * Test method for {@link it.polimi.rtag.ProbabilisticLoadBalancingGroupCoordinationStrategy#shouldInviteToJoin(it.polimi.rtag.GroupDescriptor)}.
+	 */
+	@Test
+	public void testShouldInviteToJoin_bothWithParent() {
+		remoteGroup.setParentLeader(otherNodes.get(0));
+		localGroup.setParentLeader(otherNodes.get(1));
+		
+		Assert.assertFalse(localStrategy.shouldInviteToJoin(remoteGroup));
+		Assert.assertFalse(remoteStrategy.shouldInviteToJoin(localGroup));
+	}
 	
 	/**
 	 * If one of the two groups is empty they should not merge.
@@ -105,6 +119,43 @@ public class ProbabilisticLoadBalancingGroupCoordinationStrategyTest {
 		remoteGroup.addFollower(otherNodes.get(0));
 		Assert.assertFalse(localStrategy.shouldInviteToMerge(remoteGroup));
 		Assert.assertFalse(remoteStrategy.shouldInviteToMerge(localGroup));
+		
+		localGroup.setParentLeader(otherNodes.get(1));
+		Assert.assertFalse(localStrategy.shouldInviteToMerge(remoteGroup));
+		Assert.assertFalse(remoteStrategy.shouldInviteToMerge(localGroup));
+	}
+	
+	/**
+	 * Even if empty if they are part of a hierarchy they do not merge
+	 * unless they have the same parent.
+	 * 
+	 * Test method for {@link it.polimi.rtag.ProbabilisticLoadBalancingGroupCoordinationStrategy#shouldInviteToMerge(it.polimi.rtag.GroupDescriptor)}.
+	 */
+	@Test
+	public void testShouldInviteToMerge_bothWithParent() {
+		remoteGroup.setParentLeader(otherNodes.get(0));
+		localGroup.setParentLeader(otherNodes.get(1));
+		
+		Assert.assertFalse(localStrategy.shouldInviteToMerge(remoteGroup));
+		Assert.assertFalse(remoteStrategy.shouldInviteToMerge(localGroup));
+		
+		localGroup.setParentLeader(otherNodes.get(0));
+		Assert.assertEquals(localStrategy.shouldInviteToMerge(remoteGroup),
+				!remoteStrategy.shouldInviteToMerge(localGroup));
+	}
+	
+	/**
+	 * If only one has a parent the one which is not in a hierarchy
+	 * should join the other.
+	 * 
+	 * Test method for {@link it.polimi.rtag.ProbabilisticLoadBalancingGroupCoordinationStrategy#shouldInviteToMerge(it.polimi.rtag.GroupDescriptor)}.
+	 */
+	@Test
+	public void testShouldInviteToMerge_oneWithParent() {
+		remoteGroup.setParentLeader(otherNodes.get(0));
+		
+		Assert.assertFalse(localStrategy.shouldInviteToMerge(remoteGroup));
+		Assert.assertTrue(remoteStrategy.shouldInviteToMerge(localGroup));
 	}
 	
 	/**
@@ -112,7 +163,9 @@ public class ProbabilisticLoadBalancingGroupCoordinationStrategyTest {
 	 */
 	@Test
 	public void testShouldAcceptToJoin() {
-		fail("Not yet implemented");
+		Assert.assertTrue(localStrategy.shouldAcceptToJoin(remoteGroup));
+		localGroup.addFollower(otherNodes.get(0));
+		Assert.assertFalse(localStrategy.shouldAcceptToJoin(remoteGroup));
 	}
 
 	/**
@@ -120,7 +173,9 @@ public class ProbabilisticLoadBalancingGroupCoordinationStrategyTest {
 	 */
 	@Test
 	public void testShouldAcceptToMerge() {
-		fail("Not yet implemented");
+		Assert.assertTrue(localStrategy.shouldAcceptToMerge(remoteGroup));
+		localGroup.setParentLeader(otherNodes.get(0));
+		Assert.assertFalse(localStrategy.shouldAcceptToMerge(remoteGroup));
 	}
 
 	/**
@@ -128,7 +183,7 @@ public class ProbabilisticLoadBalancingGroupCoordinationStrategyTest {
 	 */
 	@Test
 	public void testShouldAcceptToCreateAChild() {
-		fail("Not yet implemented");
+		Assert.assertTrue(localStrategy.shouldAcceptToCreateAChild());
 	}
 
 	/**
@@ -136,7 +191,14 @@ public class ProbabilisticLoadBalancingGroupCoordinationStrategyTest {
 	 */
 	@Test
 	public void testShouldSuggestToMigrate() {
-		fail("Not yet implemented");
+		localGroup.addFollower(otherNodes.get(0));
+		localGroup.addFollower(otherNodes.get(1));
+		remoteGroup.addFollower(otherNodes.get(2));
+		Assert.assertFalse(localStrategy.shouldSuggestToMigrate(remoteGroup, otherNodes.get(2)));
+		for (int i = 3; i < otherNodes.size(); i++) {
+			remoteGroup.addFollower(otherNodes.get(i));
+		}
+		Assert.assertFalse(localStrategy.shouldSuggestToMigrate(remoteGroup, otherNodes.get(2)));
 	}
 
 	/**
@@ -144,7 +206,10 @@ public class ProbabilisticLoadBalancingGroupCoordinationStrategyTest {
 	 */
 	@Test
 	public void testShouldAcceptToMigrate() {
-		fail("Not yet implemented");
+		localGroup.addFollower(otherNodes.get(0));
+		Assert.assertTrue(localStrategy.shouldAcceptToMigrate(remoteGroup));
+		remoteGroup.addFollower(otherNodes.get(1));
+		Assert.assertFalse(localStrategy.shouldAcceptToMigrate(remoteGroup));
 	}
 
 	/**
@@ -152,7 +217,11 @@ public class ProbabilisticLoadBalancingGroupCoordinationStrategyTest {
 	 */
 	@Test
 	public void testShouldSplitToNode() {
-		fail("Not yet implemented");
+		Assert.assertNull(localStrategy.shouldSplitToNode());
+		for (NodeDescriptor node: otherNodes) {
+			localGroup.addFollower(node);
+		}
+		Assert.assertNotNull(localStrategy.shouldSplitToNode());
 	}
 
 	/**
@@ -160,7 +229,12 @@ public class ProbabilisticLoadBalancingGroupCoordinationStrategyTest {
 	 */
 	@Test
 	public void testElectNewLeader() {
-		fail("Not yet implemented");
+		Assert.assertNull(localStrategy.electNewLeader());
+		localGroup.setLeader(null);
+		Assert.assertNull(localStrategy.electNewLeader());
+		localGroup.addFollower(otherNodes.get(0));
+		Assert.assertEquals(otherNodes.get(0),
+				localStrategy.electNewLeader());
 	}
 
 }
