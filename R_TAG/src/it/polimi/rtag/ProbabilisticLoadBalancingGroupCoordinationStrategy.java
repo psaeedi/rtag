@@ -131,7 +131,7 @@ public class ProbabilisticLoadBalancingGroupCoordinationStrategy implements
 			// of followers
 			int localFollowersCount = groupDescriptor.getFollowers().size();
 			int remoteFollowersCount = remoteGroup.getFollowers().size();
-			if (localFollowersCount == 0 && remoteFollowersCount == 0) {
+			if (localFollowersCount == 0 || remoteFollowersCount == 0) {
 				return false;
 			} else {
 			
