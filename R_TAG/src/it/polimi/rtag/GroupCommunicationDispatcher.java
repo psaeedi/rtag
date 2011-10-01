@@ -3,7 +3,12 @@
  */
 package it.polimi.rtag;
 
-import static it.polimi.rtag.messaging.MessageSubjects.*;
+import java.util.*;
+import java.io.Serializable;
+
+import polimi.reds.NodeDescriptor;
+import polimi.reds.broker.overlay.Overlay;
+import polimi.reds.broker.overlay.PacketListener;
 
 import it.polimi.rtag.messaging.GroupCoordinationCommand;
 import it.polimi.rtag.messaging.GroupCoordinationCommandAck;
@@ -12,12 +17,8 @@ import it.polimi.rtag.messaging.GroupFollowerCommandAck;
 import it.polimi.rtag.messaging.GroupLeaderCommand;
 import it.polimi.rtag.messaging.GroupLeaderCommandAck;
 
-import java.io.Serializable;
-import java.util.ArrayList;
+import static it.polimi.rtag.messaging.MessageSubjects.*;
 
-import polimi.reds.NodeDescriptor;
-import polimi.reds.broker.overlay.Overlay;
-import polimi.reds.broker.overlay.PacketListener;
 
 /**
  * 
@@ -46,7 +47,6 @@ public class GroupCommunicationDispatcher implements
 	private Node node;
 	private Overlay overlay;
 	
-	// TODO use a better collection
 	// TODO synchronize them
 	private ArrayList<GroupCommunicationManager> leadedGroups = new ArrayList<GroupCommunicationManager>();
 	private ArrayList<GroupCommunicationManager> followedGroups = new ArrayList<GroupCommunicationManager>();
@@ -62,9 +62,61 @@ public class GroupCommunicationDispatcher implements
 	public void addGroupManager(GroupCommunicationManager manager) {
 		GroupDescriptor groupDescriptor = manager.getGroupDescriptor();
 		if (groupDescriptor.isLeader(node.getID())) {
-			leadedGroups.add(manager);
+			synchronized (leadedGroups) {
+				leadedGroups.add(manager);				
+			}
 		} else {
-			followedGroups.add(manager);
+			synchronized (followedGroups) {
+				followedGroups.add(manager);				
+			}
+		}
+	}
+	
+	public GroupCommunicationManager getLeadedGroupByUUID(UUID query) {
+		synchronized (leadedGroups) {
+			for (GroupCommunicationManager manager: leadedGroups) {
+				GroupDescriptor localGroup = manager.getGroupDescriptor();
+				if (localGroup.getUniqueId().equals(query)) {
+					return manager;
+				}
+			}
+			return null;
+		}
+	}
+	
+	public GroupCommunicationManager getFollowedGroupByUUID(UUID query) {
+		synchronized (followedGroups) {
+			for (GroupCommunicationManager manager: followedGroups) {
+				GroupDescriptor localGroup = manager.getGroupDescriptor();
+				if (localGroup.getUniqueId().equals(query)) {
+					return manager;
+				}
+			}
+			return null;
+		}
+	}
+
+	public GroupCommunicationManager getLeadedGroupByFriendlyName(String query) {
+		synchronized (leadedGroups) {
+			for (GroupCommunicationManager manager: leadedGroups) {
+				GroupDescriptor localGroup = manager.getGroupDescriptor();
+				if (localGroup.getFriendlyName().equals(query)) {
+					return manager;
+				}
+			}
+			return null;
+		}
+	}
+	
+	public GroupCommunicationManager getFollowedGroupByFriendlyName(String query) {
+		synchronized (followedGroups) {
+			for (GroupCommunicationManager manager: followedGroups) {
+				GroupDescriptor localGroup = manager.getGroupDescriptor();
+				if (localGroup.getFriendlyName().equals(query)) {
+					return manager;
+				}
+			}
+			return null;
 		}
 	}
 	
@@ -101,15 +153,12 @@ public class GroupCommunicationDispatcher implements
 	@Override
 	public void handleGroupDiscovered(NodeDescriptor sender,
 			GroupDescriptor groupDescriptor) {
-		for (GroupCommunicationManager manager: leadedGroups) {
-			GroupDescriptor localGroup = manager.getGroupDescriptor();
-			if (localGroup.matches(groupDescriptor)) {
-				// A group matching a leaded group has been found.
-				// The manager will attempt to create a hierarchy.
-				manager.handleGroupDiscovered(sender, groupDescriptor);
-				// Only one group should match
-				return;
-			}
+		GroupCommunicationManager manager = getLeadedGroupByFriendlyName(
+				groupDescriptor.getFriendlyName());
+		if (manager != null) {
+			// A group matching a leaded group has been found.
+			// The manager will attempt to create a hierarchy.
+			manager.handleGroupDiscovered(sender, groupDescriptor);
 		}
 	}
 	
@@ -139,15 +188,12 @@ public class GroupCommunicationDispatcher implements
 
 	private void handleMessageGroupCreatedNotification(NodeDescriptor sender,
 			GroupDescriptor groupDescriptor) {
-		for (GroupCommunicationManager manager: leadedGroups) {
-			GroupDescriptor localGroup = manager.getGroupDescriptor();
-			if (localGroup.matches(groupDescriptor)) {
-				// A group matching a leaded group has been found.
-				// The manager will attempt to create a hierarchy.
-				manager.handleMessageGroupCreatedNotification(sender, groupDescriptor);
-				// Only one group should match
-				return;
-			}
+		GroupCommunicationManager manager = getLeadedGroupByFriendlyName(
+				groupDescriptor.getFriendlyName());
+		if (manager != null) {
+			// A group matching a leaded group has been found.
+			// The manager will attempt to create a hierarchy.
+			manager.handleMessageGroupCreatedNotification(sender, groupDescriptor);
 		}
 	}
 
@@ -155,103 +201,96 @@ public class GroupCommunicationDispatcher implements
 	private void handleMessageGroupCoordinationCommandAck(
 			NodeDescriptor sender, GroupCoordinationCommandAck packet) {
 		// Only a leader can receive an ack
-		for (GroupCommunicationManager manager: leadedGroups) {
-			GroupDescriptor localGroup = manager.getGroupDescriptor();
-			if (localGroup.matches(packet.getGroupDescriptor())) {
-				// A group matching a leaded group has been found.
-				// The manager will attempt to create a hierarchy.
-				manager.handleMessageGroupCoordinationCommandAck(sender, packet);
-				// Only one group should match
-				return;
-			}
+		GroupCommunicationManager manager = getLeadedGroupByFriendlyName(
+				packet.getGroupDescriptor().getFriendlyName());
+		if (manager != null) {
+			manager.handleMessageGroupCoordinationCommandAck(sender, packet);
 		}
 	}
 
 
 	private void handleMessageGroupCoordinationCommand(
 			NodeDescriptor sender, GroupCoordinationCommand packet) {
-		for (GroupCommunicationManager manager: leadedGroups) {
-			GroupDescriptor localGroup = manager.getGroupDescriptor();
-			if (localGroup.matches(packet.getGroupDescriptor())) {
-				// A group matching a leaded group has been found.
-				// The manager will attempt to create a hierarchy.
-				manager.handleMessageGroupCoordinationCommand(sender, packet);
-				// Only one group should match
-				return;
-			}
+		GroupDescriptor remoteDescriptor = packet.getGroupDescriptor();
+		// TODO add recipient group in coordination messages
+		
+		// Attempt to find a leaded group
+		GroupCommunicationManager manager = getLeadedGroupByFriendlyName(
+				remoteDescriptor.getFriendlyName());
+		if (manager != null) {
+			manager.handleMessageGroupCoordinationCommand(sender, packet);
+			return;
 		}
-		// also a follower can receive a coordination command
-		for (GroupCommunicationManager manager: followedGroups) {
-			GroupDescriptor localGroup = manager.getGroupDescriptor();
-			if (localGroup.matches(packet.getGroupDescriptor())) {
-				// A group matching a leaded group has been found.
-				// The manager will attempt to create a hierarchy.
-				manager.handleMessageGroupCoordinationCommand(sender, packet);
-				// Only one group should match
-				return;
-			}
+		// Try to find a followed group
+		manager = getFollowedGroupByFriendlyName(
+				remoteDescriptor.getFriendlyName());
+		if (manager != null) {
+			manager.handleMessageGroupCoordinationCommand(sender, packet);
+			return;
 		}
+		
 	}
 
 
 	private void handleMessageGroupLeaderCommandAck(NodeDescriptor sender,
 			GroupLeaderCommandAck packet) {
-		for (GroupCommunicationManager manager: leadedGroups) {
-			GroupDescriptor localGroup = manager.getGroupDescriptor();
-			if (localGroup.equals(packet.getGroupDescriptor())) {
-				// A group matching a leaded group has been found.
-				// The manager will attempt to create a hierarchy.
-				manager.handleMessageGroupLeaderCommandAck(sender, packet);
-				// Only one group should match
-				return;
-			}
+		GroupDescriptor remoteDescriptor = packet.getGroupDescriptor();
+		// TODO add recipient group in coordination messages
+		
+		// Attempt to find a leaded group
+		GroupCommunicationManager manager = getLeadedGroupByUUID(
+				remoteDescriptor.getUniqueId());
+		if (manager != null) {
+			manager.handleMessageGroupLeaderCommandAck(sender, packet);
+			return;
 		}
 	}
 
 
 	private void handleMessageGroupLeaderCommand(NodeDescriptor sender,
 			GroupLeaderCommand packet) {
-		for (GroupCommunicationManager manager: followedGroups) {
-			GroupDescriptor localGroup = manager.getGroupDescriptor();
-			if (localGroup.equals(packet.getGroupDescriptor())) {
-				// A group matching a leaded group has been found.
-				// The manager will attempt to create a hierarchy.
-				manager.handleMessageGroupLeaderCommand(sender, packet);
-				// Only one group should match
-				return;
-			}
+		
+		GroupDescriptor remoteDescriptor = packet.getGroupDescriptor();
+		// TODO add recipient group in coordination messages
+		
+		// Attempt to find a leaded group
+		GroupCommunicationManager manager = getFollowedGroupByUUID(
+				remoteDescriptor.getUniqueId());
+		if (manager != null) {
+			manager.handleMessageGroupLeaderCommand(sender, packet);
+			return;
 		}
 	}
 
 
 	private void handleMessageGroupFollowerCommandAck(NodeDescriptor sender,
 			GroupFollowerCommandAck packet) {
-		for (GroupCommunicationManager manager: followedGroups) {
-			GroupDescriptor localGroup = manager.getGroupDescriptor();
-			if (localGroup.equals(packet.getGroupDescriptor())) {
-				// A group matching a leaded group has been found.
-				// The manager will attempt to create a hierarchy.
-				manager.handleMessageGroupFollowerCommandAck(sender, packet);
-				// Only one group should match
-				return;
-			}
+		GroupDescriptor remoteDescriptor = packet.getGroupDescriptor();
+		// TODO add recipient group in coordination messages
+		
+		// Attempt to find a leaded group
+		GroupCommunicationManager manager = getFollowedGroupByUUID(
+				remoteDescriptor.getUniqueId());
+		if (manager != null) {
+			manager.handleMessageGroupFollowerCommandAck(sender, packet);
+			return;
 		}
 	}
 
 
 	private void handleMessageGroupFollowerCommand(NodeDescriptor sender,
 			GroupFollowerCommand packet) {
-		for (GroupCommunicationManager manager: leadedGroups) {
-			GroupDescriptor localGroup = manager.getGroupDescriptor();
-			if (localGroup.equals(packet.getGroupDescriptor())) {
-				// A group matching a leaded group has been found.
-				// The manager will attempt to create a hierarchy.
-				manager.handleMessageGroupFollowerCommand(sender, packet);
-				// Only one group should match
-				return;
-			}
-		}
 		
+		GroupDescriptor remoteDescriptor = packet.getGroupDescriptor();
+		// TODO add recipient group in coordination messages
+		
+		// Attempt to find a leaded group
+		GroupCommunicationManager manager = getLeadedGroupByUUID(
+				remoteDescriptor.getUniqueId());
+		if (manager != null) {
+			manager.handleMessageGroupFollowerCommand(sender, packet);
+			return;
+		}
 	}
 
 	/**
@@ -298,47 +337,38 @@ public class GroupCommunicationDispatcher implements
 		overlay.removeNeighborhoodChangeListener(groupCommunicationManager);
 	}
 	
-	
-	public GroupDescriptor leadedGroupMathing(String friendlyName) {
-		for (GroupCommunicationManager manager: leadedGroups) {
-			GroupDescriptor localGroup = manager.getGroupDescriptor();
-			if (localGroup.getFriendlyName().equals(friendlyName)) {
-				return localGroup;
-			}
-		}
-		return null;
-	}
-	
-	public GroupDescriptor followedGroupMathing(String friendlyName) {
-		for (GroupCommunicationManager manager: followedGroups) {
-			GroupDescriptor localGroup = manager.getGroupDescriptor();
-			if (localGroup.getFriendlyName().equals(friendlyName)) {
-				return localGroup;
-			}
-		}
-		return null;
-	}
-	
-	public GroupDescriptor getGroupMatching(String friendlyName) {
-		GroupDescriptor localGroup = null;
-		if ((localGroup = leadedGroupMathing(friendlyName)) != null) {
-			return localGroup;
-		} else {
-			return followedGroupMathing(friendlyName);
-		}
-	}
-	
 	public GroupDescriptor getLocalUniverse() {
-		for (GroupCommunicationManager manager: leadedGroups) {
-			GroupDescriptor localGroup = manager.getGroupDescriptor();
-			if (localGroup.isUniverse()) {
-				return localGroup;
+		synchronized (leadedGroups) {
+			for (GroupCommunicationManager manager: leadedGroups) {
+				GroupDescriptor localGroup = manager.getGroupDescriptor();
+				if (localGroup.isUniverse()) {
+					return localGroup;
+				}
 			}
 		}
-		for (GroupCommunicationManager manager: followedGroups) {
-			GroupDescriptor localGroup = manager.getGroupDescriptor();
-			if (localGroup.isUniverse()) {
-				return localGroup;
+		synchronized (followedGroups) {
+			for (GroupCommunicationManager manager: followedGroups) {
+				GroupDescriptor localGroup = manager.getGroupDescriptor();
+				if (localGroup.isUniverse()) {
+					return localGroup;
+				}
+			}
+		}
+		return null;
+	}
+	
+	public GroupDescriptor getGroupWithName(String friendlyName) {
+		GroupCommunicationManager manager = null;
+		synchronized (leadedGroups) {
+			manager = getLeadedGroupByFriendlyName(friendlyName);
+			if (manager != null) {
+				return manager.getGroupDescriptor();
+			}
+		}
+		synchronized (followedGroups) {
+			manager = getFollowedGroupByFriendlyName(friendlyName);
+			if (manager != null) {
+				return manager.getGroupDescriptor();
 			}
 		}
 		return null;

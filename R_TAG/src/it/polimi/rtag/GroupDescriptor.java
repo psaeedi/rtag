@@ -5,7 +5,6 @@ package it.polimi.rtag;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.UUID;
 
 import lights.Tuple;
@@ -102,12 +101,6 @@ public class GroupDescriptor implements Serializable {
 		return uniqueId;
 	}
 	/**
-	 * @param uniqueId the uniqueId to set
-	 */
-	public void setUniqueId(UUID uniqueId) {
-		this.uniqueId = uniqueId;
-	}
-	/**
 	 * @return the friendlyName
 	 */
 	public String getFriendlyName() {
@@ -184,10 +177,35 @@ public class GroupDescriptor implements Serializable {
 	 */
 	@Override
 	public boolean equals(Object obj) {
-		if (obj instanceof Tuple) {
-			return description.equals(obj);
-		} else if (obj instanceof GroupDescriptor) {
-			return uniqueId.equals(((GroupDescriptor)obj).uniqueId);
+		if (obj instanceof GroupDescriptor) {
+			GroupDescriptor remoteGroup = (GroupDescriptor)obj;
+			if (!uniqueId.equals(remoteGroup.uniqueId)) {
+				return false;
+			} 
+			
+			if ((leader != null && !leader.equals(remoteGroup.leader)) ||
+					(remoteGroup.leader != null && !remoteGroup.leader.equals(leader))) {
+				return false;
+			}
+			
+			if ((parentLeader != null && !parentLeader.equals(remoteGroup.parentLeader)) ||
+					remoteGroup.parentLeader != null && !remoteGroup.parentLeader.equals(parentLeader)) {
+				return false;
+			}
+			
+			if (followers.size() != remoteGroup.followers.size()) {
+				return false;
+			}
+			
+			for (int i = 0; i < followers.size(); i++) {
+				NodeDescriptor l = followers.get(i);
+				NodeDescriptor r = remoteGroup.followers.get(i);
+				if (!l.equals(r)) {
+					return false;
+				}
+			}
+			
+			return true;
 		} else {
 			return super.equals(obj);
 		}
@@ -205,7 +223,7 @@ public class GroupDescriptor implements Serializable {
 		return new GroupDescriptor(UUID.randomUUID(), UNIVERSE, null, true, node.getID(), null);
 	}
 
-	public boolean matches(GroupDescriptor remoteGroupDescriptor) {
+	public boolean hasSameName(GroupDescriptor remoteGroupDescriptor) {
 		if (remoteGroupDescriptor == null) {
 			throw new RuntimeException("Remote descriptor cannot be null.");
 		}

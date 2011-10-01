@@ -99,9 +99,9 @@ public class JoinAndMergeGroupsTest {
 		Thread.sleep(1000);
 		
 		GroupDescriptor universe1 = nodes.get(0).getGroupCommunicationDispatcher().
-				getGroupMatching(GroupDescriptor.UNIVERSE);
+				getGroupWithName(GroupDescriptor.UNIVERSE);
 		GroupDescriptor universe2 = nodes.get(1).getGroupCommunicationDispatcher().
-				getGroupMatching(GroupDescriptor.UNIVERSE);
+				getGroupWithName(GroupDescriptor.UNIVERSE);
 		
 		Assert.assertEquals(universe1.toString(), universe2.toString());
 		
@@ -135,8 +135,8 @@ public class JoinAndMergeGroupsTest {
 			    nodes.get(3).getGroupCommunicationDispatcher().
 				getLocalUniverse();
 		
-		Assert.assertEquals(universe1.toString(), universe2.toString());
-		Assert.assertEquals(universe3.toString(), universe4.toString());
+		Assert.assertEquals(universe1, universe2);
+		Assert.assertEquals(universe3, universe4);
 		
 		NodeDescriptor leaderA = universe1.getLeader();
 		NodeDescriptor leaderB = universe3.getLeader();
@@ -161,8 +161,8 @@ public class JoinAndMergeGroupsTest {
 			nodes.get(3).getGroupCommunicationDispatcher().
 			getLocalUniverse();
 		
-		Assert.assertEquals(universe1.toString(), universe2.toString());
-		Assert.assertEquals(universe3.toString(), universe4.toString());
+		Assert.assertEquals(universe1, universe2);
+		Assert.assertEquals(universe3, universe4);
 		
 		if (universe1.getParentLeader() == null) {
 			Assert.assertEquals(universe3.getParentLeader(), leaderA);
@@ -185,7 +185,7 @@ public class JoinAndMergeGroupsTest {
 		Thread.sleep(1000);
 		
 		GroupDescriptor universe1 = nodes.get(0).getGroupCommunicationDispatcher().
-				getGroupMatching(GroupDescriptor.UNIVERSE);
+				getGroupWithName(GroupDescriptor.UNIVERSE);
 		
 		Node leader = universe1.getLeader() == nodes.get(0).getID() ? nodes.get(0) : nodes.get(1);
 		
@@ -194,13 +194,13 @@ public class JoinAndMergeGroupsTest {
 			Thread.sleep(1000);
 		}
 		Thread.sleep(1000);
-		universe1 = nodes.get(0).getGroupCommunicationDispatcher().
-			getGroupMatching(GroupDescriptor.UNIVERSE);
+		universe1 = leader.getGroupCommunicationDispatcher().
+				getGroupWithName(GroupDescriptor.UNIVERSE);
 		for (int i = 1; i < NUMBER_OF_NODE; i++) {
 			GroupDescriptor universe2 = nodes.get(i).getGroupCommunicationDispatcher().
-				getGroupMatching(GroupDescriptor.UNIVERSE);
+					getGroupWithName(GroupDescriptor.UNIVERSE);
 			
-			Assert.assertEquals(universe1.toString(), universe2.toString());
+			Assert.assertEquals(universe1, universe2);
 		}
 		
 	}

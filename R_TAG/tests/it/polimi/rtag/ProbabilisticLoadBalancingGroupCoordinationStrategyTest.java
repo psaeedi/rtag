@@ -3,8 +3,6 @@
  */
 package it.polimi.rtag;
 
-import static org.junit.Assert.*;
-
 import java.util.ArrayList;
 import java.util.UUID;
 
@@ -13,6 +11,8 @@ import junit.framework.Assert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import static it.polimi.rtag.ProbabilisticLoadBalancingGroupCoordinationStrategy.*;
+
 
 import polimi.reds.NodeDescriptor;
 
@@ -49,7 +49,13 @@ public class ProbabilisticLoadBalancingGroupCoordinationStrategyTest {
 				friendlyGroupName, remoteLeader, null);
 		
 		otherNodes = new ArrayList<NodeDescriptor>();
-		for (int i = 0; i < 50; i++) {
+		
+		// The number of followers with which the strategy 
+		// behavior will be deterministic
+		int deterministicThreshold = 1 + (int)Math.round(1.0 / 
+				Math.min(FOLLOWER_MIGRATION_PROBABILITY, CONGESTED_GROUP_PROBABILITY));
+		
+		for (int i = 0; i < deterministicThreshold; i++) {
 			otherNodes.add(new NodeDescriptor(false));
 		}
 		
