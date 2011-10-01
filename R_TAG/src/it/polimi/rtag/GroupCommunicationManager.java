@@ -63,10 +63,7 @@ GroupDiscoveredNotificationListener {
 		
 		GroupDescriptor groupDescriptor = new GroupDescriptor(uniqueId, 
 				friendlyName, node.getID(), description);
-		
-		GroupCommunicationManager manager = new GroupCommunicationManager(
-				node, groupDescriptor, node.getOverlay());
-		return manager;
+		return createGroupCommunicationManager(node, groupDescriptor);
 	}
 	
 	
