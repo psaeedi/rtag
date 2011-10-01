@@ -11,6 +11,7 @@ import it.polimi.rtag.messaging.GroupLeaderCommand;
 import it.polimi.rtag.messaging.GroupLeaderCommandAck;
 import it.polimi.rtag.messaging.MessageSubjects;
 
+import java.beans.PropertyChangeSupport;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.UUID;
@@ -44,9 +45,9 @@ GroupDiscoveredNotificationListener {
 	private Overlay overlay;
 	private GroupCoordinationStrategy coordinationStrategy;
 	
-	private boolean leader;
 	private HashMap<MessageID, Message> pendingMessages = new HashMap<MessageID, Message>();
 	
+	PropertyChangeSupport groupChangeSupport;
 	
 	/**
 	 * Create a new group and the current node becomes a leader.
@@ -57,7 +58,7 @@ GroupDiscoveredNotificationListener {
 	 * @param description
 	 * @return
 	 */
-	public static GroupCommunicationManager createGroup(Node node, 
+	public static GroupCommunicationManager createGroupCommunicationManager(Node node, 
 			 UUID uniqueId, String friendlyName, Tuple description) {
 		
 		GroupDescriptor groupDescriptor = new GroupDescriptor(uniqueId, 
@@ -76,49 +77,54 @@ GroupDiscoveredNotificationListener {
 	 * @param groupDescriptor
 	 * @return
 	 */
-	public static GroupCommunicationManager createGroup(Node node, 
+	public static GroupCommunicationManager createGroupCommunicationManager(Node node, 
 			GroupDescriptor groupDescriptor) {
 		
 		GroupCommunicationManager manager = new GroupCommunicationManager(
 				node, groupDescriptor, node.getOverlay());
+		manager.groupChangeSupport.addPropertyChangeListener(UPDATE_DESCRIPTOR,
+				node.getTopologyManager());
 		return manager;
 	}
 	
-	public static GroupCommunicationManager createChildGroup(Node node,
+	public static GroupCommunicationManager createChildGroupCommunicationManager(Node node,
 			GroupDescriptor parentGroupDescriptor) {
-		GroupDescriptor group = new GroupDescriptor(UUID.randomUUID(), parentGroupDescriptor.getFriendlyName(),
+		GroupDescriptor groupDescriptor = new GroupDescriptor(UUID.randomUUID(), parentGroupDescriptor.getFriendlyName(),
 				node.getID(), parentGroupDescriptor.getDescription(), parentGroupDescriptor.getLeader());
 		if (parentGroupDescriptor.isUniverse()) {
-				group.isUniverse();
+			groupDescriptor.isUniverse();
 		}
-		return createGroup(node, group);
+		return createGroupCommunicationManager(node, groupDescriptor);
 	}
 	
-	public static GroupCommunicationManager createUniverse(Node node) {
+	public static GroupCommunicationManager createUniverseCommunicationManager(Node node) {
 		
 		GroupDescriptor groupDescriptor = GroupDescriptor.createUniverse(node);
-		
-		GroupCommunicationManager manager = new GroupCommunicationManager(
-				node, groupDescriptor, node.getOverlay());
-		return manager;
+		return createGroupCommunicationManager(node, groupDescriptor);
 	}
 	
 	/**
+	 * Instances of this classes should only be created using
+	 * the factory methods.
+	 * 
 	 * @param groupDescriptor
 	 * @param currentNodeDescriptor
 	 * @param overlay
 	 */
-	public GroupCommunicationManager(
+	private GroupCommunicationManager(
 			Node node, 
 			GroupDescriptor groupDescriptor,
 			Overlay overlay) {
 		this.node = node;
 		this.currentNodeDescriptor = node.getID();
-		this.setOverlay(overlay);
-		leader = groupDescriptor.isLeader(currentNodeDescriptor);
-		setGroupDescriptor(groupDescriptor);
+		groupChangeSupport = new PropertyChangeSupport(this);
+		setOverlay(overlay);
+		setGroupDescriptor(groupDescriptor);		
 	}
 	
+	public boolean isLeader() {
+		return groupDescriptor.isLeader(currentNodeDescriptor);
+	}
 	
 	/**
 	 * Notify this group manager that a new node has been discovered. If the
@@ -134,7 +140,7 @@ GroupDiscoveredNotificationListener {
 	public void notifyNeighborAdded(NodeDescriptor addedNode, Serializable reconfigurationInfo) {
 		System.out.println("GM for " + currentNodeDescriptor + " notifyNeighborAdded " + addedNode);
 		
-		if (!leader) {
+		if (!isLeader()) {
 			// Does nothing.
 			return;
 		}
@@ -177,7 +183,7 @@ GroupDiscoveredNotificationListener {
 		
 		if (!removedNode.equals(groupDescriptor.getLeader())) {
 			groupDescriptor.getFollowers().remove(removedNode);
-			if (leader) {
+			if (isLeader()) {
 				GroupLeaderCommand command = GroupLeaderCommand.createUpdateCommand(groupDescriptor);
 				sendMessageToFollowers(command);
 			}
@@ -264,7 +270,7 @@ GroupDiscoveredNotificationListener {
 	 */
 	public void handleMessageGroupLeaderCommandAck(NodeDescriptor sender,
 		GroupLeaderCommandAck message) {
-		if (!leader) {
+		if (!isLeader()) {
 			return;
 		}
 		
@@ -367,25 +373,26 @@ GroupDiscoveredNotificationListener {
 		String commandType = message.getCommand();
 		if (UPDATE_DESCRIPTOR.equals(commandType)) {
 			System.out.println(currentNodeDescriptor + " updating node " + remoteGroup);
-			// update the descriptor
+			// Update the descriptor
+			// An event is fired. The topology manager should use this event
+			// to close unused connections/links
+			groupChangeSupport.firePropertyChange(UPDATE_DESCRIPTOR, groupDescriptor, remoteGroup);
 			setGroupDescriptor(remoteGroup);
 			
-			// TODO if this is a universe group we should change the network topology
-			// TODO We should probably add or remove some node...
 			commandAck = GroupLeaderCommandAck.createOkCommand(
 					message.getID(), groupDescriptor);
 			sendMessage(GROUP_LEADER_COMMAND_ACK, commandAck, sender);
 		} else if (CREATE_CHILD_GROUP.equals(commandType)) {
 			// This follower has been suggested to create a child
-			GroupDescriptor leadedGroup = node.getGroupCommunicationDispatcher().
-				leadedGroupMathing(groupDescriptor.getFriendlyName());
-			if (leadedGroup == null && coordinationStrategy.shouldAcceptToCreateAChild()) {
+			GroupCommunicationManager leadedGroupManager = node.getGroupCommunicationDispatcher().
+				getLeadedGroupByFriendlyName(groupDescriptor.getFriendlyName());
+			if (leadedGroupManager == null && coordinationStrategy.shouldAcceptToCreateAChild()) {
 				commandAck = GroupLeaderCommandAck.createOkCommand(
 						message.getID(), groupDescriptor);
 				sendMessage(GROUP_LEADER_COMMAND_ACK, commandAck, sender);
 				// This node has accepted to create a child group
 				GroupCommunicationManager childManager =
-						GroupCommunicationManager.createChildGroup(node, groupDescriptor);
+						GroupCommunicationManager.createChildGroupCommunicationManager(node, groupDescriptor);
 				node.getGroupCommunicationDispatcher().addGroupManager(childManager);
 				// The new manager should invite the other follower to join it
 				childManager.inviteFollowersToMigrate(groupDescriptor);
@@ -421,12 +428,12 @@ GroupDiscoveredNotificationListener {
 	@Override
 	public void handleGroupDiscovered(NodeDescriptor sender, 
 			GroupDescriptor remoteGroupDescriptor) {
-		if (!leader) {
+		if (!isLeader()) {
 			// Does nothing.
 			return;
 		}
 		
-		if (!groupDescriptor.matches(remoteGroupDescriptor)) {
+		if (!groupDescriptor.hasSameName(remoteGroupDescriptor)) {
 			// The two group does not match
 			return;
 		}
@@ -454,7 +461,7 @@ GroupDiscoveredNotificationListener {
 
 	public void handleMessageGroupCoordinationCommandAck(NodeDescriptor sender,
 			GroupCoordinationCommandAck message) {
-		if (!leader) {
+		if (!isLeader()) {
 			return;
 		}
 		
@@ -568,7 +575,7 @@ GroupDiscoveredNotificationListener {
 				// group and follower of his parent group.
 				remoteGroup.addFollower(currentNodeDescriptor);
 				node.getGroupCommunicationDispatcher().addGroupManager(
-						GroupCommunicationManager.createGroup(node, remoteGroup));
+						GroupCommunicationManager.createGroupCommunicationManager(node, remoteGroup));
 				commandAck = GroupCoordinationCommandAck.createOkCommand(message.getID(), groupDescriptor);
 				sendMessage(GROUP_COORDINATION_COMMAND_ACK, commandAck, sender);
 				
@@ -589,7 +596,7 @@ GroupDiscoveredNotificationListener {
 				
 				remoteGroup.addFollower(currentNodeDescriptor);
 				node.getGroupCommunicationDispatcher().addGroupManager(
-						GroupCommunicationManager.createGroup(node, remoteGroup));
+						GroupCommunicationManager.createGroupCommunicationManager(node, remoteGroup));
 				
 				commandAck = GroupCoordinationCommandAck.createOkCommand(message.getID(), groupDescriptor);
 				sendMessage(GROUP_COORDINATION_COMMAND_ACK, commandAck, sender);
@@ -609,7 +616,7 @@ GroupDiscoveredNotificationListener {
 				
 				remoteGroup.addFollower(currentNodeDescriptor);
 				node.getGroupCommunicationDispatcher().addGroupManager(
-						GroupCommunicationManager.createGroup(node, remoteGroup));
+						GroupCommunicationManager.createGroupCommunicationManager(node, remoteGroup));
 				
 				commandAck = GroupCoordinationCommandAck.createOkCommand(message.getID(), groupDescriptor);
 				sendMessage(GROUP_COORDINATION_COMMAND_ACK, commandAck, sender);
@@ -622,7 +629,7 @@ GroupDiscoveredNotificationListener {
 				return;
 			}
 		} else if (ADOPT_GROUP.equals(commandType)) {
-			if (leader) {
+			if (isLeader()) {
 				handleFollowerJustJoined(sender);
 				commandAck = GroupCoordinationCommandAck.createOkCommand(message.getID(), groupDescriptor);
 				sendMessage(GROUP_COORDINATION_COMMAND_ACK, commandAck, sender);

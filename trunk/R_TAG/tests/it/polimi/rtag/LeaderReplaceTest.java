@@ -72,7 +72,7 @@ public class LeaderReplaceTest {
 		// (1,2,3,4,5) are in the same universe
 		
 		GroupDescriptor universe1 = nodes.get(0).getGroupCommunicationDispatcher().
-				getGroupMatching(GroupDescriptor.UNIVERSE);
+				getGroupWithName(GroupDescriptor.UNIVERSE);
 		Node leader = universe1.getLeader() == nodes.get(0).getID() ? nodes.get(0) : nodes.get(1);
 		
 		for (int i = 2; i < NUMBER_OF_NODE; i++) {			
@@ -90,7 +90,7 @@ public class LeaderReplaceTest {
 		for (Node node: nodes) {			
 			if (node.getOverlay().isRunning()) {
 				GroupDescriptor universe = node.getGroupCommunicationDispatcher().
-						getGroupMatching(GroupDescriptor.UNIVERSE);
+						getGroupWithName(GroupDescriptor.UNIVERSE);
 				if (!universe.getUniqueId().equals(universeId)) {
 					continue;
 				}
