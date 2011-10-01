@@ -71,16 +71,17 @@ public class LeaderReplaceTest {
 		// Node 1 is the leaders
 		// (1,2,3,4,5) are in the same universe
 		
-		GroupDescriptor universe1 = nodes.get(0).getGroupCommunicationDispatcher().
-				getGroupWithName(GroupDescriptor.UNIVERSE);
+		GroupDescriptor universe1 = nodes.get(0).getGroupCommunicationDispatcher().getLocalUniverse();
 		Node leader = universe1.getLeader() == nodes.get(0).getID() ? nodes.get(0) : nodes.get(1);
 		
 		for (int i = 2; i < NUMBER_OF_NODE; i++) {			
 			leader.getOverlay().addNeighbor(urls.get(i));
 			Thread.sleep(1000);
 		}
+
+		universe1 = leader.getGroupCommunicationDispatcher().getLocalUniverse();
 		
-		Assert.assertTrue(universe1.getFollowers().size()>1);
+		Assert.assertTrue(universe1.getFollowers().size() > 1);
 		leader.stop();
 		Thread.sleep(2000);
 
