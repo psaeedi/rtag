@@ -19,13 +19,13 @@ public class ProbabilisticLoadBalancingGroupCoordinationStrategy implements
 	 * probability which is the number of nodes in this group multiplied by this
 	 * constant. 
 	 */
-	public static final double FOLLOWER_MIGRATION_PROBABILITY = 0.02;
+	public static final double FOLLOWER_MIGRATION_PROBABILITY = 0.05;
 	
 	/**
 	 * Every time a follower joins this group the leader will split the group
 	 * with a probability which is the number of followers multiplied by this constant. 
 	 */
-	public static final double CONGESTED_GROUP_PROBABILITY = 0.03;
+	public static final double CONGESTED_GROUP_PROBABILITY = 0.1;
 	private GroupDescriptor groupDescriptor;
 	
 	/**
@@ -138,7 +138,7 @@ public class ProbabilisticLoadBalancingGroupCoordinationStrategy implements
 				if (localFollowersCount < remoteFollowersCount) {
 					return true;
 				} else if (localFollowersCount > remoteFollowersCount) {
-					// The current leader wait for the other one to invite it
+					// The current leader wait for the other one to invite it5
 					return false;
 				} else { 
 					// they have the same number of followers or no followers

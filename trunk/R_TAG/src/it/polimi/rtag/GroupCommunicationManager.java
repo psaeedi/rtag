@@ -369,7 +369,6 @@ GroupDiscoveredNotificationListener {
 		
 		String commandType = message.getCommand();
 		if (UPDATE_DESCRIPTOR.equals(commandType)) {
-			System.out.println(currentNodeDescriptor + " updating node " + remoteGroup);
 			// Update the descriptor
 			// An event is fired. The topology manager should use this event
 			// to close unused connections/links

@@ -7,6 +7,8 @@ package it.polimi.rtag;
 import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.Set;
 
 
 import junit.framework.Assert;
@@ -28,21 +30,11 @@ public class JoinAndMergeGroupsTest {
     private static final int NUMBER_OF_NODE = 5;
 
 	int localPort=10001;
-    /*int localPort2 = 10002;
-    int localPort3 = 10003;
-    int localPort4 = 10004;*/
     
     String host = "localhost";
     
     ArrayList<Node> nodes = new ArrayList<Node>();
     ArrayList<String> urls = new ArrayList<String>();
-    
-    /*String node1Url = "reds-tcp:"+ host + ":" + localPort1;
-    String node2Url = "reds-tcp:"+ host + ":" + localPort2;
-    String node3Url = "reds-tcp:"+ host + ":" + localPort3;
-    String node4Url = "reds-tcp:"+ host + ":" + localPort4;*/
-    
-  
 	
 	/**
 	 * @throws java.lang.Exception
@@ -176,7 +168,7 @@ public class JoinAndMergeGroupsTest {
 	}
 	
 	@Test
-	public void testTenFollowersJoinGroup() 
+	public void testMultipleFollowersJoinGroup() 
 			throws AlreadyNeighborException, ConnectException, 
 					MalformedURLException, NotRunningException, 
 					InterruptedException {
@@ -202,7 +194,6 @@ public class JoinAndMergeGroupsTest {
 			
 			Assert.assertEquals(universe1, universe2);
 		}
-		
 	}
 	
 }

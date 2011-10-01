@@ -59,7 +59,7 @@ public class Node implements PacketListener {
 		topologyManager = new GroupAwareTopologyManager();
 		Transport transport = new TCPTransport(port);
 			
-		setOverlay(new GenericOverlay(topologyManager, transport));
+		setOverlay(new MessageCountingGenericOverlay(topologyManager, transport));
 		
 		groupCommunicationDispatcher = new GroupCommunicationDispatcher(this);
 		
