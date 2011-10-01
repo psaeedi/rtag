@@ -5,6 +5,7 @@ package it.polimi.rtag;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import lights.Tuple;
@@ -154,8 +155,8 @@ public class GroupDescriptor implements Serializable {
 	/**
 	 * @return the followers
 	 */
-	public ArrayList<NodeDescriptor> getFollowers() {
-		return followers;
+	public List<NodeDescriptor> getFollowers() {
+		return new ArrayList<NodeDescriptor>(followers);
 	}
 
 	/**

@@ -17,7 +17,7 @@ import java.util.HashSet;
  */
 public class MessageCountingExperiment {
 
-    private static final int NUMBER_OF_NODES = 200;
+    private static final int NUMBER_OF_NODES = 100;
 
 	int localPort=10001;
     
@@ -25,7 +25,20 @@ public class MessageCountingExperiment {
     
     ArrayList<Node> nodes = new ArrayList<Node>();
     ArrayList<String> urls = new ArrayList<String>();
-	
+    
+    
+    PrintWriter pw = null;
+    
+    public MessageCountingExperiment() {
+    	File messagesFile = new File("MessageCountingExperiment.csv");
+    	try {
+			pw = new PrintWriter(messagesFile);
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    }
+    
     private void setUp() {
     	for (int i = 0; i < NUMBER_OF_NODES; i++) {
 			int port = localPort ++;
@@ -34,11 +47,29 @@ public class MessageCountingExperiment {
 			nodes.add(node);
 			urls.add("reds-tcp:"+ host + ":" + port);
 		}
+    	
+    	for (int i = 1; i < NUMBER_OF_NODES; i++) {
+    		int randomNode = (int)Math.floor(Math.random() * i);
+    		System.out.println("************Adding neighbor " + i + " to node " + randomNode);
+    		try {
+				nodes.get(randomNode).getOverlay().addNeighbor(urls.get(i));
+				Thread.sleep(1500);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+    	}
     }
     
-    private void writeToFile() {
-    	File sentMessagesFile = new File("MessageCountingExperiment_sentMessages.csv");
-    	File receivedMessagesFile = new File("MessageCountingExperiment_receivedMessages.csv");
+    private void resetCounters() {
+    	for (Node node: nodes) {
+    		MessageCountingGenericOverlay overlay = (MessageCountingGenericOverlay)node.getOverlay();
+    		overlay.getSentMessages().clear();
+    		overlay.getReceivedMessages().clear();
+    	}
+    }
+    
+    private void writeToFile(String label) {
     	HashSet<String> sentSubjects = new HashSet<String>();
     	HashSet<String> receivedSubjects = new HashSet<String>();
     	
@@ -55,73 +86,91 @@ public class MessageCountingExperiment {
     		}
     	}
     	
-    	PrintWriter pw = null;
-    	try {
-			pw = new PrintWriter(sentMessagesFile);
-	    	for (String key: sentSubjects) {
-	    		pw.print(key + ";");
-	    		for (Node node: nodes) {
-	        		MessageCountingGenericOverlay overlay = (MessageCountingGenericOverlay)node.getOverlay();
-	        		map = overlay.getSentMessages();
-	        		if (!map.containsKey(key)) {
-	        			pw.print("0;");
-	        		} else {
-	        			pw.print(map.get(key) + ";");
-	        		}
-	        	}
-	    		pw.println("");
-	    	}
-	    	pw.flush();
-	    	pw.close();
-    	} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+    		
+		pw.print("Key;");
+		for (int i = 0; i < nodes.size(); i++) {
+   			pw.print("Node" + i + ";");
+    	}
+		pw.println("");
+		
+		pw.println(label);
+		pw.println("---------sent messages----------");
+    	for (String key: sentSubjects) {
+    		pw.print(key + ";");
+    		for (Node node: nodes) {
+        		MessageCountingGenericOverlay overlay = (MessageCountingGenericOverlay)node.getOverlay();
+        		map = overlay.getSentMessages();
+        		if (!map.containsKey(key)) {
+        			pw.print("0;");
+        		} else {
+        			pw.print(map.get(key) + ";");
+        		}
+        	}
+    		pw.println("");
+    	}
+
+    	pw.println("---------received messages----------");
+    	for (String key: receivedSubjects) {
+    		pw.print(key + ";");
+    		for (Node node: nodes) {
+        		MessageCountingGenericOverlay overlay = (MessageCountingGenericOverlay)node.getOverlay();
+        		map = overlay.getReceivedMessages();
+        		if (!map.containsKey(key)) {
+        			pw.print("0;");
+        		} else {
+        			pw.print(map.get(key) + ";");
+        		}
+        	}
+    		pw.println("");
+    	}
     	
-    	try {
-			pw = new PrintWriter(receivedMessagesFile);
-	    	for (String key: receivedSubjects) {
-	    		pw.print(key + ";");
-	    		for (Node node: nodes) {
-	        		MessageCountingGenericOverlay overlay = (MessageCountingGenericOverlay)node.getOverlay();
-	        		map = overlay.getReceivedMessages();
-	        		if (!map.containsKey(key)) {
-	        			pw.print("0;");
-	        		} else {
-	        			pw.print(map.get(key) + ";");
-	        		}
-	        	}
-	    		pw.println("");
-	    	}
-	    	pw.flush();
-	    	pw.close();
-    	} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-    	
+    	pw.println("---------Groups----------");
+		pw.print("leaded groups;");
+		for (Node node: nodes) {
+    		GroupCommunicationDispatcher dispatcher = node.getGroupCommunicationDispatcher();
+    		pw.print(dispatcher.getLeadedGroups().size() + ";");
+    	}
+		pw.println("");
+		
+    	pw.print("followed groups;");
+		for (Node node: nodes) {
+    		GroupCommunicationDispatcher dispatcher = node.getGroupCommunicationDispatcher();
+    		pw.print(dispatcher.getFollowedGroups().size() + ";");
+    	}
+		pw.println("");
+
+    	pw.print("leaded universe size;");
+		for (Node node: nodes) {
+    		GroupCommunicationDispatcher dispatcher = node.getGroupCommunicationDispatcher();
+    		GroupCommunicationManager manager = dispatcher.getLeadedGroupByFriendlyName(GroupDescriptor.UNIVERSE);
+    		if (manager != null) {
+    			pw.print(manager.getGroupDescriptor().getMembers().size() + ";");
+    		} else {
+    			pw.print("0;");
+    		}
+    	}
+		pw.println("");
+		
+    	pw.flush();
     }
     
     private void tearDown() {
 		for (Node node: nodes) {
 			node.stop();
-		}
-	}
-    
-    private void doExperiment() {
-    	for (int i = 1; i < NUMBER_OF_NODES; i++) {
-    		int randomNode = (int)Math.floor(Math.random() * i);
-    		System.out.println("Adding neighbor to node " + randomNode);
-    		try {
-				nodes.get(randomNode).getOverlay().addNeighbor(urls.get(i));
-				Thread.sleep(1000);
-			} catch (Exception e) {
+			try {
+				Thread.sleep(500);
+			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-    	}
+		}
+	}
+    
+    private void closeFile() {
+    	pw.flush();
+    	pw.close();
+    	
     }
-
     
 	/**
 	 * @param args
@@ -130,9 +179,12 @@ public class MessageCountingExperiment {
 		// TODO Auto-generated method stub
 		MessageCountingExperiment exp = new MessageCountingExperiment();
 		exp.setUp();
-		exp.doExperiment();
+		exp.writeToFile("setUp");
+		exp.resetCounters();
 		exp.tearDown();
-		exp.writeToFile();
+		exp.writeToFile("tearDown");
+		exp.resetCounters();
+		exp.closeFile();
 	}
 
 }

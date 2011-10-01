@@ -83,6 +83,20 @@ public class GroupCoordinationCommand extends Message {
 		return new GroupCoordinationCommand(groupDescriptor, JOIN_MY_GROUP);
 	}
 	
+	public static GroupCoordinationCommand createMigrateToGroupCommand(GroupDescriptor groupDescriptor) {
+		if (groupDescriptor == null) {
+			throw new IllegalArgumentException("Group descriptor cannot be null.");
+		}
+		return new GroupCoordinationCommand(groupDescriptor, MIGRATE_TO_GROUP);
+	}
+	
+	public static GroupCoordinationCommand createAdoptGroupCommand(GroupDescriptor groupDescriptor) {
+		if (groupDescriptor == null) {
+			throw new IllegalArgumentException("Group descriptor cannot be null.");
+		}
+		return new GroupCoordinationCommand(groupDescriptor, ADOPT_GROUP);
+	}
+	
 	/**
 	 * @param groupDescriptor
 	 * @param command

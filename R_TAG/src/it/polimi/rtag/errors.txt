@@ -1,0 +1,9 @@
+Exception in thread "TCPLink.Reader" java.util.ConcurrentModificationException
+	at java.util.LinkedList$ListItr.checkForComodification(LinkedList.java:778)
+	at java.util.LinkedList$ListItr.next(LinkedList.java:713)
+	at polimi.reds.broker.overlay.SimpleTopologyManager.notifyDataArrived(SimpleTopologyManager.java:252)
+	at polimi.reds.broker.overlay.AbstractTransport.notifyDataArrived(AbstractTransport.java:154)
+	at polimi.reds.broker.overlay.TCPTransport$TCPLink.run(TCPTransport.java:291)
+	at java.lang.Thread.run(Thread.java:636)
+	
+	
