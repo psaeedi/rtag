@@ -4,9 +4,7 @@ package it.polimi.rtag;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.UUID;
 
-import lights.Tuple;
 
 import com.google.common.collect.HashMultimap;
 
@@ -21,9 +19,7 @@ import polimi.reds.NodeDescriptor;
 import polimi.reds.broker.overlay.GenericOverlay;
 import polimi.reds.broker.overlay.Overlay;
 import polimi.reds.broker.overlay.PacketListener;
-import polimi.reds.broker.overlay.SimpleTopologyManager;
 import polimi.reds.broker.overlay.TCPTransport;
-import polimi.reds.broker.overlay.TopologyManager;
 import polimi.reds.broker.overlay.Transport;
 
 import static it.polimi.rtag.messaging.MessageSubjects.*;
