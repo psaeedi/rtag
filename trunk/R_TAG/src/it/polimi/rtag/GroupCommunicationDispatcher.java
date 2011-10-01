@@ -159,7 +159,17 @@ public class GroupCommunicationDispatcher implements
 			// A group matching a leaded group has been found.
 			// The manager will attempt to create a hierarchy.
 			manager.handleGroupDiscovered(sender, groupDescriptor);
-		}
+			return;
+		} 
+		
+		manager = getFollowedGroupByFriendlyName(
+				groupDescriptor.getFriendlyName());
+		if (manager != null) {
+			// A group matching a followed group has been found.
+			// The manager will attempt to create a hierarchy.
+			manager.handleGroupDiscovered(sender, groupDescriptor);
+			return;
+		} 
 	}
 	
 	@Override

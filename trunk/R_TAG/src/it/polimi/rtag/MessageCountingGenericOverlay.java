@@ -4,10 +4,8 @@
 package it.polimi.rtag;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.io.Serializable;
 import java.util.HashMap;
-import java.util.Map.Entry;
 
 import polimi.reds.NodeDescriptor;
 import polimi.reds.broker.overlay.GenericOverlay;
@@ -49,14 +47,14 @@ public class MessageCountingGenericOverlay extends GenericOverlay {
 	 * @return the sentMessages
 	 */
 	public HashMap<String, Integer> getSentMessages() {
-		return sentMessages;
+		return new HashMap<String, Integer>(sentMessages);
 	}
 
 	/**
 	 * @return the receivedMessages
 	 */
 	public HashMap<String, Integer> getReceivedMessages() {
-		return receivedMessages;
+		return new HashMap<String, Integer>(receivedMessages);
 	}
 
 	/* (non-Javadoc)
@@ -79,19 +77,5 @@ public class MessageCountingGenericOverlay extends GenericOverlay {
 		super.send(subject, packet, recipient);
 	}
 	
-	public void printToStream(PrintStream pw) {
-		// printing messages
-		System.out.println(getNodeDescriptor().getID());
-		System.out.println("----------sent messages---------");
-		for (Entry<String, Integer> entry: sentMessages.entrySet()) {
-			System.out.println(entry.getKey() + ": " + entry.getValue());
-		}
-		System.out.println("----------received messages---------");
-		for (Entry<String, Integer> entry: receivedMessages.entrySet()) {
-			System.out.println(entry.getKey() + ": " + entry.getValue());
-		}
-		System.out.println("-------------------");
-		System.out.println("");
-	}
 	
 }

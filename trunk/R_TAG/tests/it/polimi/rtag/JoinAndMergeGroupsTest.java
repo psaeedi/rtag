@@ -95,12 +95,19 @@ public class JoinAndMergeGroupsTest {
 		GroupDescriptor universe2 = nodes.get(1).getGroupCommunicationDispatcher().
 				getGroupWithName(GroupDescriptor.UNIVERSE);
 		
-		Assert.assertEquals(universe1.toString(), universe2.toString());
+		Assert.assertEquals(universe1, universe2);
 		
 		Assert.assertEquals(2, universe1.getMembers().size());
-		Assert.assertEquals(2, universe2.getMembers().size());
-		Assert.assertEquals(universe1.getLeader(), universe2.getLeader());
-		Assert.assertTrue( nodes.get(0).getOverlay().isNeighborOf(nodes.get(1).getID()));
+		Assert.assertTrue(nodes.get(0).getOverlay().isNeighborOf(nodes.get(1).getID()));
+		
+		Node leader = (universe1.getLeader() == nodes.get(0).getID()) ? nodes.get(0) : nodes.get(1);
+		Node follower = (universe1.getLeader() == nodes.get(0).getID()) ? nodes.get(1) : nodes.get(0);
+		
+		
+		Assert.assertEquals(1, leader.getGroupCommunicationDispatcher().getLeadedGroups().size());
+		Assert.assertEquals(0, leader.getGroupCommunicationDispatcher().getFollowedGroups().size());
+		Assert.assertEquals(0, follower.getGroupCommunicationDispatcher().getLeadedGroups().size());
+		Assert.assertEquals(1, follower.getGroupCommunicationDispatcher().getFollowedGroups().size());
 	}
 	
 	@Test
@@ -174,7 +181,7 @@ public class JoinAndMergeGroupsTest {
 					InterruptedException {
 		
 		nodes.get(0).getOverlay().addNeighbor(urls.get(1));	
-		Thread.sleep(1000);
+		Thread.sleep(500);
 		
 		GroupDescriptor universe1 = nodes.get(0).getGroupCommunicationDispatcher().
 				getGroupWithName(GroupDescriptor.UNIVERSE);
@@ -185,7 +192,6 @@ public class JoinAndMergeGroupsTest {
 			leader.getOverlay().addNeighbor(urls.get(i));
 			Thread.sleep(1000);
 		}
-		Thread.sleep(1000);
 		universe1 = leader.getGroupCommunicationDispatcher().
 				getGroupWithName(GroupDescriptor.UNIVERSE);
 		for (int i = 1; i < NUMBER_OF_NODE; i++) {

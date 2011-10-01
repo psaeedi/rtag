@@ -12,7 +12,10 @@ import it.polimi.rtag.messaging.GroupLeaderCommandAck;
 import it.polimi.rtag.messaging.MessageSubjects;
 
 import java.beans.PropertyChangeSupport;
+import java.io.IOException;
 import java.io.Serializable;
+import java.net.ConnectException;
+import java.net.MalformedURLException;
 import java.util.HashMap;
 import java.util.UUID;
 
@@ -21,7 +24,10 @@ import lights.Tuple;
 import polimi.reds.Message;
 import polimi.reds.MessageID;
 import polimi.reds.NodeDescriptor;
+import polimi.reds.broker.overlay.AlreadyNeighborException;
 import polimi.reds.broker.overlay.NeighborhoodChangeListener;
+import polimi.reds.broker.overlay.NotConnectedException;
+import polimi.reds.broker.overlay.NotRunningException;
 import polimi.reds.broker.overlay.Overlay;
 
 import static it.polimi.rtag.messaging.MessageSubjects.*;
@@ -136,7 +142,6 @@ GroupDiscoveredNotificationListener {
 	@Override
 	public void notifyNeighborAdded(NodeDescriptor addedNode, Serializable reconfigurationInfo) {
 		System.out.println("GM for " + currentNodeDescriptor + " notifyNeighborAdded " + addedNode);
-		
 		if (!isLeader()) {
 			// Does nothing.
 			return;
@@ -153,7 +158,6 @@ GroupDiscoveredNotificationListener {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
 	}
 	
 	@Override
@@ -173,13 +177,18 @@ GroupDiscoveredNotificationListener {
 	 */
 	@Override
 	public void notifyNeighborRemoved(NodeDescriptor removedNode) {
+		
 		if (!groupDescriptor.isMember(removedNode)) {
 			// Not a group member
 			return;
 		}
+		if (removedNode.equals(currentNodeDescriptor)) {
+			// The current node is the dead one....
+			return;
+		}
 		
 		if (!removedNode.equals(groupDescriptor.getLeader())) {
-			groupDescriptor.getFollowers().remove(removedNode);
+			groupDescriptor.removeFollower(removedNode);
 			if (isLeader()) {
 				GroupLeaderCommand command = GroupLeaderCommand.createUpdateCommand(groupDescriptor);
 				sendMessageToFollowers(command);
@@ -194,11 +203,13 @@ GroupDiscoveredNotificationListener {
 				// if the dead leader was part of a hierarchy
 				// the current node should join the parent group
 				NodeDescriptor parent = groupDescriptor.getParentLeader();
-				if (groupDescriptor.getParentLeader() != null) {
-					
+				if (parent != null) {
+					GroupCoordinationCommand command = 
+						GroupCoordinationCommand.createAdoptGroupCommand(groupDescriptor);
+					sendCoordinationCommand(command, parent);
 				}
 			}
-		}
+		}	
 	}
 
 	/**
@@ -271,16 +282,20 @@ GroupDiscoveredNotificationListener {
 			return;
 		}
 		
-		// TODO check if the command was sent by this node
-		Message msg = pendingMessages.get(message.getOriginalMessage());
-		if (msg == null) {
-			// The original message was not in the table
-			// maybe it was expired?
-			// Maybe it was for another group
-			return;
+		Message msg = null;
+		synchronized (pendingMessages) {
+			// TODO check if the command was sent by this node
+			msg = pendingMessages.get(message.getOriginalMessage());
+			if (msg == null) {
+				// The original message was not in the table
+				// maybe it was expired?
+				// Maybe it was for another group
+				return;
+			}
+			// Remove the pending message
+			pendingMessages.remove(msg.getID());
 		}
-		// Remove the pending message
-		pendingMessages.remove(msg.getID());
+		
 		
 		GroupLeaderCommand command = (GroupLeaderCommand)msg;
 		String commandType = command.getCommand();
@@ -307,6 +322,11 @@ GroupDiscoveredNotificationListener {
 	private void sendMessage(String subject, 
 			Message message, NodeDescriptor recipient) {
 		try {
+			recipient = connectIfNotConnected(recipient);
+			if (recipient == null) {
+				System.err.println("CANNOT CONNECT TO: " + recipient);
+				return;
+			}
 			overlay.send(subject, message, recipient);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -317,19 +337,27 @@ GroupDiscoveredNotificationListener {
 	private void sendCoordinationCommand(
 			GroupCoordinationCommand message, NodeDescriptor recipient) {
 		sendMessage(GROUP_COORDINATION_COMMAND, message, recipient);
-		pendingMessages.put(message.getID(), message);
+		synchronized (pendingMessages) {
+			pendingMessages.put(message.getID(), message);
+		}
+		
 	}
 	
 	private void sendLeaderCommand(
 			GroupLeaderCommand message, NodeDescriptor recipient) {
 		sendMessage(GROUP_LEADER_COMMAND, message, recipient);
-		pendingMessages.put(message.getID(), message);
+		synchronized (pendingMessages) {
+			pendingMessages.put(message.getID(), message);
+		}
 	}
 	
 	private void sendFollowerCommand(
 			GroupFollowerCommand message, NodeDescriptor recipient) {
 		sendMessage(GROUP_FOLLOWER_COMMAND, message, recipient);
-		pendingMessages.put(message.getID(), message);
+		synchronized (pendingMessages) {
+			pendingMessages.put(message.getID(), message);
+		}
+		
 	}
 	
 	private void sendMessageToFollowers(GroupLeaderCommand message) {
@@ -354,7 +382,8 @@ GroupDiscoveredNotificationListener {
 	 * @param message
 	 */
 	public void handleMessageGroupLeaderCommand(NodeDescriptor sender,
-		GroupLeaderCommand message) {
+			GroupLeaderCommand message) {
+
 		GroupDescriptor remoteGroup = message.getGroupDescriptor();
 		
 		GroupLeaderCommandAck commandAck = null;
@@ -424,27 +453,56 @@ GroupDiscoveredNotificationListener {
 	@Override
 	public void handleGroupDiscovered(NodeDescriptor sender, 
 			GroupDescriptor remoteGroupDescriptor) {
-		if (!isLeader()) {
-			// Does nothing.
-			return;
-		}
-		
+
 		if (!groupDescriptor.hasSameName(remoteGroupDescriptor)) {
 			// The two group does not match
 			return;
+		}
+		
+		if (!isLeader()) {
+			// Forward the message to the leader
+			try {
+				overlay.send(MessageSubjects.GROUP_DISCOVERED_NOTIFICATION, 
+						remoteGroupDescriptor, 
+						groupDescriptor.getLeader());
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			return;
+		}
+		
+		NodeDescriptor remoteLeader = remoteGroupDescriptor.getLeader();
+		if (!remoteLeader.equals(sender)) {
+			// We are receiving a notification, we should then first connect the remote leader.
+			remoteLeader = connectIfNotConnected(remoteLeader);
 		}
 		
 		// We first attempt to merge then to join
 		if (coordinationStrategy.shouldInviteToMerge(remoteGroupDescriptor)) {
 			GroupCoordinationCommand command = 
 					GroupCoordinationCommand.createMergeGroupCommand(groupDescriptor);
-			sendCoordinationCommand(command, remoteGroupDescriptor.getLeader());
+			sendCoordinationCommand(command, remoteLeader);
 		} else if (coordinationStrategy.shouldInviteToJoin(remoteGroupDescriptor)) {
 			GroupCoordinationCommand command = 
 					GroupCoordinationCommand.createJoinMyGroupCommand(groupDescriptor);
-			sendCoordinationCommand(command, remoteGroupDescriptor.getLeader());
+			sendCoordinationCommand(command, remoteLeader);
 		}
-		
+	}
+	
+	private NodeDescriptor connectIfNotConnected(NodeDescriptor descriptor) {
+		// We are receiving a notification, we should then first connect the remote leader.
+		NodeDescriptor node = null;
+		for (String url: descriptor.getUrls()) {
+			try {
+				node = overlay.addNeighbor(url);
+			} catch (AlreadyNeighborException e) {
+				return descriptor;
+			} catch (Exception e) {
+				continue;
+			}
+		}
+		return node;
 	}
 	
 	/**
@@ -461,17 +519,21 @@ GroupDiscoveredNotificationListener {
 			return;
 		}
 		
-		// Check if the command was sent by this node
-		Message msg = pendingMessages.get(message.getOriginalMessage());
-		if (msg == null) {
-			// The original message was not in the table
-			// maybe it was expired?
-			// Maybe it was for another group
-			return;
+		Message msg = null;
+		synchronized (pendingMessages) {
+			// Check if the command was sent by this node
+			msg = pendingMessages.get(message.getOriginalMessage());
+			if (msg == null) {
+				// The original message was not in the table
+				// maybe it was expired?
+				// Maybe it was for another group
+				return;
+			}
+			// Remove the pending message
+			pendingMessages.remove(msg.getID());
 		}
-		// Remove the pending message
-		pendingMessages.remove(msg.getID());
 		
+
 		GroupCoordinationCommand command = (GroupCoordinationCommand)msg;
 		String commandType = command.getCommand();
 		String responseType = message.getResponse();
@@ -528,6 +590,7 @@ GroupDiscoveredNotificationListener {
 		}else {
 			// unhandled commands..
 		}
+		
 	}
 
 	
