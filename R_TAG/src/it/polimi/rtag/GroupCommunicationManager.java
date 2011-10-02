@@ -160,38 +160,39 @@ GroupDiscoveredNotificationListener {
 		}
 	}
 	
-	@Override
-	public void notifyNeighborDead(NodeDescriptor deadNode, Serializable reconfigurationInfo) {
-		notifyNeighborRemoved(deadNode);
-	}
-	
-	/** 
-	 * Notify this group manager that a new node has been removed. If the
+	/**
+	 * If the
 	 * current node is not a follower of this group, then ignore the message.</p>
 	 * If the removed node is not a leader, we remove the node from the descriptor.
 	 * If the current node is a leader it sends the updated group descriptor.</p>
 	 * 
 	 * If the removed node was the leader, a new leader is required to be selected.</p>
 	 * 
-	 * @see polimi.reds.broker.overlay.NeighborhoodChangeListener#notifyNeighborRemoved(polimi.reds.NodeDescriptor)
+	 * @see polimi.reds.broker.overlay.NeighborhoodChangeListener#notifyNeighborDead(polimi.reds.NodeDescriptor, java.io.Serializable)
 	 */
 	@Override
-	public void notifyNeighborRemoved(NodeDescriptor removedNode) {
-		
-		if (!groupDescriptor.isMember(removedNode)) {
+	public void notifyNeighborDead(NodeDescriptor deadNode, Serializable reconfigurationInfo) {
+		System.out.println("GM for " + 
+				currentNodeDescriptor + " has been notified that " + 
+				deadNode + " is dead");
+		if (!groupDescriptor.isMember(deadNode)) {
 			// Not a group member
 			return;
 		}
-		if (removedNode.equals(currentNodeDescriptor)) {
+		if (deadNode.equals(currentNodeDescriptor)) {
 			// The current node is the dead one....
 			return;
 		}
 		
-		if (!removedNode.equals(groupDescriptor.getLeader())) {
-			groupDescriptor.removeFollower(removedNode);
+		if (!groupDescriptor.isLeader(deadNode)) {
+			groupDescriptor.removeFollower(deadNode);
 			if (isLeader()) {
 				GroupLeaderCommand command = GroupLeaderCommand.createUpdateCommand(groupDescriptor);
 				sendMessageToFollowers(command);
+				return;
+			} else {
+				// This node is a follower
+				return;
 			}
 		} else {
 			// promote a new leader!
@@ -210,6 +211,15 @@ GroupDiscoveredNotificationListener {
 				}
 			}
 		}	
+	}
+	
+	/** 
+	 * Notify this group manager that a new node has been removed. 
+	 * @see polimi.reds.broker.overlay.NeighborhoodChangeListener#notifyNeighborRemoved(polimi.reds.NodeDescriptor)
+	 */
+	@Override
+	public void notifyNeighborRemoved(NodeDescriptor removedNode) {
+		// Do nothing
 	}
 
 	/**
@@ -327,6 +337,9 @@ GroupDiscoveredNotificationListener {
 				System.err.println("CANNOT CONNECT TO: " + recipient);
 				return;
 			}
+			System.out.println( 
+					currentNodeDescriptor + " sending " + subject + " message to" +
+					recipient);
 			overlay.send(subject, message, recipient);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -362,9 +375,6 @@ GroupDiscoveredNotificationListener {
 	
 	private void sendMessageToFollowers(GroupLeaderCommand message) {
 		for (NodeDescriptor follower: groupDescriptor.getFollowers()) {
-			System.out.println("GM for " + 
-					currentNodeDescriptor + " sending to follower " + 
-					follower);
 			sendLeaderCommand(message, follower);
 		}
 	}
@@ -472,12 +482,7 @@ GroupDiscoveredNotificationListener {
 			return;
 		}
 		
-		NodeDescriptor remoteLeader = remoteGroupDescriptor.getLeader();
-		if (!remoteLeader.equals(sender)) {
-			// We are receiving a notification, we should then first connect the remote leader.
-			remoteLeader = connectIfNotConnected(remoteLeader);
-		}
-		
+		NodeDescriptor remoteLeader = remoteGroupDescriptor.getLeader();	
 		// We first attempt to merge then to join
 		if (coordinationStrategy.shouldInviteToMerge(remoteGroupDescriptor)) {
 			GroupCoordinationCommand command = 
@@ -496,9 +501,9 @@ GroupDiscoveredNotificationListener {
 		for (String url: descriptor.getUrls()) {
 			try {
 				node = overlay.addNeighbor(url);
-			} catch (AlreadyNeighborException e) {
+			} catch (AlreadyNeighborException ex) {
 				return descriptor;
-			} catch (Exception e) {
+			} catch (Exception ex) {
 				continue;
 			}
 		}
@@ -580,6 +585,9 @@ GroupDiscoveredNotificationListener {
 			if (GroupCoordinationCommandAck.OK.equals(responseType)) {
 				// The remote leader has adopted this group
 				groupDescriptor.setParentLeader(sender);
+				// The child leader (which is the current node)
+				// Should become a follower of the remoted group.
+				// TODO!!!!!!
 			} else if (GroupLeaderCommandAck.KO.equals(responseType)) {
 				// It refused
 				groupDescriptor.setParentLeader(null);
@@ -628,7 +636,7 @@ GroupDiscoveredNotificationListener {
 		
 		String commandType = message.getCommand();
 		if (MERGE_GROUPS.equals(commandType)) {
-			if (coordinationStrategy.shouldAcceptToMerge(remoteGroup)) {
+			if (isLeader() && coordinationStrategy.shouldAcceptToMerge(remoteGroup)) {
 				// The current node has accepted the remote as a parent node
 				// From now on the current node will be both leader of his current
 				// group and follower of his parent group.

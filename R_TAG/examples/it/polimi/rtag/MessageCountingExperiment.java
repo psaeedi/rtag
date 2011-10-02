@@ -48,12 +48,16 @@ public class MessageCountingExperiment {
 			urls.add("reds-tcp:"+ host + ":" + port);
 		}
     	
+    	createNetworkByAddingToARandomNode();
+    }
+    
+    
+    private void createNetworkByAddingToNode0() {
     	for (int i = 1; i < NUMBER_OF_NODES; i++) {
-    		int randomNode = (int)Math.floor(Math.random() * i);
-    		System.out.println("************Adding neighbor " + i + " to node " + randomNode);
+    		System.out.println("************Adding neighbor " + i + " to node " + nodes.get(0));
     		try {
-				nodes.get(randomNode).getOverlay().addNeighbor(urls.get(i));
-				Thread.sleep(1500);
+				nodes.get(0).getOverlay().addNeighbor(urls.get(i));
+				Thread.sleep(1000);
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -61,11 +65,38 @@ public class MessageCountingExperiment {
     	}
     }
     
+    private void createNetworkByAddingToARandomNode() {
+    	for (int i = 1; i < NUMBER_OF_NODES; i++) {
+    		int randomNode = (int)Math.floor(Math.random() * i);
+    		System.out.println("************Adding neighbor " + i + " to node " + randomNode);
+    		try {
+				nodes.get(randomNode).getOverlay().addNeighbor(urls.get(i));
+				Thread.sleep(1000);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+    	}
+    }
+    
+    private void createNetworkByAddingToTheLastAdded() {
+    	for (int i = 1; i < NUMBER_OF_NODES; i++) {
+    		System.out.println("************Adding neighbor " + i + " to node " + nodes.get(i-1));
+    		try {
+				nodes.get(i-1).getOverlay().addNeighbor(urls.get(i));
+				Thread.sleep(1000);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+    	}
+    }
+    
+    
     private void resetCounters() {
     	for (Node node: nodes) {
     		MessageCountingGenericOverlay overlay = (MessageCountingGenericOverlay)node.getOverlay();
-    		overlay.getSentMessages().clear();
-    		overlay.getReceivedMessages().clear();
+    		overlay.clearCounting();
     	}
     }
     
@@ -150,7 +181,6 @@ public class MessageCountingExperiment {
     		}
     	}
 		pw.println("");
-		
     	pw.flush();
     }
     
@@ -180,11 +210,8 @@ public class MessageCountingExperiment {
 		MessageCountingExperiment exp = new MessageCountingExperiment();
 		exp.setUp();
 		exp.writeToFile("setUp");
-		exp.resetCounters();
-		exp.tearDown();
-		exp.writeToFile("tearDown");
-		exp.resetCounters();
 		exp.closeFile();
+		exp.tearDown();
 	}
 
 }

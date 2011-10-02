@@ -24,6 +24,8 @@ public class MessageCountingGenericOverlay extends GenericOverlay {
 	private HashMap<String, Integer> sentMessages = new HashMap<String, Integer>();
 	private HashMap<String, Integer> receivedMessages = new HashMap<String, Integer>();
 	
+	private Object lock = new Object();
+	
 	/**
 	 * @param tm
 	 * @param tr
@@ -33,7 +35,7 @@ public class MessageCountingGenericOverlay extends GenericOverlay {
 	}
 
 	private void incrementMessage(HashMap<String, Integer> map, String subject) {
-		synchronized (map) {
+		synchronized (lock) {
 			int value = 0;
 			if (map.containsKey(subject)) {
 				value = map.get(subject);
@@ -77,5 +79,10 @@ public class MessageCountingGenericOverlay extends GenericOverlay {
 		super.send(subject, packet, recipient);
 	}
 	
-	
+	public void clearCounting() {
+		synchronized (lock) {
+			sentMessages.clear();
+			receivedMessages.clear();
+		}
+	}
 }

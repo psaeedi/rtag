@@ -123,12 +123,14 @@ public class GroupDescriptor implements Serializable {
 	 * @param leader the leader to set
 	 */
 	public void setLeader(NodeDescriptor leader) {
+		if (followers.contains(leader)) {
+			followers.remove(leader);
+		}
 		this.leader = leader;
 	}
 
 
 	public boolean isLeader(NodeDescriptor currentDescriptor) {
-		// TODO check if the equals methods works as we expect
 		return leader.equals(currentDescriptor);
 	}
 
@@ -236,6 +238,9 @@ public class GroupDescriptor implements Serializable {
 	 * @param parentLeader the parentLeader to set
 	 */
 	public void setParentLeader(NodeDescriptor parentLeader) {
+		if (followers.contains(parentLeader)) {
+			throw new RuntimeException("Attempting to set a follower as a parent leader.");
+		}
 		this.parentLeader = parentLeader;
 	}
 
@@ -245,6 +250,9 @@ public class GroupDescriptor implements Serializable {
 	 * @see java.util.HashSet#add(java.lang.Object)
 	 */
 	public boolean addFollower(NodeDescriptor descriptor) {
+		if (followers.contains(descriptor)) {
+			throw new RuntimeException("Attempting to add the same follower twice.");
+		}
 		return followers.add(descriptor);
 	}
 
