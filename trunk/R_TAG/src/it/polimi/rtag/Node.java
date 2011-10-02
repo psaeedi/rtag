@@ -19,7 +19,9 @@ import polimi.reds.NodeDescriptor;
 import polimi.reds.broker.overlay.GenericOverlay;
 import polimi.reds.broker.overlay.Overlay;
 import polimi.reds.broker.overlay.PacketListener;
+import polimi.reds.broker.overlay.SimpleTopologyManager;
 import polimi.reds.broker.overlay.TCPTransport;
+import polimi.reds.broker.overlay.TopologyManager;
 import polimi.reds.broker.overlay.Transport;
 
 import static it.polimi.rtag.messaging.MessageSubjects.*;
@@ -43,6 +45,7 @@ public class Node implements PacketListener {
 	private HashMultimap<NodeDescriptor, MessageID> pendingCommunicationMessages = HashMultimap.create();
 	private HashSet<TupleMessage> recentlyReceivedMessages = new HashSet<TupleMessage>();
 	
+	private Object lock = new Object();
 	
 	public Node(String address, int port) {
 		/**
@@ -163,7 +166,7 @@ public class Node implements PacketListener {
 	private void handleMessageAck(NodeDescriptor sender, Ack ack) {
 		// TODO do something depending on the response.
 		// if the response is OK remove the message from the list of pending messages
-		synchronized (pendingCommunicationMessages) {
+		synchronized (lock) {
 			pendingCommunicationMessages.remove(sender, ack.getOriginalMessageID());
 		}
 		
@@ -183,7 +186,7 @@ public class Node implements PacketListener {
 		
 		// Check if we have already received the message.
 		// Duplicated messages are discarded.
-		synchronized (recentlyReceivedMessages) {
+		synchronized (lock) {
 			if (recentlyReceivedMessages.contains(message)) {
 				// Duplicated message received!
 				sendMessageAck(sender, Ack.createOkAck(message.getID()));
@@ -200,7 +203,7 @@ public class Node implements PacketListener {
 		}
 		
 		// Add the message id to the collection.
-		synchronized (recentlyReceivedMessages) {
+		synchronized (lock) {
 			recentlyReceivedMessages.add(message);
 		}
 		
@@ -278,7 +281,7 @@ public class Node implements PacketListener {
 		// TODO check if message and recipient matches
 		try {
 			overlay.send(COMMUNICATION, message, recipient);
-			synchronized (pendingCommunicationMessages) {
+			synchronized (lock) {
 				pendingCommunicationMessages.put(recipient, message.getID());	
 			}
 		} catch (Exception e) {
@@ -295,7 +298,7 @@ public class Node implements PacketListener {
 	protected void cleanRecentlyReceivedMessages() {
 		// TODO empty the recently received messages collection by 
 		// removing all the expired ones.
-		synchronized(recentlyReceivedMessages) {
+		synchronized(lock) {
 			ArrayList<TupleMessage> messages = new ArrayList<TupleMessage>(recentlyReceivedMessages);
 			for (int i = messages.size(); i > -1; i--) {
 				TupleMessage message = messages.get(i);

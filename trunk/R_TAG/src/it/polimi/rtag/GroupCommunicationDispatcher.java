@@ -44,6 +44,8 @@ public class GroupCommunicationDispatcher implements
 		GROUP_DISCOVERED_NOTIFICATION
 	};
 	
+	private Object lock = new Object();
+	
 	private Node node;
 	private Overlay overlay;
 	
@@ -60,20 +62,26 @@ public class GroupCommunicationDispatcher implements
 	}
 	
 	public void addGroupManager(GroupCommunicationManager manager) {
-		GroupDescriptor groupDescriptor = manager.getGroupDescriptor();
+		GroupDescriptor groupDescriptor = manager.getGroupDescriptor();		
 		if (groupDescriptor.isLeader(node.getID())) {
-			synchronized (leadedGroups) {
+			synchronized (lock) {
+				if (getLeadedGroupByFriendlyName(groupDescriptor.getFriendlyName()) != null) {
+					throw new RuntimeException("Already leading a group matching: " + groupDescriptor);
+				}
 				leadedGroups.add(manager);				
 			}
 		} else {
-			synchronized (followedGroups) {
+			synchronized (lock) {
+				if (getFollowedGroupByFriendlyName(groupDescriptor.getFriendlyName()) != null) {
+					throw new RuntimeException("Already following a group matching: " + groupDescriptor);
+				}
 				followedGroups.add(manager);				
 			}
 		}
 	}
 	
 	public GroupCommunicationManager getLeadedGroupByUUID(UUID query) {
-		synchronized (leadedGroups) {
+		synchronized (lock) {
 			for (GroupCommunicationManager manager: leadedGroups) {
 				GroupDescriptor localGroup = manager.getGroupDescriptor();
 				if (localGroup.getUniqueId().equals(query)) {
@@ -85,7 +93,7 @@ public class GroupCommunicationDispatcher implements
 	}
 	
 	public GroupCommunicationManager getFollowedGroupByUUID(UUID query) {
-		synchronized (followedGroups) {
+		synchronized (lock) {
 			for (GroupCommunicationManager manager: followedGroups) {
 				GroupDescriptor localGroup = manager.getGroupDescriptor();
 				if (localGroup.getUniqueId().equals(query)) {
@@ -97,7 +105,7 @@ public class GroupCommunicationDispatcher implements
 	}
 
 	public GroupCommunicationManager getLeadedGroupByFriendlyName(String query) {
-		synchronized (leadedGroups) {
+		synchronized (lock) {
 			for (GroupCommunicationManager manager: leadedGroups) {
 				GroupDescriptor localGroup = manager.getGroupDescriptor();
 				if (localGroup.getFriendlyName().equals(query)) {
@@ -109,7 +117,7 @@ public class GroupCommunicationDispatcher implements
 	}
 	
 	public GroupCommunicationManager getFollowedGroupByFriendlyName(String query) {
-		synchronized (followedGroups) {
+		synchronized (lock) {
 			for (GroupCommunicationManager manager: followedGroups) {
 				GroupDescriptor localGroup = manager.getGroupDescriptor();
 				if (localGroup.getFriendlyName().equals(query)) {
@@ -307,56 +315,65 @@ public class GroupCommunicationDispatcher implements
 	 * @return the leadedGroups
 	 */
 	public ArrayList<GroupCommunicationManager> getLeadedGroups() {
-		return leadedGroups;
+		synchronized (lock) {
+			return new ArrayList<GroupCommunicationManager>(leadedGroups);	
+		}
 	}
 
 	/**
 	 * @return the followedGroups
 	 */
 	public ArrayList<GroupCommunicationManager> getFollowedGroups() {
-		return followedGroups;
+		synchronized (lock) {
+			return new ArrayList<GroupCommunicationManager>(followedGroups);			
+		}
 	}
 
 	public void reassignGroup(GroupCommunicationManager manager) {
-		if (manager.getGroupDescriptor().isLeader(node.getID())) {
-			if (followedGroups.contains(manager)) {
-				followedGroups.remove(manager);
-				leadedGroups.add(manager);
-			}
-			else {
-				addGroupManager(manager);
-			}
-		} else  {
-			if (leadedGroups.contains(manager)) {
-				leadedGroups.remove(manager);
-				followedGroups.add(manager);
-			}
-			else {
-				addGroupManager(manager);
+		synchronized (lock) {
+			if (manager.isLeader()) {
+				if (followedGroups.contains(manager)) {
+					followedGroups.remove(manager);
+					leadedGroups.add(manager);
+				}
+				else {
+					addGroupManager(manager);
+				}
+			} else  {
+				throw new RuntimeException("Reassign group should only be invoked by a promoted leader.");
+				/*
+				if (leadedGroups.contains(manager)) {
+					leadedGroups.remove(manager);
+					followedGroups.add(manager);
+				}
+				else {
+					addGroupManager(manager);
+				}*/
 			}
 		}
 	}
 	
 	public void removeGroup(GroupCommunicationManager groupCommunicationManager) {
-		if (followedGroups.contains(groupCommunicationManager)) {
-			followedGroups.remove(groupCommunicationManager);
+		synchronized (lock) {
+			if (followedGroups.contains(groupCommunicationManager)) {
+				followedGroups.remove(groupCommunicationManager);
+			}
+			if (leadedGroups.contains(groupCommunicationManager)) {
+				leadedGroups.remove(groupCommunicationManager);
+			}
+			overlay.removeNeighborhoodChangeListener(groupCommunicationManager);
 		}
-		if (leadedGroups.contains(groupCommunicationManager)) {
-			leadedGroups.remove(groupCommunicationManager);
-		}
-		overlay.removeNeighborhoodChangeListener(groupCommunicationManager);
+
 	}
 	
 	public GroupDescriptor getLocalUniverse() {
-		synchronized (leadedGroups) {
+		synchronized (lock) {
 			for (GroupCommunicationManager manager: leadedGroups) {
 				GroupDescriptor localGroup = manager.getGroupDescriptor();
 				if (localGroup.isUniverse()) {
 					return localGroup;
 				}
 			}
-		}
-		synchronized (followedGroups) {
 			for (GroupCommunicationManager manager: followedGroups) {
 				GroupDescriptor localGroup = manager.getGroupDescriptor();
 				if (localGroup.isUniverse()) {
@@ -368,14 +385,12 @@ public class GroupCommunicationDispatcher implements
 	}
 	
 	public GroupDescriptor getGroupWithName(String friendlyName) {
-		GroupCommunicationManager manager = null;
-		synchronized (leadedGroups) {
+		synchronized (lock) {
+			GroupCommunicationManager manager = null;
 			manager = getLeadedGroupByFriendlyName(friendlyName);
 			if (manager != null) {
 				return manager.getGroupDescriptor();
 			}
-		}
-		synchronized (followedGroups) {
 			manager = getFollowedGroupByFriendlyName(friendlyName);
 			if (manager != null) {
 				return manager.getGroupDescriptor();

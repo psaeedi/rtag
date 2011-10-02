@@ -90,10 +90,10 @@ public class GroupAwareTopologyManager extends SimpleTopologyManager
 	
 	private void addGroupDescriptor(GroupDescriptor groupDescriptor) {
 		addNodeForGroup(groupDescriptor.getLeader(), groupDescriptor);
-		addNodeForGroup(groupDescriptor.getParentLeader(), groupDescriptor);
+		/*addNodeForGroup(groupDescriptor.getParentLeader(), groupDescriptor);
 		for (NodeDescriptor nodeDescriptor: groupDescriptor.getFollowers()) {
 			addNodeForGroup(nodeDescriptor, groupDescriptor);
-		}
+		}*/
 	}
 	
 	private void removeNodeFromGroup(NodeDescriptor nodeDescriptor, GroupDescriptor groupDescriptor) {
@@ -107,15 +107,46 @@ public class GroupAwareTopologyManager extends SimpleTopologyManager
 
 	private void removeGroupDescriptor(GroupDescriptor groupDescriptor) {
 		removeNodeFromGroup(groupDescriptor.getLeader(), groupDescriptor);
-		removeNodeFromGroup(groupDescriptor.getParentLeader(), groupDescriptor);
+		/*removeNodeFromGroup(groupDescriptor.getParentLeader(), groupDescriptor);
 		for (NodeDescriptor nodeDescriptor: groupDescriptor.getFollowers()) {
 			removeNodeFromGroup(nodeDescriptor, groupDescriptor);
-		}
+		}*/
 	}
 	
 	private void updateGroupDescriptor(GroupDescriptor oldGroupDescriptor,
 			GroupDescriptor newGroupDescriptor) {
 		
+		if (newGroupDescriptor != null && oldGroupDescriptor != null) {
+			NodeDescriptor oldLeader = oldGroupDescriptor.getLeader();
+			NodeDescriptor newLeader = newGroupDescriptor.getLeader();
+			if (oldLeader == null && newLeader == null) {
+				return;
+			} else if (oldLeader != null && newLeader == null) {
+				removeNodeFromGroup(oldLeader, oldGroupDescriptor);
+				return;
+			} else if (oldLeader == null && newLeader != null) {
+				addNodeForGroup(newLeader, newGroupDescriptor);
+				return;
+			} else if (!newLeader.equals(oldLeader)) {
+				addNodeForGroup(newLeader, newGroupDescriptor);
+				removeNodeFromGroup(oldLeader, oldGroupDescriptor);
+				return;
+			}
+		} else if (newGroupDescriptor != null && oldGroupDescriptor == null) {
+			NodeDescriptor newLeader = newGroupDescriptor.getLeader();
+			if (newLeader != null) {
+				addNodeForGroup(newLeader, newGroupDescriptor);
+			}
+		} else if (newGroupDescriptor == null && oldGroupDescriptor != null) {
+			NodeDescriptor oldLeader = oldGroupDescriptor.getLeader();
+			if (oldLeader != null) {
+				removeNodeFromGroup(oldLeader, oldGroupDescriptor);
+			}
+		} else {
+			//
+		}
+		
+		/*
 		ArrayList<NodeDescriptor> oldMembers = oldGroupDescriptor.getMembers();
 		oldMembers.add(oldGroupDescriptor.getParentLeader());
 		
@@ -146,6 +177,6 @@ public class GroupAwareTopologyManager extends SimpleTopologyManager
 		// Add all the group memebers in newMembers which are not in oldMembers
 		for (NodeDescriptor node: newMembers) {
 			addNodeForGroup(node, newGroupDescriptor);
-		}
+		}*/
 	}
 }
