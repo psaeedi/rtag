@@ -23,7 +23,7 @@ import polimi.reds.broker.overlay.NotRunningException;
  */
 public class LeaderReplaceTest {
 
-    private static final int NUMBER_OF_NODE = 5;
+    private static final int NUMBER_OF_NODES = 5;
 
 	int localPort=10001;
     
@@ -40,7 +40,7 @@ public class LeaderReplaceTest {
 	@Before
 	public void setUp() throws Exception {
 		
-		for (int i = 0; i < NUMBER_OF_NODE; i++) {
+		for (int i = 0; i < NUMBER_OF_NODES; i++) {
 			int port = localPort ++;
 			Node node = new Node(host, port);
 			node.start();
@@ -66,44 +66,65 @@ public class LeaderReplaceTest {
 			MalformedURLException, NotRunningException, 
 			InterruptedException {
 		nodes.get(0).getOverlay().addNeighbor(urls.get(1));
+		nodes.get(2).getOverlay().addNeighbor(urls.get(3));
 		
 		Thread.sleep(1000);
-		// Node 1 is the leaders
-		// (1,2,3,4,5) are in the same universe
 		
-		GroupDescriptor universe1 = nodes.get(0).getGroupCommunicationDispatcher().getLocalUniverse();
-		Node leader = universe1.getLeader() == nodes.get(0).getID() ? nodes.get(0) : nodes.get(1);
+		// Node 1 and 3 should be leaders
+		// (1,2) (3,4) are in the same universes
+		GroupDescriptor universe1 = 
+				nodes.get(0).getGroupCommunicationDispatcher().
+				getLocalUniverse();
+		GroupDescriptor universe2 = 
+			    nodes.get(1).getGroupCommunicationDispatcher().
+				getLocalUniverse();
+		GroupDescriptor universe3 = 
+			    nodes.get(2).getGroupCommunicationDispatcher().
+				getLocalUniverse();
+		GroupDescriptor universe4 = 
+			    nodes.get(3).getGroupCommunicationDispatcher().
+				getLocalUniverse();
 		
-		for (int i = 2; i < NUMBER_OF_NODE; i++) {			
-			leader.getOverlay().addNeighbor(urls.get(i));
-			Thread.sleep(1000);
-		}
-
-		universe1 = leader.getGroupCommunicationDispatcher().getLocalUniverse();
+		Assert.assertEquals(universe1, universe2);
+		Assert.assertEquals(universe3, universe4);
 		
-		Assert.assertTrue(universe1.getFollowers().size() > 1);
-		leader.stop();
+		NodeDescriptor leaderA = universe1.getLeader();
+		NodeDescriptor leaderB = universe3.getLeader();
+		
+		Node nodeLeaderA = (leaderA == nodes.get(0).getID()) ? nodes.get(0) : nodes.get(1);
+		Node nodeLeaderB = (leaderB == nodes.get(2).getID()) ? nodes.get(2) : nodes.get(3);
+		Node nodeFollowerB = (leaderB == nodes.get(2).getID()) ? nodes.get(3) : nodes.get(2);
+		String urlB = (leaderB == nodes.get(2).getID()) ? urls.get(2) : urls.get(3);
+		
+		// We add the two leaders together
+		nodeLeaderA.getOverlay().addNeighbor(urlB);
+		Thread.sleep(1000);
+		nodeLeaderB.getOverlay().addNeighbor(urls.get(4));
+		Thread.sleep(1000);
+		
+		GroupDescriptor universeB = nodeLeaderB.
+				getGroupCommunicationDispatcher().getLocalUniverse();
+		Assert.assertTrue(universeB.getParentLeader().equals(leaderA));
+		Assert.assertTrue(universeB.isFollower(nodeFollowerB.getID()));
+	
+		
+		System.out.println("Stopping: " + leaderB);
+		nodeLeaderB.stop();
 		Thread.sleep(2000);
-
-		UUID universeId = universe1.getUniqueId();
 		
-		ArrayList<GroupDescriptor> descriptors = new ArrayList<GroupDescriptor>();
-		for (Node node: nodes) {			
-			if (node.getOverlay().isRunning()) {
-				GroupDescriptor universe = node.getGroupCommunicationDispatcher().
-						getGroupWithName(GroupDescriptor.UNIVERSE);
-				if (!universe.getUniqueId().equals(universeId)) {
-					continue;
-				}
-				Assert.assertTrue(universe.getLeader() != leader.getID());
-				Assert.assertNotNull(universe.getLeader());
-				descriptors.add(universe);
-			}
-		}
-		Assert.assertTrue(descriptors.size() >= 2);
-		GroupDescriptor desc = descriptors.get(0);
-		for (GroupDescriptor descriptor: descriptors) {
-			Assert.assertEquals(desc.toString(), descriptor.toString());
-		}
+		// The orphan group should be adopted
+		GroupDescriptor adoptedUniverse = nodeFollowerB.
+				getGroupCommunicationDispatcher().getLocalUniverse();
+		
+		System.out.println(adoptedUniverse);
+		
+		Assert.assertTrue(!adoptedUniverse.isMember(leaderB));
+		Assert.assertEquals(leaderA, adoptedUniverse.getParentLeader());
+		
+		GroupDescriptor parentUniverse = nodeLeaderA.
+				getGroupCommunicationDispatcher().getLocalUniverse();
+		Assert.assertTrue(parentUniverse.isFollower(adoptedUniverse.getLeader()));
+		
+		Thread.sleep(2000);
 	}
 }

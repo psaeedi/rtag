@@ -184,6 +184,8 @@ public class GroupCommunicationDispatcher implements
 	public void notifyPacketArrived(String subject, NodeDescriptor sender,
 			Serializable packet) {
 		
+		// TODO return ko if a message was not handled?
+		
 		if (GROUP_FOLLOWER_COMMAND.equals(subject)) {
 			handleMessageGroupFollowerCommand(sender, (GroupFollowerCommand)packet);
 		} else if (GROUP_FOLLOWER_COMMAND_ACK.equals(subject)) {

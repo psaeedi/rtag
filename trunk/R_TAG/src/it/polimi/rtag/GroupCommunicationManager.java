@@ -85,8 +85,8 @@ GroupDiscoveredNotificationListener {
 		
 		GroupCommunicationManager manager = new GroupCommunicationManager(
 				node, groupDescriptor, node.getOverlay());
-		manager.groupChangeSupport.addPropertyChangeListener(UPDATE_DESCRIPTOR,
-				node.getTopologyManager());
+		/*manager.groupChangeSupport.addPropertyChangeListener(UPDATE_DESCRIPTOR,
+				node.getTopologyManager());*/
 		return manager;
 	}
 	
@@ -220,6 +220,8 @@ GroupDiscoveredNotificationListener {
 	@Override
 	public void notifyNeighborRemoved(NodeDescriptor removedNode) {
 		// Do nothing
+		System.out.println("************ REMOVED: "+ removedNode);
+		notifyNeighborDead(removedNode, null);
 	}
 
 	/**
@@ -566,7 +568,8 @@ GroupDiscoveredNotificationListener {
 			} else if (GroupLeaderCommandAck.KO.equals(responseType)) {
 				// It refused.
 				// we may try with a merge
-				GroupCoordinationCommand sendAttempt = GroupCoordinationCommand.createMergeGroupCommand(groupDescriptor);
+				GroupCoordinationCommand sendAttempt = 
+						GroupCoordinationCommand.createMergeGroupCommand(groupDescriptor);
 				sendCoordinationCommand(sendAttempt, sender);
 				return;
 			}
@@ -586,8 +589,15 @@ GroupDiscoveredNotificationListener {
 				// The remote leader has adopted this group
 				groupDescriptor.setParentLeader(sender);
 				// The child leader (which is the current node)
-				// Should become a follower of the remoted group.
-				// TODO!!!!!!
+				// Should become a follower of the remote group.
+				GroupDescriptor parentGroup = message.getGroupDescriptor();
+				// The parent has already added this node as a follower of its group.
+				if (!parentGroup.isMember(currentNodeDescriptor)) {
+					throw new RuntimeException("The adopteee should have already been added.");
+				}
+				GroupCommunicationManager manager = 
+						GroupCommunicationManager.createGroupCommunicationManager(node, parentGroup);
+				node.getGroupCommunicationDispatcher().addGroupManager(manager);
 			} else if (GroupLeaderCommandAck.KO.equals(responseType)) {
 				// It refused
 				groupDescriptor.setParentLeader(null);
@@ -598,7 +608,6 @@ GroupDiscoveredNotificationListener {
 		}else {
 			// unhandled commands..
 		}
-		
 	}
 
 	
