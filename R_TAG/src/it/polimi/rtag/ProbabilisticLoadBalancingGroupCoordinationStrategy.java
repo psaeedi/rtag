@@ -19,7 +19,7 @@ public class ProbabilisticLoadBalancingGroupCoordinationStrategy implements
 	 * probability which is the number of nodes in this group multiplied by this
 	 * constant. 
 	 */
-	public static final double FOLLOWER_MIGRATION_PROBABILITY = 0.05;
+	public static final double FOLLOWER_MIGRATION_PROBABILITY = 0.1;
 	
 	/**
 	 * Every time a follower joins this group the leader will split the group

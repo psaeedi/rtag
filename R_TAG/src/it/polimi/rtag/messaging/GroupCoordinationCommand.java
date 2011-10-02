@@ -13,14 +13,7 @@ import polimi.reds.Message;
  * its followers or to other leaders.
  */
 public class GroupCoordinationCommand extends Message {
-	
-	/* Old A3 stuff
-	public static final String DELETE_GROUP_ONLY = "DEL_GO";
-	public static final String DELETE_GROUP_RECURSIVELY = "DEL_REC";
-	public static final String DIVIDE_GROUP = "DIVIDE";
-	public static final String LEAVE_GROUP = "LEAVE";
-	*/
-	
+		
 	/**
 	 * 
 	 */
@@ -65,7 +58,7 @@ public class GroupCoordinationCommand extends Message {
 	 * previous hierarchy.
 	 */
 	public static final String ADOPT_GROUP = "ADOPT_GROUP";
-
+	
 	private GroupDescriptor groupDescriptor;
 	private String command;
 	
