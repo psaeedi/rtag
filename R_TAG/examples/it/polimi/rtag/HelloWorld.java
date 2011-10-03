@@ -1,8 +1,6 @@
 package it.polimi.rtag;
 
-import polimi.reds.NodeDescriptor;
-import it.polimi.rtag.filters.*;
-import it.polimi.rtag.messaging.*;
+
 
 public class HelloWorld {
 

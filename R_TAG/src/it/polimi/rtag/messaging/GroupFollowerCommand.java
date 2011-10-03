@@ -23,17 +23,35 @@ public class GroupFollowerCommand extends Message {
 	 */
 	public static final String LEAVING_NOTICE = "LEAVING_NOTICE";
 	
+	private GroupDescriptor groupDescriptor;
+	private String command;
+	
+	public static GroupFollowerCommand createLeavingNoticeCommand(GroupDescriptor groupDescriptor) {
+		if (groupDescriptor == null) {
+			throw new IllegalArgumentException("Group descriptor cannot be null.");
+		}
+		return new GroupFollowerCommand(groupDescriptor, LEAVING_NOTICE);
+	}
+	
 	/**
-	 * 
+	 * @param groupDescriptor
+	 * @param command
 	 */
-	public GroupFollowerCommand() {
+	private GroupFollowerCommand(GroupDescriptor groupDescriptor, String command) {
 		createID();
-		// TODO Auto-generated constructor stub
+		this.groupDescriptor = groupDescriptor;
+		this.command = command;
+	}
+	
+	public GroupDescriptor getGroupDescriptor() {
+		return groupDescriptor;
 	}
 
-	public GroupDescriptor getGroupDescriptor() {
-		// TODO Auto-generated method stub
-		return null;
+	/**
+	 * @return the command
+	 */
+	public String getCommand() {
+		return command;
 	}
 
 }

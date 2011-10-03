@@ -201,7 +201,7 @@ public class ProbabilisticLoadBalancingGroupCoordinationStrategy implements
 				remoteGroup.getFollowers().size()) {
 			return false;
 		} else {
-			return Math.random() <= FOLLOWER_MIGRATION_PROBABILITY * groupDescriptor.getFollowers().size();
+			return Math.random() <= FOLLOWER_MIGRATION_PROBABILITY * remoteGroup.getFollowers().size();
 		}
 	}
 
@@ -233,7 +233,5 @@ public class ProbabilisticLoadBalancingGroupCoordinationStrategy implements
 		}
 		return groupDescriptor.getFollowers().get(0);
 	}
-
-
 
 }

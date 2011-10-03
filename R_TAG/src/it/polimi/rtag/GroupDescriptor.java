@@ -95,6 +95,17 @@ public class GroupDescriptor implements Serializable {
 		this.parentLeader = parentLeader;
 	}
 	
+	public GroupDescriptor(GroupDescriptor oldDescriptor) {
+		super();
+		this.uniqueId = oldDescriptor.uniqueId;
+		this.friendlyName = oldDescriptor.friendlyName;
+		this.description = oldDescriptor.description;
+		this.universe = oldDescriptor.universe;
+		this.leader = oldDescriptor.leader;
+		this.parentLeader = oldDescriptor.parentLeader;
+		this.followers = new ArrayList<NodeDescriptor>(oldDescriptor.followers);
+	}
+	
 	/**
 	 * @return the uniqueId
 	 */
@@ -131,6 +142,9 @@ public class GroupDescriptor implements Serializable {
 
 
 	public boolean isLeader(NodeDescriptor currentDescriptor) {
+		if (leader == null) {
+			return false;
+		}
 		return leader.equals(currentDescriptor);
 	}
 

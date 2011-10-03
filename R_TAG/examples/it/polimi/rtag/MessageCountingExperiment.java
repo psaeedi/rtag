@@ -17,7 +17,7 @@ import java.util.HashSet;
  */
 public class MessageCountingExperiment {
 
-    private static final int NUMBER_OF_NODES = 100;
+    private static final int NUMBER_OF_NODES = 20;
 
 	int localPort=10001;
     
@@ -48,13 +48,13 @@ public class MessageCountingExperiment {
 			urls.add("reds-tcp:"+ host + ":" + port);
 		}
     	
-    	createNetworkByAddingToARandomNode();
+    	createNetworkByAddingToNode0();
     }
     
     
     private void createNetworkByAddingToNode0() {
     	for (int i = 1; i < NUMBER_OF_NODES; i++) {
-    		System.out.println("************Adding neighbor " + i + " to node " + nodes.get(0));
+    		System.out.println("************Adding neighbor " + i + " to node 0");
     		try {
 				nodes.get(0).getOverlay().addNeighbor(urls.get(i));
 				Thread.sleep(1000);
@@ -188,7 +188,7 @@ public class MessageCountingExperiment {
 		for (Node node: nodes) {
 			node.stop();
 			try {
-				Thread.sleep(500);
+				Thread.sleep(1000);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

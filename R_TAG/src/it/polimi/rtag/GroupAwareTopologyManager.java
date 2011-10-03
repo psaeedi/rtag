@@ -7,6 +7,7 @@ import java.beans.PropertyChangeEvent;
 import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.UUID;
 
@@ -27,6 +28,7 @@ public class GroupAwareTopologyManager extends SimpleTopologyManager
 
 	private HashMultimap<NodeDescriptor, UUID> groupsByNode = HashMultimap.create();
 	
+	private HashMap<UUID, GroupDescriptor> groups = new HashMap<UUID, GroupDescriptor>();
 	/**
 	 * 
 	 */
@@ -47,6 +49,10 @@ public class GroupAwareTopologyManager extends SimpleTopologyManager
 	public void propertyChange(PropertyChangeEvent evt) {
 		GroupDescriptor oldGroupDescriptor = (GroupDescriptor) evt.getOldValue();
 		GroupDescriptor newGroupDescriptor = (GroupDescriptor) evt.getNewValue();
+		if (oldGroupDescriptor == null && newGroupDescriptor != null) {
+			oldGroupDescriptor = groups.get(newGroupDescriptor.getUniqueId());
+		}
+		
 		// TODO do something
 		if (oldGroupDescriptor == null) {
 			// A new group has been created/added
