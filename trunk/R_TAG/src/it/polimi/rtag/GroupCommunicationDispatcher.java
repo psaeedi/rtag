@@ -62,20 +62,30 @@ public class GroupCommunicationDispatcher implements
 	}
 	
 	public void addGroupManager(GroupCommunicationManager manager) {
-		GroupDescriptor groupDescriptor = manager.getGroupDescriptor();		
-		if (groupDescriptor.isLeader(node.getID())) {
-			synchronized (lock) {
+		GroupDescriptor groupDescriptor = manager.getGroupDescriptor();	
+		synchronized (lock) {
+			if (groupDescriptor.isLeader(node.getID())) {
 				if (getLeadedGroupByFriendlyName(groupDescriptor.getFriendlyName()) != null) {
 					throw new RuntimeException("Already leading a group matching: " + groupDescriptor);
 				}
-				leadedGroups.add(manager);				
-			}
-		} else {
-			synchronized (lock) {
+				leadedGroups.add(manager);
+				GroupCommunicationManager followerManager = getFollowedGroupByFriendlyName(
+						groupDescriptor.getFriendlyName());
+				if (followerManager != null) {
+					followerManager.groupChangeSupport.addPropertyChangeListener(
+							GroupLeaderCommand.UPDATE_DESCRIPTOR, manager);
+				}
+			} else {
 				if (getFollowedGroupByFriendlyName(groupDescriptor.getFriendlyName()) != null) {
 					throw new RuntimeException("Already following a group matching: " + groupDescriptor);
 				}
-				followedGroups.add(manager);				
+				followedGroups.add(manager);
+				GroupCommunicationManager leaderManager = getLeadedGroupByFriendlyName(
+						groupDescriptor.getFriendlyName());
+				if (leaderManager != null) {
+					manager.groupChangeSupport.addPropertyChangeListener(
+							GroupLeaderCommand.UPDATE_DESCRIPTOR, leaderManager);
+				}
 			}
 		}
 	}
@@ -332,11 +342,26 @@ public class GroupCommunicationDispatcher implements
 	}
 
 	public void reassignGroup(GroupCommunicationManager manager) {
+		GroupDescriptor groupDescriptor = 
+				manager.getGroupDescriptor();
 		synchronized (lock) {
 			if (manager.isLeader()) {
 				if (followedGroups.contains(manager)) {
 					followedGroups.remove(manager);
+					GroupCommunicationManager leadedManager = 
+						getLeadedGroupByFriendlyName(
+								groupDescriptor.getFriendlyName());
+					if (leadedManager != null) {
+						manager.groupChangeSupport
+								.removePropertyChangeListener(leadedManager);
+					}
 					leadedGroups.add(manager);
+					GroupCommunicationManager followerManager = getFollowedGroupByFriendlyName(
+							groupDescriptor.getFriendlyName());
+					if (followerManager != null) {
+						followerManager.groupChangeSupport.addPropertyChangeListener(
+								GroupLeaderCommand.UPDATE_DESCRIPTOR, manager);
+					}
 				}
 				else {
 					addGroupManager(manager);
@@ -355,15 +380,31 @@ public class GroupCommunicationDispatcher implements
 		}
 	}
 	
-	public void removeGroup(GroupCommunicationManager groupCommunicationManager) {
+	public void removeGroup(GroupCommunicationManager manager) {
+		GroupDescriptor groupDescriptor = 
+				manager.getGroupDescriptor();
 		synchronized (lock) {
-			if (followedGroups.contains(groupCommunicationManager)) {
-				followedGroups.remove(groupCommunicationManager);
+			if (followedGroups.contains(manager)) {
+				followedGroups.remove(manager);
+				GroupCommunicationManager leadedManager = 
+					getLeadedGroupByFriendlyName(
+							groupDescriptor.getFriendlyName());
+				if (leadedManager != null) {
+					manager.groupChangeSupport
+							.removePropertyChangeListener(leadedManager);
+				}
 			}
-			if (leadedGroups.contains(groupCommunicationManager)) {
-				leadedGroups.remove(groupCommunicationManager);
+			if (leadedGroups.contains(manager)) {
+				leadedGroups.remove(manager);
+				GroupCommunicationManager followedManager = 
+					getLeadedGroupByFriendlyName(
+							groupDescriptor.getFriendlyName());
+				if (followedManager != null) {
+					followedManager.groupChangeSupport
+							.removePropertyChangeListener(manager);
+				}
 			}
-			overlay.removeNeighborhoodChangeListener(groupCommunicationManager);
+			overlay.removeNeighborhoodChangeListener(manager);
 		}
 
 	}

@@ -25,9 +25,11 @@ public interface GroupCoordinationStrategy {
 	
 	public boolean shouldAcceptToCreateAChild();
 	
-	public boolean shouldSuggestToMigrate(GroupDescriptor remoteGroup, NodeDescriptor remoteFollower);
+	public boolean shouldSuggestToMigrate(GroupDescriptor remoteGroup,
+			NodeDescriptor remoteFollower);
 	
 	public boolean shouldAcceptToMigrate(GroupDescriptor remoteGroup);
 	
 	public NodeDescriptor electNewLeader();
+
 }
