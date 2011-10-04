@@ -101,4 +101,14 @@ public class GroupCoordinationCommandAck extends Message {
 		return groupDescriptor;
 	}
 
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return "GroupCoordinationCommandAck [originalMessage="
+				+ originalMessage + ", groupDescriptor=" + groupDescriptor.getUniqueId()
+				+ ", response=" + response + "]";
+	}
+
 }

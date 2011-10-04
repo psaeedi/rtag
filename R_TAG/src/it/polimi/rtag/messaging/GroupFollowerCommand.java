@@ -54,4 +54,13 @@ public class GroupFollowerCommand extends Message {
 		return command;
 	}
 
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return "GroupFollowerCommand [groupDescriptor=" + groupDescriptor.getUniqueId()
+				+ ", command=" + command + "]";
+	}
+
 }
