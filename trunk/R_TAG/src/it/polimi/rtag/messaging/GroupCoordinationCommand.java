@@ -113,4 +113,13 @@ public class GroupCoordinationCommand extends Message {
 	public String getCommand() {
 		return command;
 	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return "GroupCoordinationCommand [groupDescriptor=" + groupDescriptor.getUniqueId()
+				+ ", command=" + command + "]";
+	}
 }

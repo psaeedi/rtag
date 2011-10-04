@@ -152,9 +152,6 @@ public class GroupCommunicationDispatcher implements
 		for (String subject: SUBJECTS) {
 			overlay.addPacketListener(this, subject);
 		}
-		// We create a queue for this dispatcher
-		overlay.setTrafficClass(this.getClass().toString(),
-				this.getClass().toString());
 	}
 
 
@@ -348,20 +345,7 @@ public class GroupCommunicationDispatcher implements
 			if (manager.isLeader()) {
 				if (followedGroups.contains(manager)) {
 					followedGroups.remove(manager);
-					GroupCommunicationManager leadedManager = 
-						getLeadedGroupByFriendlyName(
-								groupDescriptor.getFriendlyName());
-					if (leadedManager != null) {
-						manager.groupChangeSupport
-								.removePropertyChangeListener(leadedManager);
-					}
 					leadedGroups.add(manager);
-					GroupCommunicationManager followerManager = getFollowedGroupByFriendlyName(
-							groupDescriptor.getFriendlyName());
-					if (followerManager != null) {
-						followerManager.groupChangeSupport.addPropertyChangeListener(
-								GroupLeaderCommand.UPDATE_DESCRIPTOR, manager);
-					}
 				}
 				else {
 					addGroupManager(manager);
@@ -442,4 +426,19 @@ public class GroupCommunicationDispatcher implements
 		return null;
 	}
 
+	public void removeAllGroupsAndDisconnect() {
+		synchronized (lock) {
+			for (int i = leadedGroups.size() - 1; i > -1; i--) {
+				GroupCommunicationManager manager = leadedGroups.get(i);
+				removeGroup(manager);
+			}
+			for (int i = leadedGroups.size() - 1; i > -1; i--) {
+				GroupCommunicationManager manager = followedGroups.get(i);
+				removeGroup(manager);
+			}
+		}
+		for (String subject: SUBJECTS) {
+			overlay.removePacketListener(this, subject);
+		}
+	}
 }

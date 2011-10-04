@@ -19,13 +19,13 @@ public class ProbabilisticLoadBalancingGroupCoordinationStrategy implements
 	 * probability which is the number of nodes in this group multiplied by this
 	 * constant. 
 	 */
-	public static final double FOLLOWER_MIGRATION_PROBABILITY = 0.1;
+	public static final double FOLLOWER_MIGRATION_PROBABILITY = 0.3;
 	
 	/**
 	 * Every time a follower joins this group the leader will split the group
 	 * with a probability which is the number of followers multiplied by this constant. 
 	 */
-	public static final double CONGESTED_GROUP_PROBABILITY = 0.1;
+	public static final double CONGESTED_GROUP_PROBABILITY = 0.2;
 	private GroupDescriptor groupDescriptor;
 	
 	/**
@@ -45,6 +45,12 @@ public class ProbabilisticLoadBalancingGroupCoordinationStrategy implements
 		NodeDescriptor localParent = groupDescriptor.getParentLeader();
 		NodeDescriptor remoteParent = remoteGroup.getParentLeader();
 		NodeDescriptor remoteLeader = remoteGroup.getLeader();
+		
+		if (groupDescriptor.isFollower(remoteLeader) || 
+				remoteGroup.isFollower(localLeader)) {
+			// Already in a hierarchy
+			return false;
+		}
 		
 		if (localParent != null && remoteParent == null) {
 			if (localParent.equals(remoteGroup.getLeader())) {
@@ -97,6 +103,12 @@ public class ProbabilisticLoadBalancingGroupCoordinationStrategy implements
 		NodeDescriptor localParent = groupDescriptor.getParentLeader();
 		NodeDescriptor remoteParent = remoteGroup.getParentLeader();
 		NodeDescriptor remoteLeader = remoteGroup.getLeader();
+		
+		if (groupDescriptor.isFollower(remoteLeader) || 
+				remoteGroup.isFollower(localLeader)) {
+			// Already in a hierarchy
+			return false;
+		}
 		
 		if (localParent != null && remoteParent == null) {
 			if (localParent.equals(remoteGroup.getLeader())) {
@@ -179,6 +191,15 @@ public class ProbabilisticLoadBalancingGroupCoordinationStrategy implements
 	 */
 	@Override
 	public boolean shouldAcceptToMerge(GroupDescriptor remoteGroup) {
+		if (groupDescriptor.isFollower(remoteGroup.getLeader())) {
+			// The remote group is a child group
+			return false;
+		}
+		if (remoteGroup.isFollower(groupDescriptor.getLeader())) {
+			// The current is a child group
+			return false;
+		}
+		
 		// If the parent is null OK otherwise KO
 		return (groupDescriptor.getParentLeader() == null);
 	}

@@ -37,7 +37,7 @@ public class Node implements PacketListener {
 	
     private NodeDescriptor currentDescriptor;
     
-    private GroupAwareTopologyManager topologyManager;
+    private TopologyManager topologyManager;
     private Overlay overlay;
     
     private GroupCommunicationDispatcher groupCommunicationDispatcher;
@@ -59,10 +59,10 @@ public class Node implements PacketListener {
 		 */
 		
 		// TODO implement a new routing topology manager
-		topologyManager = new GroupAwareTopologyManager();
+		topologyManager = new SimpleTopologyManager();
 		Transport transport = new TCPTransport(port);
 			
-		setOverlay(new MessageCountingGenericOverlay(topologyManager, transport));
+		setOverlay(new GenericOverlay(topologyManager, transport));
 		
 		groupCommunicationDispatcher = new GroupCommunicationDispatcher(this);
 		
@@ -319,6 +319,7 @@ public class Node implements PacketListener {
 	}
 
 	public void stop() {
+		groupCommunicationDispatcher.removeAllGroupsAndDisconnect();
 		overlay.stop();
 	}
 
@@ -332,7 +333,7 @@ public class Node implements PacketListener {
 	/**
 	 * @return the topologyManager
 	 */
-	public GroupAwareTopologyManager getTopologyManager() {
+	public TopologyManager getTopologyManager() {
 		return topologyManager;
 	}
 

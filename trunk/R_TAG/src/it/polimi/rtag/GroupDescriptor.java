@@ -147,6 +147,13 @@ public class GroupDescriptor implements Serializable {
 		}
 		return leader.equals(currentDescriptor);
 	}
+	
+	public boolean isParentLeader(NodeDescriptor currentDescriptor) {
+		if (parentLeader == null) {
+			return false;
+		}
+		return parentLeader.equals(currentDescriptor);
+	}
 
 	public boolean isMember(NodeDescriptor currentDescriptor) {
 		return isLeader(currentDescriptor) || isFollower(currentDescriptor);
@@ -265,7 +272,8 @@ public class GroupDescriptor implements Serializable {
 	 */
 	public boolean addFollower(NodeDescriptor descriptor) {
 		if (followers.contains(descriptor)) {
-			throw new RuntimeException("Attempting to add the same follower twice.");
+			throw new RuntimeException("Attempting to add the same follower twice. Node " + 
+					descriptor + " group: " + this);
 		}
 		return followers.add(descriptor);
 	}

@@ -98,4 +98,14 @@ public class GroupLeaderCommandAck extends Message {
 		return groupDescriptor;
 	}
 
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return "GroupLeaderCommandAck [originalMessage=" + originalMessage
+				+ ", groupDescriptor=" + groupDescriptor.getUniqueId() + ", response="
+				+ response + "]";
+	}
+
 }

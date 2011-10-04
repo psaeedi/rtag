@@ -87,6 +87,16 @@ public class GroupFollowerCommandAck extends Message {
 	public GroupDescriptor getGroupDescriptor() {
 		return groupDescriptor;
 	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return "GroupFollowerCommandAck [originalMessage=" + originalMessage
+				+ ", response=" + response + ", groupDescriptor="
+				+ groupDescriptor.getUniqueId() + "]";
+	}
 	
 
 }
