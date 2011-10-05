@@ -56,6 +56,7 @@ public class LeaderReplaceTest {
 	public void tearDown() throws Exception {
 		for (Node node: nodes) {
 			node.stop();
+			Thread.sleep(100);
 		}
 	}
 	
@@ -102,6 +103,7 @@ public class LeaderReplaceTest {
 		nodeLeaderB.getOverlay().addNeighbor(urls.get(4));
 		Thread.sleep(1000);
 		
+		// TODO this works 50% of the time fix it
 		GroupDescriptor universeB = nodeLeaderB.
 				getGroupCommunicationDispatcher().getLocalUniverse();
 		Assert.assertTrue(universeB.getParentLeader().equals(leaderA));
@@ -110,7 +112,7 @@ public class LeaderReplaceTest {
 		
 		System.out.println("Stopping: " + leaderB);
 		nodeLeaderB.stop();
-		Thread.sleep(2000);
+		Thread.sleep(500);
 		
 		// The orphan group should be adopted
 		GroupDescriptor adoptedUniverse = nodeFollowerB.
@@ -125,6 +127,6 @@ public class LeaderReplaceTest {
 				getGroupCommunicationDispatcher().getLocalUniverse();
 		Assert.assertTrue(parentUniverse.isFollower(adoptedUniverse.getLeader()));
 		
-		Thread.sleep(2000);
+		Thread.sleep(500);
 	}
 }

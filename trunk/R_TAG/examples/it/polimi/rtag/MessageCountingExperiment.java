@@ -48,7 +48,7 @@ public class MessageCountingExperiment {
 			urls.add("reds-tcp:"+ host + ":" + port);
 		}
     	
-    	createNetworkByAddingToNode0();
+    	createNetworkByAddingToARandomNode();
     }
     
     

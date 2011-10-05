@@ -204,7 +204,7 @@ public class ProbabilisticLoadBalancingGroupCoordinationStrategyTest {
 		for (int i = 3; i < otherNodes.size(); i++) {
 			remoteGroup.addFollower(otherNodes.get(i));
 		}
-		Assert.assertFalse(localStrategy.shouldSuggestToMigrate(remoteGroup, otherNodes.get(2)));
+		Assert.assertTrue(localStrategy.shouldSuggestToMigrate(remoteGroup, otherNodes.get(2)));
 	}
 
 	/**

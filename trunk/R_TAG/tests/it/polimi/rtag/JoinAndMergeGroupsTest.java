@@ -58,6 +58,7 @@ public class JoinAndMergeGroupsTest {
 	public void tearDown() throws Exception {
 		for (Node node: nodes) {
 			node.stop();
+			Thread.sleep(100);
 		}
 	}
 
