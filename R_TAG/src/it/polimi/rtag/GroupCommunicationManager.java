@@ -13,6 +13,7 @@ import it.polimi.rtag.messaging.MessageSubjects;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeSupport;
+import java.io.IOException;
 import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.util.HashMap;
@@ -25,6 +26,7 @@ import polimi.reds.MessageID;
 import polimi.reds.NodeDescriptor;
 import polimi.reds.broker.overlay.AlreadyNeighborException;
 import polimi.reds.broker.overlay.NeighborhoodChangeListener;
+import polimi.reds.broker.overlay.NotConnectedException;
 import polimi.reds.broker.overlay.NotRunningException;
 import polimi.reds.broker.overlay.Overlay;
 
@@ -44,6 +46,8 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 		GroupDiscoveredNotificationListener, GroupChangeListener {
 
 	private Node node;
+	private boolean running = true;
+	private Object lock = new Object();
 	
 	private GroupDescriptor groupDescriptor;
 	private NodeDescriptor currentNodeDescriptor;
@@ -282,7 +286,6 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 		this.overlay = overlay;
 		/*overlay.setTrafficClass(groupDescriptor.getFriendlyName(),
 				groupDescriptor.getFriendlyName());*/
-		overlay.addNeighborhoodChangeListener(this);
 	}
 	
 	/**
@@ -428,15 +431,17 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 	private void sendMessage(String subject, 
 			Message message, NodeDescriptor recipient) {
 		try {
-			recipient = connectIfNotConnected(recipient);
-			if (recipient == null) {
-				System.err.println("CANNOT CONNECT TO: " + recipient);
-				return;
+			synchronized (lock) {
+				recipient = connectIfNotConnected(recipient);
+				if (recipient == null) {
+					System.err.println("CANNOT CONNECT TO: " + recipient);
+					return;
+				}
+				System.out.println("GM " + groupDescriptor.getUniqueId() +
+						currentNodeDescriptor + " sending " + message + " to" +
+						recipient);
+				overlay.send(subject, message, recipient);
 			}
-			System.out.println("GM " + groupDescriptor.getUniqueId() +
-					currentNodeDescriptor + " sending " + message + " to" +
-					recipient);
-			overlay.send(subject, message, recipient);
 		} catch (Exception e) {
 			System.err.println("Catched: " + e.getMessage());
 		} 
@@ -539,11 +544,9 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 
 
 	private void inviteFollowersToMigrate(GroupDescriptor remoteGroup) {
-		System.out.println("_____________inviteFollowersToMigrate1");
 		for (NodeDescriptor follower: remoteGroup.getFollowers()) {
 			if (remoteGroup.getLeader() == null || 
 					coordinationStrategy.shouldSuggestToMigrate(remoteGroup, follower)) {
-				System.out.println("_____________inviteFollowersToMigrate2");
 				GroupCoordinationCommand command = 
 					GroupCoordinationCommand.createMigrateToGroupCommand(groupDescriptor);
 				sendCoordinationCommand(command, follower);
@@ -573,6 +576,13 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 		}
 		
 		if (!isLeader()) {
+			try {
+				overlay.send(MessageSubjects.GROUP_DISCOVERED_NOTIFICATION, 
+						remoteGroupDescriptor, groupDescriptor.getLeader());
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} 
 			return;
 		}
 		
@@ -595,6 +605,10 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 		if (overlay.isNeighborOf(descriptor)) {
 			return descriptor;
 		}
+		if (!running) {
+			return null;
+		}
+		
 		System.out.println("òòòòòòòòòòòòòòòò Connecting to " + descriptor);
 		NodeDescriptor node = null;
 		for (String url: descriptor.getUrls()) {
@@ -878,7 +892,28 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 						groupDescriptor.getFriendlyName() +
 						" remote: " + fatherDescriptor.getFriendlyName());
 			}
+			// TODO disabled because it crashes
 			inviteFollowersToMigrate(fatherDescriptor);
+		}
+	}
+
+
+	/**
+	 * @return the running
+	 */
+	public boolean isRunning() {
+		synchronized (lock) {
+			return running;
+		}
+	}
+
+
+	/**
+	 * @param running the running to set
+	 */
+	public void setRunning(boolean running) {
+		synchronized (lock) {
+			this.running = running;
 		}
 	}
 

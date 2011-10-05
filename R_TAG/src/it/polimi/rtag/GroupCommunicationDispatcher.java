@@ -69,6 +69,7 @@ public class GroupCommunicationDispatcher implements
 					throw new RuntimeException("Already leading a group matching: " + groupDescriptor);
 				}
 				leadedGroups.add(manager);
+				overlay.addNeighborhoodChangeListener(manager);
 				GroupCommunicationManager followerManager = getFollowedGroupByFriendlyName(
 						groupDescriptor.getFriendlyName());
 				if (followerManager != null) {
@@ -80,6 +81,7 @@ public class GroupCommunicationDispatcher implements
 					throw new RuntimeException("Already following a group matching: " + groupDescriptor);
 				}
 				followedGroups.add(manager);
+				overlay.addNeighborhoodChangeListener(manager);
 				GroupCommunicationManager leaderManager = getLeadedGroupByFriendlyName(
 						groupDescriptor.getFriendlyName());
 				if (leaderManager != null) {
@@ -370,6 +372,9 @@ public class GroupCommunicationDispatcher implements
 		synchronized (lock) {
 			if (followedGroups.contains(manager)) {
 				followedGroups.remove(manager);
+				overlay.addNeighborhoodChangeListener(manager);
+				manager.setRunning(false);
+				
 				GroupCommunicationManager leadedManager = 
 					getLeadedGroupByFriendlyName(
 							groupDescriptor.getFriendlyName());
@@ -380,6 +385,9 @@ public class GroupCommunicationDispatcher implements
 			}
 			if (leadedGroups.contains(manager)) {
 				leadedGroups.remove(manager);
+				overlay.addNeighborhoodChangeListener(manager);
+				manager.setRunning(false);
+				
 				GroupCommunicationManager followedManager = 
 					getLeadedGroupByFriendlyName(
 							groupDescriptor.getFriendlyName());
