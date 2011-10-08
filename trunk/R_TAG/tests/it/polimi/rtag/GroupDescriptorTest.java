@@ -115,7 +115,7 @@ public class GroupDescriptorTest {
 		Assert.assertFalse(localGroup.equals(remoteGroup));
 
 		GroupDescriptor localClone = new GroupDescriptor(localGroup.getUniqueId(), 
-				localGroup.getFriendlyName(), localGroup.getLeader(), localGroup.getDescription());
+				localGroup.getFriendlyName(), localGroup.getLeader());
 		
 		// Simmetry
 		Assert.assertTrue(localGroup.equals(localClone));
@@ -128,7 +128,7 @@ public class GroupDescriptorTest {
 	@Test
 	public void testEqualsObject_followers() {
 		GroupDescriptor localClone = new GroupDescriptor(localGroup.getUniqueId(), 
-				localGroup.getFriendlyName(), localGroup.getLeader(), localGroup.getDescription());
+				localGroup.getFriendlyName(), localGroup.getLeader());
 		
 		// Followers
 		localClone.addFollower(otherNodes.get(0));
@@ -146,7 +146,7 @@ public class GroupDescriptorTest {
 	@Test
 	public void testEqualsObject_leaders() {
 		GroupDescriptor localClone = new GroupDescriptor(localGroup.getUniqueId(), 
-				localGroup.getFriendlyName(), localGroup.getLeader(), localGroup.getDescription());
+				localGroup.getFriendlyName(), localGroup.getLeader());
 
 		// Leaders
 		localClone.setLeader(null);
@@ -162,7 +162,7 @@ public class GroupDescriptorTest {
 	@Test
 	public void testEqualsObject_parents() {
 		GroupDescriptor localClone = new GroupDescriptor(localGroup.getUniqueId(), 
-				localGroup.getFriendlyName(), localGroup.getLeader(), localGroup.getDescription());
+				localGroup.getFriendlyName(), localGroup.getLeader());
 		
 		localClone.setParentLeader(remoteLeader);
 		Assert.assertFalse(localClone.equals(localGroup));

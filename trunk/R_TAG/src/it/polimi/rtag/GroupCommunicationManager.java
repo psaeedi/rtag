@@ -68,10 +68,10 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 	 * @return
 	 */
 	public static GroupCommunicationManager createGroupCommunicationManager(Node node, 
-			 UUID uniqueId, String friendlyName, Tuple description) {
+			 UUID uniqueId, String friendlyName) {
 		
 		GroupDescriptor groupDescriptor = new GroupDescriptor(uniqueId, 
-				friendlyName, node.getID(), description);
+				friendlyName, node.getID());
 		return createGroupCommunicationManager(node, groupDescriptor);
 	}
 	
@@ -96,8 +96,9 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 	
 	public static GroupCommunicationManager createChildGroupCommunicationManager(Node node,
 			GroupDescriptor parentGroupDescriptor) {
-		GroupDescriptor groupDescriptor = new GroupDescriptor(UUID.randomUUID(), parentGroupDescriptor.getFriendlyName(),
-				node.getID(), parentGroupDescriptor.getDescription(), parentGroupDescriptor.getLeader());
+		GroupDescriptor groupDescriptor = new GroupDescriptor(UUID.randomUUID(), 
+				parentGroupDescriptor.getFriendlyName(),
+				node.getID(), parentGroupDescriptor.getLeader());
 		if (parentGroupDescriptor.isUniverse()) {
 			groupDescriptor.isUniverse();
 		}

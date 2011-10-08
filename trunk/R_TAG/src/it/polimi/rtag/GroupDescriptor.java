@@ -24,10 +24,20 @@ public class GroupDescriptor implements Serializable {
 	 */
 	private static final long serialVersionUID = -598794056247356570L;
 	public static final String UNIVERSE = "__UNIVERSE";
+	
 	private UUID uniqueId;
+	
 	private String friendlyName;
-	private Tuple description;
+	
+	//private Tuple description;
+	
 	private boolean universe = false;
+	
+	/**
+	 * The top leader of this group hierarchy. This is need to 
+	 * avoid creating loops. 
+	 */
+	private NodeDescriptor progenitor;
 	
 	/**
 	 * The group leader.
@@ -45,7 +55,9 @@ public class GroupDescriptor implements Serializable {
 	private NodeDescriptor parentLeader;
 
 	
-	//TODO add a constructor to create universe groups
+	public static GroupDescriptor createUniverse(NodeDescriptor leader) {
+		return new GroupDescriptor(UUID.randomUUID(), UNIVERSE, leader);
+	}
 	
 	/**
 	 * @param uniqueId
@@ -53,11 +65,10 @@ public class GroupDescriptor implements Serializable {
 	 * @param leader
 	 */
 	public GroupDescriptor(UUID uniqueId, String friendlyName,
-			NodeDescriptor leader, Tuple description) {
+			NodeDescriptor leader) {
 		this.uniqueId = uniqueId;
 		this.friendlyName = friendlyName;
 		this.leader = leader;
-		this.description = description;
 	}
 	
 	/**
@@ -67,11 +78,10 @@ public class GroupDescriptor implements Serializable {
 	 * @param parentGroup
 	 */
 	public GroupDescriptor(UUID uniqueId, String friendlyName,
-			NodeDescriptor leader, Tuple description, NodeDescriptor parentLeader) {
+			NodeDescriptor leader, NodeDescriptor parentLeader) {
 		this.uniqueId = uniqueId;
 		this.friendlyName = friendlyName;
 		this.leader = leader;
-		this.description = description;
 		this.parentLeader = parentLeader;
 	}
 	
@@ -83,13 +93,12 @@ public class GroupDescriptor implements Serializable {
 	 * @param leader
 	 * @param parentLeader
 	 */
-	private GroupDescriptor(UUID uuid, String friendlyName,
-			Tuple description, boolean universe, NodeDescriptor leader,
+	private GroupDescriptor(UUID uuid, String friendlyName, 
+			boolean universe, NodeDescriptor leader,
 			NodeDescriptor parentLeader) {
 		super();
 		this.uniqueId = uuid;
 		this.friendlyName = friendlyName;
-		this.description = description;
 		this.universe = universe;
 		this.leader = leader;
 		this.parentLeader = parentLeader;
@@ -99,7 +108,6 @@ public class GroupDescriptor implements Serializable {
 		super();
 		this.uniqueId = oldDescriptor.uniqueId;
 		this.friendlyName = oldDescriptor.friendlyName;
-		this.description = oldDescriptor.description;
 		this.universe = oldDescriptor.universe;
 		this.leader = oldDescriptor.leader;
 		this.parentLeader = oldDescriptor.parentLeader;
@@ -189,12 +197,6 @@ public class GroupDescriptor implements Serializable {
 		return parentLeader;
 	}
 
-	/**
-	 * @return the description
-	 */
-	public Tuple getDescription() {
-		return description;
-	}
 
 	/* (non-Javadoc)
 	 * @see java.lang.Object#equals(java.lang.Object)
@@ -243,15 +245,13 @@ public class GroupDescriptor implements Serializable {
 	}
 
 	public static GroupDescriptor createUniverse(Node node) {
-		// TODO think of a unique id
-		return new GroupDescriptor(UUID.randomUUID(), UNIVERSE, null, true, node.getID(), null);
+		return new GroupDescriptor(UUID.randomUUID(), UNIVERSE, true, node.getID(), null);
 	}
 
 	public boolean hasSameName(GroupDescriptor remoteGroupDescriptor) {
 		if (remoteGroupDescriptor == null) {
 			throw new RuntimeException("Remote descriptor cannot be null.");
 		}
-		// TODO provide a serious implementation using tuples
 		return friendlyName.equals(remoteGroupDescriptor.friendlyName);
 	}
 
@@ -298,5 +298,19 @@ public class GroupDescriptor implements Serializable {
 	@Override
 	public String toString() {
 		return acceptVisitor(new GroupToStringVisitor()).toString();
+	}
+
+	/**
+	 * @return the progenitor
+	 */
+	public NodeDescriptor getProgenitor() {
+		return progenitor;
+	}
+
+	/**
+	 * @param progenitor the progenitor to set
+	 */
+	public void setProgenitor(NodeDescriptor progenitor) {
+		this.progenitor = progenitor;
 	}
 }
