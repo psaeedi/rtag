@@ -43,11 +43,21 @@ import static it.polimi.rtag.messaging.GroupCoordinationCommand.*;
  * @author Panteha Saeedi (saeedi@elet.polimi.it).
  */
 public class GroupCommunicationManager implements NeighborhoodChangeListener, 
-		GroupDiscoveredNotificationListener, GroupChangeListener {
+		GroupDiscoveredNotificationListener {
 
+	/**
+	 * The {@link GroupCommunicationManager} managing a
+	 * parent group if any.
+	 */
+	private GroupCommunicationManager followedParentManager;
+	
+	/**
+	 * The {@link GroupCommunicationManager} managing a
+	 * child group if any.
+	 */
+	private GroupCommunicationManager leadedChildManager;
+	
 	private Node node;
-	private boolean running = true;
-	private Object lock = new Object();
 	
 	private GroupDescriptor groupDescriptor;
 	private NodeDescriptor currentNodeDescriptor;
@@ -133,6 +143,65 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 	public boolean isLeader() {
 		return groupDescriptor.isLeader(currentNodeDescriptor);
 	}
+	
+	public void handleGroupManagerAdded(GroupCommunicationManager manager) {
+		if (this.equals(manager)) {
+			throw new RuntimeException(
+					"A manager should not receive notifications " +
+					"about itself. This should NOT have happened.");
+		}
+		GroupDescriptor otherGroupDescriptor = manager.getGroupDescriptor();
+		if (!groupDescriptor.getFriendlyName().equals(
+				otherGroupDescriptor.getFriendlyName())) {
+		 return;
+		}
+		if (isLeader()) {
+			if (manager.isLeader()) {
+				throw new RuntimeException(
+						"A node should only lead a group of the same " +
+						"hierarchy. This should NOT have happened.");
+			}
+			if (followedParentManager != null) {
+				throw new RuntimeException(
+						"There is already a parent manager." +
+						"This should NOT have happened.");
+			}
+			// We add the child manager
+			followedParentManager = manager;
+			return;
+		} else {
+			if (!manager.isLeader()) {
+				throw new RuntimeException(
+						"A node should only follow a group of the same " +
+						"hierarchy. This should NOT have happened.");
+			}
+			if (leadedChildManager != null) {
+				throw new RuntimeException(
+						"There is already a child manager." +
+						"This should NOT have happened.");
+			}
+			// We add the child manager
+			leadedChildManager = manager;
+			return;
+		}
+
+	}
+	
+	public void handleGroupManagerRemoved(GroupCommunicationManager manager) {
+		if (this.equals(manager)) {
+			throw new RuntimeException(
+					"A manager should not receive notifications about itself.");
+		}
+		if (manager.equals(followedParentManager)) {
+			followedParentManager = null;
+			return;
+		}
+		if (manager.equals(leadedChildManager)) {
+			leadedChildManager = null;
+			return;
+		}
+	}
+
 	
 	/**
 	 * Notify this group manager that a new node has been discovered. 
@@ -431,18 +500,16 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 	
 	private void sendMessage(String subject, 
 			Message message, NodeDescriptor recipient) {
+		recipient = connectIfNotConnected(recipient);
 		try {
-			synchronized (lock) {
-				recipient = connectIfNotConnected(recipient);
-				if (recipient == null) {
-					System.err.println("CANNOT CONNECT TO: " + recipient);
-					return;
-				}
-				System.out.println("GM " + groupDescriptor.getUniqueId() +
-						currentNodeDescriptor + " sending " + message + " to" +
-						recipient);
-				overlay.send(subject, message, recipient);
+			if (recipient == null) {
+				System.err.println("CANNOT CONNECT TO: " + recipient);
+				return;
 			}
+			System.out.println("GM " + groupDescriptor.getUniqueId() +
+					currentNodeDescriptor + " sending " + message + " to" +
+					recipient);
+			overlay.send(subject, message, recipient);
 		} catch (Exception e) {
 			System.err.println("Catched: " + e.getMessage());
 		} 
@@ -476,6 +543,11 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 	
 	private void sendMessageToFollowers(GroupLeaderCommand message) {
 		for (NodeDescriptor follower: groupDescriptor.getFollowers()) {
+			if (currentNodeDescriptor.equals(follower)) {
+				throw new RuntimeException(
+						"Trying to talk to itself. " +
+						"This should NOT happen.");
+			}
 			sendLeaderCommand(message, follower);
 		}
 	}
@@ -520,9 +592,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 			return;
 		} else if (CREATE_CHILD_GROUP.equals(commandType)) {
 			// This follower has been suggested to create a child
-			GroupCommunicationManager leadedGroupManager = node.getGroupCommunicationDispatcher().
-				getLeadedGroupByFriendlyName(groupDescriptor.getFriendlyName());
-			if (leadedGroupManager == null && coordinationStrategy.shouldAcceptToCreateAChild()) {
+			if (leadedChildManager == null && coordinationStrategy.shouldAcceptToCreateAChild()) {
 				commandAck = GroupLeaderCommandAck.createOkCommand(
 						message.getID(), groupDescriptor);
 				sendMessage(GROUP_LEADER_COMMAND_ACK, commandAck, sender);
@@ -540,12 +610,18 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 			return;
 		} else {
 			// unhandled commands..
+			throw new RuntimeException("Unknown GroupLeaderCommand: " + commandType);
 		}
 	}
 
 
 	private void inviteFollowersToMigrate(GroupDescriptor remoteGroup) {
 		for (NodeDescriptor follower: remoteGroup.getFollowers()) {
+			if (currentNodeDescriptor.equals(follower)) {
+				// Skip itself
+				continue;
+			}
+
 			if (remoteGroup.getLeader() == null || 
 					coordinationStrategy.shouldSuggestToMigrate(remoteGroup, follower)) {
 				GroupCoordinationCommand command = 
@@ -602,15 +678,18 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 	}
 	
 	private NodeDescriptor connectIfNotConnected(NodeDescriptor descriptor) {
+		if (currentNodeDescriptor.equals(descriptor)) {
+			throw new RuntimeException("Trying to talk to itself. " +
+					"This should definitely NOT happen.");
+		}
+		
 		// We are receiving a notification, we should then first connect the remote leader.
 		if (overlay.isNeighborOf(descriptor)) {
 			return descriptor;
 		}
-		if (!running) {
-			return null;
-		}
 		
-		System.out.println("òòòòòòòòòòòòòòòò Connecting to " + descriptor);
+		System.out.println("òòòòòòòòòòòòòòòò " + currentNodeDescriptor + 
+				" connecting to " + descriptor);
 		NodeDescriptor node = null;
 		for (String url: descriptor.getUrls()) {
 			try {
@@ -724,6 +803,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 			return;
 		}else {
 			// unhandled commands..
+			throw new RuntimeException("Unknown GroupCoordinationCommand: " + commandType);
 		}
 	}
 
@@ -740,6 +820,10 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 		GroupLeaderCommand command = GroupLeaderCommand.createUpdateCommand(groupDescriptor);
 		sendMessageToFollowers(command);
 		createChildIfNecessary();
+		// We ask the child manger to see if it can get some followers
+		if (leadedChildManager != null) {
+			leadedChildManager.inviteFollowersToMigrate(groupDescriptor);
+		}
 	}
 	
 	private void createChildIfNecessary() {
@@ -763,7 +847,8 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 		
 		String commandType = message.getCommand();
 		if (MERGE_GROUPS.equals(commandType)) {
-			if (isLeader() && coordinationStrategy.shouldAcceptToMerge(remoteGroup)) {
+			if (isLeader() && followedParentManager == null && 
+					coordinationStrategy.shouldAcceptToMerge(remoteGroup)) {
 				// The current node has accepted the remote as a parent node
 				// From now on the current node will be both leader of his current
 				// group and follower of his parent group.
@@ -855,6 +940,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 			}
 		} else {
 			// unhandled commands..
+			throw new RuntimeException("Unknown GroupCoordinationCommand: " + commandType);
 		}
 	}
 
@@ -866,56 +952,6 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 		groupChangeSupport.firePropertyChange(UPDATE_DESCRIPTOR, this.groupDescriptor, groupDescriptor);
 		this.groupDescriptor = groupDescriptor;
 		coordinationStrategy = new ProbabilisticLoadBalancingGroupCoordinationStrategy(groupDescriptor);
-	}
-
-
-	/**
-	 * Leaded child groups receive an update every time
-	 * their followed father updates.
-	 * 
-	 * @see java.beans.PropertyChangeListener#propertyChange(java.beans.PropertyChangeEvent)
-	 */
-	@Override
-	public void propertyChange(PropertyChangeEvent property) {
-		if (UPDATE_DESCRIPTOR.equals(property.getPropertyName())) {
-			GroupDescriptor fatherDescriptor = (GroupDescriptor)property.getNewValue();
-			if (fatherDescriptor == null) {
-				return;
-			}
-			if (!fatherDescriptor.isFollower(currentNodeDescriptor)) {
-				throw new RuntimeException("Only followers should receive this update.");
-			}
-			if (fatherDescriptor.getUniqueId().equals(groupDescriptor.getUniqueId())) {
-				throw new RuntimeException("The two groups are not father and son");
-			}
-			if (!fatherDescriptor.getFriendlyName().equals(groupDescriptor.getFriendlyName())) {
-				throw new RuntimeException("The two groups have a different name. Local: " + 
-						groupDescriptor.getFriendlyName() +
-						" remote: " + fatherDescriptor.getFriendlyName());
-			}
-			// TODO disabled because it crashes
-			inviteFollowersToMigrate(fatherDescriptor);
-		}
-	}
-
-
-	/**
-	 * @return the running
-	 */
-	public boolean isRunning() {
-		synchronized (lock) {
-			return running;
-		}
-	}
-
-
-	/**
-	 * @param running the running to set
-	 */
-	public void setRunning(boolean running) {
-		synchronized (lock) {
-			this.running = running;
-		}
 	}
 
 }

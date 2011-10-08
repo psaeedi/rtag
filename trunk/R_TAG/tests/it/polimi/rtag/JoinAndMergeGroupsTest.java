@@ -198,8 +198,13 @@ public class JoinAndMergeGroupsTest {
 		for (int i = 1; i < NUMBER_OF_NODE; i++) {
 			GroupDescriptor universe2 = nodes.get(i).getGroupCommunicationDispatcher().
 					getGroupWithName(GroupDescriptor.UNIVERSE);
-			
-			Assert.assertEquals(universe1, universe2);
+			if (universe2.getParentLeader() != null) {
+				Assert.assertEquals(universe1.getLeader(),
+						universe2.getParentLeader());
+				// this only works if they do not create nephews
+			} else {
+				Assert.assertEquals(universe1, universe2);
+			}
 		}
 	}
 	
