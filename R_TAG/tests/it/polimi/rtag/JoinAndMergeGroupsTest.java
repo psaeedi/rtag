@@ -58,7 +58,6 @@ public class JoinAndMergeGroupsTest {
 	public void tearDown() throws Exception {
 		for (Node node: nodes) {
 			node.stop();
-			Thread.sleep(100);
 		}
 	}
 
@@ -88,8 +87,7 @@ public class JoinAndMergeGroupsTest {
 					MalformedURLException, NotRunningException, 
 					InterruptedException {
 		nodes.get(0).getOverlay().addNeighbor(urls.get(1));
-		
-		Thread.sleep(1000);
+		Thread.sleep(500);
 		
 		GroupDescriptor universe1 = nodes.get(0).getGroupCommunicationDispatcher().
 				getGroupWithName(GroupDescriptor.UNIVERSE);
