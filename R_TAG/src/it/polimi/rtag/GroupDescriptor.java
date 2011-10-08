@@ -54,11 +54,6 @@ public class GroupDescriptor implements Serializable {
 	 */
 	private NodeDescriptor parentLeader;
 
-	
-	public static GroupDescriptor createUniverse(NodeDescriptor leader) {
-		return new GroupDescriptor(UUID.randomUUID(), UNIVERSE, leader);
-	}
-	
 	/**
 	 * @param uniqueId
 	 * @param friendlyName
