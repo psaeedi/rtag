@@ -872,9 +872,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 			}	
 		} else if (JOIN_MY_GROUP.equals(commandType)) {
 			// If this node is leader of a child group it will refuse
-			GroupCommunicationManager parentManager = node.getGroupCommunicationDispatcher()
-					.getFollowedGroupByFriendlyName(remoteGroup.getFriendlyName());
-			if (parentManager != null) {
+			if (followedParentManager != null) {
 				// Refuse
 				commandAck = GroupCoordinationCommandAck.createKoCommand(message.getID(), groupDescriptor);
 				sendMessage(MessageSubjects.GROUP_COORDINATION_COMMAND_ACK, commandAck, sender);
