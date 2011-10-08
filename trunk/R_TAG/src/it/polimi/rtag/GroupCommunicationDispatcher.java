@@ -398,11 +398,15 @@ public class GroupCommunicationDispatcher implements
 				followedGroups.remove(manager);
 				overlay.addNeighborhoodChangeListener(manager);
 				notifyGroupManagerWasRemoved(manager);
+				node.getTopologyManager().removeNodesForGroup(
+						manager.getGroupDescriptor());
 			}
 			if (leadedGroups.contains(manager)) {
 				leadedGroups.remove(manager);
 				overlay.addNeighborhoodChangeListener(manager);
 				notifyGroupManagerWasRemoved(manager);
+				node.getTopologyManager().removeNodesForGroup(
+						manager.getGroupDescriptor());
 			}
 			overlay.removeNeighborhoodChangeListener(manager);
 		}

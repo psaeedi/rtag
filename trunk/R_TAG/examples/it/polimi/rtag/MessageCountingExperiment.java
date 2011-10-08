@@ -181,6 +181,13 @@ public class MessageCountingExperiment {
     		}
     	}
 		pw.println("");
+
+    	pw.print("Active connections;");
+		for (Node node: nodes) {
+    		pw.print(node.getTopologyManager().getNumberOfNeighbors() + ";");
+    	}
+		
+		pw.println("");
     	pw.flush();
     }
     

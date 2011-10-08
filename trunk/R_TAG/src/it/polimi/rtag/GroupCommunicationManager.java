@@ -11,8 +11,9 @@ import it.polimi.rtag.messaging.GroupLeaderCommand;
 import it.polimi.rtag.messaging.GroupLeaderCommandAck;
 import it.polimi.rtag.messaging.MessageSubjects;
 
-import java.beans.PropertyChangeSupport;
 import java.io.Serializable;
+import java.net.ConnectException;
+import java.net.MalformedURLException;
 import java.util.HashMap;
 import java.util.UUID;
 
@@ -21,6 +22,7 @@ import polimi.reds.MessageID;
 import polimi.reds.NodeDescriptor;
 import polimi.reds.broker.overlay.AlreadyNeighborException;
 import polimi.reds.broker.overlay.NeighborhoodChangeListener;
+import polimi.reds.broker.overlay.NotRunningException;
 import polimi.reds.broker.overlay.Overlay;
 
 import static it.polimi.rtag.messaging.MessageSubjects.*;
@@ -58,8 +60,6 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 	private GroupCoordinationStrategy coordinationStrategy;
 	
 	private HashMap<MessageID, Message> pendingMessages = new HashMap<MessageID, Message>();
-	
-	PropertyChangeSupport groupChangeSupport;
 	
 	/**
 	 * Create a new group and the current node becomes a leader.
@@ -128,7 +128,6 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 			Overlay overlay) {
 		this.node = node;
 		this.currentNodeDescriptor = node.getID();
-		groupChangeSupport = new PropertyChangeSupport(this);
 		setOverlay(overlay);
 		setGroupDescriptor(groupDescriptor);		
 	}
@@ -235,6 +234,8 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 	 */
 	@Override
 	public void notifyNeighborDead(NodeDescriptor deadNode, Serializable reconfigurationInfo) {
+		// Also the topology receives this event independently.
+		// Do NOT invoke it twice
 		System.out.println("GM " + groupDescriptor.getUniqueId() + " for " + 
 				currentNodeDescriptor + " has been notified that " + 
 				deadNode + " is dead");
@@ -242,8 +243,6 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 		// If the dead node is the parent group simply set it to null
 		if (groupDescriptor.isParentLeader(deadNode)) {
 			groupDescriptor.setParentLeader(null);
-			groupChangeSupport.firePropertyChange(UPDATE_DESCRIPTOR,
-					null, groupDescriptor);
 			
 			if (isLeader()) {
 				GroupLeaderCommand command = GroupLeaderCommand
@@ -265,10 +264,10 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 		
 		if (!groupDescriptor.isLeader(deadNode)) {
 			groupDescriptor.removeFollower(deadNode);
-			groupChangeSupport.firePropertyChange(UPDATE_DESCRIPTOR, null, groupDescriptor);
 			if (isLeader()) {
-				GroupLeaderCommand command = GroupLeaderCommand.createUpdateCommand(groupDescriptor);
-				sendMessageToFollowers(command);
+				GroupLeaderCommand updateCommand = 
+						GroupLeaderCommand.createUpdateCommand(groupDescriptor);
+				sendMessageToFollowers(updateCommand);
 			} 
 			return;
 		} else {
@@ -301,7 +300,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 				}
 			} else {
 				// Notify the children of the update
-				groupChangeSupport.firePropertyChange(UPDATE_DESCRIPTOR, null, groupDescriptor);	
+				// TODO??
 			}
 		}	
 	}
@@ -423,10 +422,12 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 		String commandType = message.getCommand();
 		if (LEAVING_NOTICE.equals(commandType)) {
 			// Update the current group
-			groupDescriptor.removeFollower(sender);
+			/*groupDescriptor.removeFollower(sender);
 			GroupLeaderCommand updateCommand = 
 					GroupLeaderCommand.createUpdateCommand(groupDescriptor);
 			sendMessageToFollowers(updateCommand);
+			*/
+			handleFollowerRemoved(sender);
 			
 			// Sending ack
 			commandAck = GroupFollowerCommandAck.createOkCommand(
@@ -673,26 +674,13 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 			throw new RuntimeException("Trying to talk to itself. " +
 					"This should definitely NOT happen.");
 		}
-		
-		// We are receiving a notification, we should then first connect the remote leader.
-		if (overlay.isNeighborOf(descriptor)) {
-			return descriptor;
+
+		try {
+			return node.getTopologyManager().addNeighborForGroup(
+					descriptor, groupDescriptor);
+		} catch (Exception e) {
+			return null;
 		}
-		
-		System.out.println("òòòòòòòòòòòòòòòò " + currentNodeDescriptor + 
-				" connecting to " + descriptor);
-		NodeDescriptor node = null;
-		for (String url: descriptor.getUrls()) {
-			try {
-				node = overlay.addNeighbor(url);
-			} catch (AlreadyNeighborException ex) {
-				return descriptor;
-			} catch (Exception ex) {
-				continue;
-			}
-			
-		}
-		return node;
 	}
 	
 	/**
@@ -771,8 +759,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 		} else if (ADOPT_GROUP.equals(commandType)) {
 			if (GroupCoordinationCommandAck.OK.equals(responseType)) {
 				// The remote leader has adopted this group
-				groupDescriptor.setParentLeader(sender);
-				groupChangeSupport.firePropertyChange(UPDATE_DESCRIPTOR, null, groupDescriptor);
+				handleParentLeaderChange(sender);
 				
 				// The child leader (which is the current node)
 				// Should become a follower of the remote group.
@@ -786,8 +773,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 				node.getGroupCommunicationDispatcher().addGroupManager(manager);
 			} else if (GroupLeaderCommandAck.KO.equals(responseType)) {
 				// It refused
-				groupDescriptor.setParentLeader(null);
-				groupChangeSupport.firePropertyChange(UPDATE_DESCRIPTOR, null, groupDescriptor);
+				handleParentLeaderChange(null);
 			}
 			GroupLeaderCommand updateCommand = GroupLeaderCommand.createUpdateCommand(groupDescriptor);
 			sendMessageToFollowers(updateCommand);
@@ -807,7 +793,6 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 	 */
 	private void handleFollowerJustJoined(NodeDescriptor follower) {
 		groupDescriptor.addFollower(follower);
-		groupChangeSupport.firePropertyChange(UPDATE_DESCRIPTOR, null, groupDescriptor);
 		GroupLeaderCommand command = GroupLeaderCommand.createUpdateCommand(groupDescriptor);
 		sendMessageToFollowers(command);
 		createChildIfNecessary();
@@ -816,6 +801,35 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 			leadedChildManager.inviteFollowersToMigrate(groupDescriptor);
 		}
 	}
+	
+	/**
+	 * A follower has been removed.
+	 * Remove it from the {@link GroupAwareTopologyManager} and notify the other
+	 * followers. 
+	 */
+	private void handleFollowerRemoved(NodeDescriptor follower) {
+		groupDescriptor.removeFollower(follower);
+		node.getTopologyManager().removeNeighboorForGroup(
+				follower, groupDescriptor);
+		GroupLeaderCommand updateCommand = 
+				GroupLeaderCommand.createUpdateCommand(groupDescriptor);
+		sendMessageToFollowers(updateCommand);
+	}
+	
+	private void handleParentLeaderChange(NodeDescriptor descriptor) {
+		NodeDescriptor oldParent = groupDescriptor.getParentLeader();
+		groupDescriptor.setParentLeader(descriptor);
+		if (oldParent != null && !oldParent.equals(descriptor)) {
+			node.getTopologyManager().removeNeighboorForGroup(
+					oldParent, groupDescriptor);
+		}
+		if (isLeader()) {
+			GroupLeaderCommand updateCommand = 
+				GroupLeaderCommand.createUpdateCommand(groupDescriptor);
+			sendMessageToFollowers(updateCommand);
+		}
+	}
+	
 	
 	private void createChildIfNecessary() {
 		NodeDescriptor recipient = coordinationStrategy.shouldSplitToNode();
@@ -850,11 +864,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 				sendMessage(GROUP_COORDINATION_COMMAND_ACK, commandAck, sender);
 				
 				// Update the descriptor and send updates to all his followers
-				groupDescriptor.setParentLeader(sender);
-				groupChangeSupport.firePropertyChange(UPDATE_DESCRIPTOR, null, groupDescriptor);
-				
-				GroupLeaderCommand updateCommand = GroupLeaderCommand.createUpdateCommand(groupDescriptor);
-				sendMessageToFollowers(updateCommand);
+				handleParentLeaderChange(sender);
 				return;
 			} else {
 				commandAck = GroupCoordinationCommandAck.createKoCommand(message.getID(), groupDescriptor);
@@ -938,7 +948,6 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 	 * @param groupDescriptor the groupDescriptor to set
 	 */
 	private void setGroupDescriptor(GroupDescriptor groupDescriptor) {
-		groupChangeSupport.firePropertyChange(UPDATE_DESCRIPTOR, this.groupDescriptor, groupDescriptor);
 		this.groupDescriptor = groupDescriptor;
 		coordinationStrategy = new LoadBalancingGroupCoordinationStrategy(groupDescriptor);
 	}
