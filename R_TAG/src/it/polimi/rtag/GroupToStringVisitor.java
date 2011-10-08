@@ -20,7 +20,6 @@ public class GroupToStringVisitor implements GroupVisitor {
 		builder = new StringBuilder();
 		builder.append("Id: " + groupDescriptor.getUniqueId() + "\n");
 		builder.append("Name: " + groupDescriptor.getFriendlyName() + "\n");
-		builder.append("Description: " + groupDescriptor.getDescription() + "\n");
 		visitParent();
 		visitLeader();
 		visitFollowers();
