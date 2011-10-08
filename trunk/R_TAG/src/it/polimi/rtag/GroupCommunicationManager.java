@@ -11,23 +11,16 @@ import it.polimi.rtag.messaging.GroupLeaderCommand;
 import it.polimi.rtag.messaging.GroupLeaderCommandAck;
 import it.polimi.rtag.messaging.MessageSubjects;
 
-import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeSupport;
-import java.io.IOException;
 import java.io.Serializable;
-import java.net.MalformedURLException;
 import java.util.HashMap;
 import java.util.UUID;
-
-import lights.Tuple;
 
 import polimi.reds.Message;
 import polimi.reds.MessageID;
 import polimi.reds.NodeDescriptor;
 import polimi.reds.broker.overlay.AlreadyNeighborException;
 import polimi.reds.broker.overlay.NeighborhoodChangeListener;
-import polimi.reds.broker.overlay.NotConnectedException;
-import polimi.reds.broker.overlay.NotRunningException;
 import polimi.reds.broker.overlay.Overlay;
 
 import static it.polimi.rtag.messaging.MessageSubjects.*;
@@ -354,8 +347,6 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 			throw new AssertionError("Overlay cannot be null");
 		}
 		this.overlay = overlay;
-		/*overlay.setTrafficClass(groupDescriptor.getFriendlyName(),
-				groupDescriptor.getFriendlyName());*/
 	}
 	
 	/**
@@ -949,7 +940,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 	private void setGroupDescriptor(GroupDescriptor groupDescriptor) {
 		groupChangeSupport.firePropertyChange(UPDATE_DESCRIPTOR, this.groupDescriptor, groupDescriptor);
 		this.groupDescriptor = groupDescriptor;
-		coordinationStrategy = new ProbabilisticLoadBalancingGroupCoordinationStrategy(groupDescriptor);
+		coordinationStrategy = new LoadBalancingGroupCoordinationStrategy(groupDescriptor);
 	}
 
 }
