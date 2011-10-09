@@ -22,10 +22,11 @@ import polimi.reds.broker.overlay.SimpleTopologyManager;
  */
 public class GroupAwareTopologyManager extends SimpleTopologyManager {
 
-	private Set<NodeDescriptor> ungroupedNodes = new HashSet<NodeDescriptor>();
+	private Set<NodeDescriptor> applicationNodes = new HashSet<NodeDescriptor>();
 	
 	private HashMultimap<NodeDescriptor, UUID> groupsByNode = HashMultimap.create();
 	
+	private Object lock = new Object();
 	/**
 	 * 
 	 */
@@ -33,7 +34,9 @@ public class GroupAwareTopologyManager extends SimpleTopologyManager {
 		// TODO Auto-generated constructor stub
 	}
 
-	/* (non-Javadoc)
+	/** 
+	 * When the application wants to connect a new node.
+	 * 
 	 * @see polimi.reds.broker.overlay.SimpleTopologyManager#addNeighbor(java.lang.String)
 	 */
 	@Override
@@ -41,11 +44,31 @@ public class GroupAwareTopologyManager extends SimpleTopologyManager {
 			MalformedURLException, AlreadyNeighborException, ConnectException {
 		NodeDescriptor descriptor = super.addNeighbor(url);
 		if (descriptor != null) {
-			ungroupedNodes.add(descriptor);
+			synchronized (lock) {
+				applicationNodes.add(descriptor);				
+			}
 		}
 		return descriptor;
 	}
 
+	/**
+	 * When the application wants to release a node.
+	 * 
+	 * @see polimi.reds.broker.overlay.SimpleTopologyManager#removeNeighbor(polimi.reds.NodeDescriptor)
+	 */
+	@Override
+	public void removeNeighbor(NodeDescriptor descriptor) {
+		boolean canBeRemoved = true;
+		synchronized (lock) {
+			applicationNodes.remove(descriptor);
+			canBeRemoved = !groupsByNode.containsKey(descriptor);
+		}
+		if (canBeRemoved) {
+			super.removeNeighbor(descriptor);
+		}
+	}
+
+	
 	public NodeDescriptor addNeighborForGroup(NodeDescriptor descriptor, 
 			GroupDescriptor groupDescriptor) throws NotRunningException {
 		
@@ -54,16 +77,13 @@ public class GroupAwareTopologyManager extends SimpleTopologyManager {
 		}
 		
 		NodeDescriptor node = null;
-		
-		if (ungroupedNodes.contains(descriptor)) {
-			ungroupedNodes.remove(descriptor);
-			node = descriptor;
-		} else if (isNeighborOf(descriptor)) {
+		if (isNeighborOf(descriptor)) {
 			node = descriptor;
 		} else {
 			for (String url: descriptor.getUrls()) {
 				try {
-					node = addNeighbor(url);
+					// TODO this may create a deadlock
+					node = super.addNeighbor(url);
 				} catch (AlreadyNeighborException ex) {
 					node = descriptor;
 				} catch (Exception ex) {
@@ -71,47 +91,52 @@ public class GroupAwareTopologyManager extends SimpleTopologyManager {
 				}
 				
 			}
-			if (node != null) {
-				ungroupedNodes.remove(descriptor);
-			}
 		}
 		if (node != null) {
-			groupsByNode.put(node, groupDescriptor.getUniqueId());
+			synchronized (lock) {
+				groupsByNode.put(node, groupDescriptor.getUniqueId());
+			}
 		}
 		return node;
+		
 	}
 	
 	public void removeNeighboorForGroup(NodeDescriptor descriptor,
 			GroupDescriptor groupDescriptor) {
-		groupsByNode.remove(descriptor, groupDescriptor);
-		if (!groupsByNode.containsKey(descriptor) ||
-				groupsByNode.get(descriptor).size() == 0)
-		{
-			if (ungroupedNodes.contains(descriptor)) {
-				throw new RuntimeException("Node " + descriptor +
-						" which was in a group should not be in " +
-						" the ungrouped list.");
+		boolean canBeRemoved = false;
+		synchronized (lock) {
+			groupsByNode.remove(descriptor, groupDescriptor.getUniqueId());
+			if (groupsByNode.get(descriptor).size() == 0) {
+				groupsByNode.removeAll(descriptor);
 			}
+			canBeRemoved = (!groupsByNode.containsKey(descriptor) ||
+					groupsByNode.get(descriptor).size() == 0 || !applicationNodes.contains(descriptor));
+		}
+		if (canBeRemoved) {
 			super.removeNeighbor(descriptor);
 		}
 	}
 	
 	public void removeNodesForGroup(GroupDescriptor groupDescriptor) {
-		Set<NodeDescriptor> keys = groupsByNode.keySet();
+		Set<NodeDescriptor> keys = null;
+		synchronized (lock) {
+			keys = new HashSet<NodeDescriptor>(groupsByNode.keySet());
+		}
 		for (NodeDescriptor descriptor: keys) {
 			removeNeighboorForGroup(descriptor, groupDescriptor);
 		}
 	}
-
-	/* (non-Javadoc)
-	 * @see polimi.reds.broker.overlay.SimpleTopologyManager#removeNeighbor(polimi.reds.NodeDescriptor)
-	 */
-	@Override
-	public void removeNeighbor(NodeDescriptor descriptor) {
-		if (ungroupedNodes.contains(descriptor)) {
-			ungroupedNodes.remove(descriptor);
+	
+	public int getApplicationConnectionCount() {
+		synchronized (lock) {
+			return applicationNodes.size();
 		}
-		groupsByNode.removeAll(descriptor);
-		super.removeNeighbor(descriptor);
 	}
+	
+	public int getMiddlewareConnectionCount() {
+		synchronized (lock) {
+			return groupsByNode.keySet().size();
+		}
+	}
+
 }
