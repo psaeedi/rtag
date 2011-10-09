@@ -91,9 +91,6 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 		
 		GroupCommunicationManager manager = new GroupCommunicationManager(
 				node, groupDescriptor, node.getOverlay());
-		// TODO implement this
-		/*manager.groupChangeSupport.addPropertyChangeListener(UPDATE_DESCRIPTOR,
-				node.getTopologyManager());*/
 		return manager;
 	}
 	
@@ -208,7 +205,8 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 	public void notifyNeighborAdded(NodeDescriptor addedNode, Serializable reconfigurationInfo) {
 		System.out.println("GM for " + currentNodeDescriptor + " notifyNeighborAdded " + addedNode);
 
-		if (groupDescriptor.isMember(addedNode)) {
+		if (groupDescriptor.isMember(addedNode) ||
+				groupDescriptor.isParentLeader(addedNode)) {
 			// Already a member, nothing to be done.
 			return;
 		}
@@ -234,11 +232,15 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 	 */
 	@Override
 	public void notifyNeighborDead(NodeDescriptor deadNode, Serializable reconfigurationInfo) {
+		if (currentNodeDescriptor.equals(deadNode)) {
+			throw new RuntimeException("Notified of its own death");
+		}
+		
 		// Also the topology receives this event independently.
 		// Do NOT invoke it twice
 		System.out.println("GM " + groupDescriptor.getUniqueId() + " for " + 
 				currentNodeDescriptor + " has been notified that " + 
-				deadNode + " is dead");
+				deadNode + " is dead. " + reconfigurationInfo);
 		
 		// If the dead node is the parent group simply set it to null
 		if (groupDescriptor.isParentLeader(deadNode)) {
@@ -422,11 +424,6 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 		String commandType = message.getCommand();
 		if (LEAVING_NOTICE.equals(commandType)) {
 			// Update the current group
-			/*groupDescriptor.removeFollower(sender);
-			GroupLeaderCommand updateCommand = 
-					GroupLeaderCommand.createUpdateCommand(groupDescriptor);
-			sendMessageToFollowers(updateCommand);
-			*/
 			handleFollowerRemoved(sender);
 			
 			// Sending ack
@@ -487,8 +484,6 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 			// unhandled commands..
 		}
 	}
-
-	
 	
 	private void sendMessage(String subject, 
 			Message message, NodeDescriptor recipient) {
@@ -498,12 +493,13 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 				System.err.println("CANNOT CONNECT TO: " + recipient);
 				return;
 			}
-			System.out.println("GM " + groupDescriptor.getUniqueId() +
+			System.out.println("GM " + groupDescriptor.getFriendlyName() + " " +
 					currentNodeDescriptor + " sending " + message + " to" +
 					recipient);
 			overlay.send(subject, message, recipient);
 		} catch (Exception e) {
 			System.err.println("Catched: " + e.getMessage());
+			e.printStackTrace();
 		} 
 	}
 	
@@ -643,9 +639,15 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 			// Same group
 			return;
 		}
+		NodeDescriptor remoteLeader = remoteGroupDescriptor.getLeader();	
+		if (currentNodeDescriptor.equals(remoteLeader)) {
+			// we have discovered our child
+			return;
+		}
 		
 		if (!isLeader()) {
 			try {
+				//connectIfNotConnected(groupDescriptor.getLeader());
 				overlay.send(MessageSubjects.GROUP_DISCOVERED_NOTIFICATION, 
 						remoteGroupDescriptor, groupDescriptor.getLeader());
 			} catch (Exception e) {
@@ -654,8 +656,6 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 			} 
 			return;
 		}
-		
-		NodeDescriptor remoteLeader = remoteGroupDescriptor.getLeader();	
 		
 		// We first attempt to merge then to join
 		if (coordinationStrategy.shouldInviteToMerge(remoteGroupDescriptor)) {
@@ -666,7 +666,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 			GroupCoordinationCommand command = 
 					GroupCoordinationCommand.createJoinMyGroupCommand(groupDescriptor);
 			sendCoordinationCommand(command, remoteLeader);
-		}
+		} 
 	}
 	
 	private NodeDescriptor connectIfNotConnected(NodeDescriptor descriptor) {

@@ -48,7 +48,7 @@ public class MessageCountingExperiment {
 			urls.add("reds-tcp:"+ host + ":" + port);
 		}
     	
-    	createNetworkByAddingToNode0();
+    	createNetworkByAddingToARandomNode();
     }
     
     
@@ -182,10 +182,23 @@ public class MessageCountingExperiment {
     	}
 		pw.println("");
 
-    	pw.print("Active connections;");
+		pw.print("Total active connections;");
 		for (Node node: nodes) {
     		pw.print(node.getTopologyManager().getNumberOfNeighbors() + ";");
     	}
+		pw.println("");
+		
+    	pw.print("Application active connections;");
+		for (Node node: nodes) {
+    		pw.print(node.getTopologyManager().getApplicationConnectionCount() + ";");
+    	}
+		pw.println("");
+		
+		pw.print("Middleware active connections;");
+		for (Node node: nodes) {
+    		pw.print(node.getTopologyManager().getMiddlewareConnectionCount() + ";");
+    	}
+		pw.println("");
 		
 		pw.println("");
     	pw.flush();

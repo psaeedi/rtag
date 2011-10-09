@@ -393,22 +393,23 @@ public class GroupCommunicationDispatcher implements
 	}
 	
 	public void removeGroup(GroupCommunicationManager manager) {
+		boolean wasRemoved = false;
 		synchronized (lock) {
 			if (followedGroups.contains(manager)) {
 				followedGroups.remove(manager);
-				overlay.addNeighborhoodChangeListener(manager);
-				notifyGroupManagerWasRemoved(manager);
-				node.getTopologyManager().removeNodesForGroup(
-						manager.getGroupDescriptor());
+				wasRemoved = true;
 			}
 			if (leadedGroups.contains(manager)) {
 				leadedGroups.remove(manager);
-				overlay.addNeighborhoodChangeListener(manager);
+				wasRemoved = true;
+			}
+			// Disconnect the manager
+			if (wasRemoved) {
+				overlay.removeNeighborhoodChangeListener(manager);
 				notifyGroupManagerWasRemoved(manager);
 				node.getTopologyManager().removeNodesForGroup(
 						manager.getGroupDescriptor());
 			}
-			overlay.removeNeighborhoodChangeListener(manager);
 		}
 	}
 	
