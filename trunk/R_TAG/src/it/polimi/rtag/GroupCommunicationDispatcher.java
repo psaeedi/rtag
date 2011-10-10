@@ -413,22 +413,31 @@ public class GroupCommunicationDispatcher implements
 		}
 	}
 	
-	public GroupDescriptor getLocalUniverse() {
+	public GroupCommunicationManager getLocalUniverseManager() {
 		synchronized (lock) {
 			for (GroupCommunicationManager manager: leadedGroups) {
 				GroupDescriptor localGroup = manager.getGroupDescriptor();
 				if (localGroup.isUniverse()) {
-					return localGroup;
+					return manager;
 				}
 			}
 			for (GroupCommunicationManager manager: followedGroups) {
 				GroupDescriptor localGroup = manager.getGroupDescriptor();
 				if (localGroup.isUniverse()) {
-					return localGroup;
+					return manager;
 				}
 			}
 		}
 		return null;
+	}
+	
+	public GroupDescriptor getLocalUniverse() {
+		GroupCommunicationManager manager = getLocalUniverseManager();
+		if (manager != null) {
+			return manager.getGroupDescriptor();
+		} else {
+			return null;
+		}
 	}
 	
 	public GroupDescriptor getGroupWithName(String friendlyName) {
@@ -459,6 +468,47 @@ public class GroupCommunicationDispatcher implements
 		}
 		for (String subject: SUBJECTS) {
 			overlay.removePacketListener(this, subject);
+		}
+	}
+
+	/**
+	 * Removes all the groups matching the given name.
+	 * This is invoked by the node when the application wants
+	 * to leave a group.  
+	 */
+	public void leaveGroupsWithName(String friendlyName) {
+		synchronized (lock) {
+			GroupCommunicationManager manager = null;
+			manager = getLeadedGroupByFriendlyName(friendlyName);
+			if (manager != null) {
+				removeGroup(manager);
+			}
+			manager = getFollowedGroupByFriendlyName(friendlyName);
+			if (manager != null) {
+				removeGroup(manager);
+			}
+		}
+	}
+
+	/**
+	 * Create a new group and inform the network
+	 */
+	public void joinGroupAndNotifyNetwork(String friendlyName) {
+		GroupDescriptor descriptor = getGroupWithName(friendlyName);
+		if (descriptor != null) {
+			// Already in that group
+			return;
+		}
+		GroupCommunicationManager manager =
+				GroupCommunicationManager.createGroupCommunicationManager(
+						node, UUID.randomUUID(), friendlyName);
+		addGroupManager(manager);
+		try {
+			getLocalUniverseManager().sendMessageGroupCreatedNotification(
+					node.getID(),
+					manager.getGroupDescriptor());
+		} catch (Exception ex) {
+			ex.printStackTrace();
 		}
 	}
 }
