@@ -11,6 +11,7 @@ import it.polimi.rtag.messaging.GroupLeaderCommand;
 import it.polimi.rtag.messaging.GroupLeaderCommandAck;
 import it.polimi.rtag.messaging.MessageSubjects;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.net.ConnectException;
 import java.net.MalformedURLException;
@@ -22,6 +23,7 @@ import polimi.reds.MessageID;
 import polimi.reds.NodeDescriptor;
 import polimi.reds.broker.overlay.AlreadyNeighborException;
 import polimi.reds.broker.overlay.NeighborhoodChangeListener;
+import polimi.reds.broker.overlay.NotConnectedException;
 import polimi.reds.broker.overlay.NotRunningException;
 import polimi.reds.broker.overlay.Overlay;
 
@@ -350,6 +352,36 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 		this.overlay = overlay;
 	}
 	
+	public void sendMessageGroupCreatedNotification(NodeDescriptor sender,
+			GroupDescriptor packet) {
+		// We should forward the message to everyone beside the sender
+		if (isLeader()) {
+			for (NodeDescriptor follower: groupDescriptor.getFollowers()) {
+				if (sender.equals(follower)) {
+					continue;
+				}
+				connectIfNotConnected(follower);
+				try {
+					overlay.send(GROUP_CREATED_NOTIFICATION, packet, follower);
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		} else {
+			NodeDescriptor leader = groupDescriptor.getLeader();
+			if (!leader.equals(sender)) {
+				connectIfNotConnected(leader);
+				try {
+					overlay.send(GROUP_CREATED_NOTIFICATION, packet, leader);
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+	
 	/**
 	 * When a node creates a new group the created group descriptor is spread
 	 * over the network. Group leaders can use this information to merge similar groups.</p>
@@ -367,6 +399,9 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 		}
 		
 		// TODO send a GroupLeaderCommand#MERGE_GROUPS if opportune
+		handleGroupDiscovered(sender, packet);
+		// Notify the rest of the network
+		sendMessageGroupCreatedNotification(sender, packet);
 	}
 
 

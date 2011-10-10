@@ -4,6 +4,7 @@ package it.polimi.rtag;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.UUID;
 
 
 import com.google.common.collect.HashMultimap;
@@ -76,12 +77,14 @@ public class Node implements PacketListener {
 	/**
 	 * @param tmessage
 	 * @param filter
+	 * 
+	 * TODO integrate this better with the grouping
 	 */
-	public void sendGroupcast(TupleMessage tmessage, Filter filter) {
-		GroupcastFilter groupcastFilter = (GroupcastFilter)filter;
-		GroupDescriptor group = groupcastFilter.getGroupDescriptor();
+	public void sendGroupcast(TupleMessage tmessage, GroupcastFilter filter) {
+		GroupDescriptor group = filter.getGroupDescriptor();
 		if (group.isMember(currentDescriptor)) {
 			// TODO add to tuplespace
+			// TODO move this code to the GroupCommunicationManager
 			if (group.isLeader(currentDescriptor)) {
 				for (NodeDescriptor recipient: group.getFollowers()) {
 					sendMessageCommunication(recipient, tmessage);
@@ -335,6 +338,23 @@ public class Node implements PacketListener {
 	 */
 	public GroupAwareTopologyManager getTopologyManager() {
 		return topologyManager;
+	}
+
+	public void joinGroup(String friendlyName) {
+		// if string is equle to the constant universe, rise an excdption
+		if (GroupDescriptor.UNIVERSE.equals(friendlyName)) {
+			throw new RuntimeException("The application cannot join the universe.");
+		}
+		// otherwise tell dispatcher to create and join a group of what we need
+		groupCommunicationDispatcher.joinGroupAndNotifyNetwork(friendlyName);
+	}
+
+	public void leaveGroup(String friendlyName) {
+		if (GroupDescriptor.UNIVERSE.equals(friendlyName)) {
+			throw new RuntimeException("The application cannot leave the universe.");
+		}
+		groupCommunicationDispatcher.leaveGroupsWithName(friendlyName);
+		
 	}
 
 
