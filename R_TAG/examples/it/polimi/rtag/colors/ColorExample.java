@@ -106,6 +106,8 @@ public class ColorExample {
 		// Verify that all have received the message
 		// Count the number of messages sent
 		
+		// 4- Write to file
+		
 		exp.closeFile();
 		exp.Stop();
 	}
