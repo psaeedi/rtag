@@ -9,6 +9,7 @@ import it.polimi.rtag.messaging.GroupFollowerCommand;
 import it.polimi.rtag.messaging.GroupFollowerCommandAck;
 import it.polimi.rtag.messaging.GroupLeaderCommand;
 import it.polimi.rtag.messaging.GroupLeaderCommandAck;
+import it.polimi.rtag.messaging.GroupcastTupleMessage;
 import it.polimi.rtag.messaging.MessageSubjects;
 
 import java.io.IOException;
@@ -76,7 +77,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 			 UUID uniqueId, String friendlyName) {
 		
 		GroupDescriptor groupDescriptor = new GroupDescriptor(uniqueId, 
-				friendlyName, node.getID());
+				friendlyName, node.getNodeDescriptor());
 		return createGroupCommunicationManager(node, groupDescriptor);
 	}
 	
@@ -100,7 +101,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 			GroupDescriptor parentGroupDescriptor) {
 		GroupDescriptor groupDescriptor = new GroupDescriptor(UUID.randomUUID(), 
 				parentGroupDescriptor.getFriendlyName(),
-				node.getID(), parentGroupDescriptor.getLeader());
+				node.getNodeDescriptor(), parentGroupDescriptor.getLeader());
 		if (parentGroupDescriptor.isUniverse()) {
 			groupDescriptor.isUniverse();
 		}
@@ -126,7 +127,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 			GroupDescriptor groupDescriptor,
 			Overlay overlay) {
 		this.node = node;
-		this.currentNodeDescriptor = node.getID();
+		this.currentNodeDescriptor = node.getNodeDescriptor();
 		setOverlay(overlay);
 		setGroupDescriptor(groupDescriptor);		
 	}
@@ -986,5 +987,14 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 		this.groupDescriptor = groupDescriptor;
 		coordinationStrategy = new LoadBalancingGroupCoordinationStrategy(groupDescriptor);
 	}
+
+
+	public void handleGroupcast(GroupcastTupleMessage message) {
+		// TODO Auto-generated method stub
+		// if universe and not the recipient forward
+		// if recipient use and forward
+		// else skip/exception
+	}
+
 
 }

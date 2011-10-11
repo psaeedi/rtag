@@ -3,12 +3,16 @@
  */
 package it.polimi.rtag.colors;
 
+import it.polimi.rtag.GroupDescriptor;
 import it.polimi.rtag.colors.ColorApplication.Color;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+
+import lights.Field;
+import lights.Tuple;
 
 
 /**
@@ -17,7 +21,7 @@ import java.util.ArrayList;
  */
 public class ColorExample {
 	
-	private static final int NUMBER_OF_NODES = 6;
+	private static final int NUMBER_OF_NODES = 3;
 
 	int localPort = 10001;
     
@@ -63,8 +67,9 @@ public class ColorExample {
 		}
 		
 		createNetworkByAddingToNode0();
-		changeColor(apps.get(2), Color.ORANGE);
-		changeColor(apps.get(5), Color.PURPLE);
+		//changeColor(apps.get(2), Color.ORANGE);
+		//changeColor(apps.get(5), Color.PURPLE);
+		sendGroupcast(apps.get(4), Color.RED, "Hello");
     }
     
     
@@ -75,7 +80,7 @@ public class ColorExample {
     	
     }
     
-    private void Stop() {
+    private void stop() {
     	for(ColorApplication application: apps) {
 			application.tearDown();
 			try {
@@ -87,6 +92,10 @@ public class ColorExample {
     	}
 	}
  
+    
+    private void sendGroupcast(ColorApplication app, Color color, String command) {
+    	app.sendGroupcast(color, command);
+    }
 
 	/**
 	 * @param args
@@ -109,7 +118,7 @@ public class ColorExample {
 		// 4- Write to file
 		
 		exp.closeFile();
-		exp.Stop();
+		exp.stop();
 	}
 	
 	private void createNetworkByAddingToNode0() {

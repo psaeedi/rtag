@@ -240,7 +240,7 @@ public class GroupDescriptor implements Serializable {
 	}
 
 	public static GroupDescriptor createUniverse(Node node) {
-		return new GroupDescriptor(UUID.randomUUID(), UNIVERSE, true, node.getID(), null);
+		return new GroupDescriptor(UUID.randomUUID(), UNIVERSE, true, node.getNodeDescriptor(), null);
 	}
 
 	public boolean hasSameName(GroupDescriptor remoteGroupDescriptor) {
