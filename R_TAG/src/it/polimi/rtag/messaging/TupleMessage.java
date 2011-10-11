@@ -3,15 +3,14 @@
  */
 package it.polimi.rtag.messaging;
 
-import it.polimi.rtag.filters.TupleFilter;
 import lights.Tuple;
 
 /**
  * @author Panteha Saeedi (saeedi@elet.polimi.it)</p>.
  * 
- * 
+ * Applications should extend this with their own messages.
  */
-public class TupleMessage extends polimi.reds.Message {
+public abstract class TupleMessage extends polimi.reds.Message {
 
 	/**
 	 * Messages are valid for 5 minutes.
@@ -24,22 +23,13 @@ public class TupleMessage extends polimi.reds.Message {
 	 */
 	private static final long serialVersionUID = -7291797665468391009L;
 
-	private TupleFilter filter;
 	private Tuple content;
 	private long creationTime;
 	
-	public TupleMessage(TupleFilter filter, Tuple content) {
+	public TupleMessage(Tuple content) {
 		createID();
-		this.filter = filter;
 		this.content = content;
 		creationTime = System.currentTimeMillis();
-	}
-
-	/**
-	 * @return the filter
-	 */
-	public TupleFilter getFilter() {
-		return filter;
 	}
 
 	/**
@@ -53,5 +43,6 @@ public class TupleMessage extends polimi.reds.Message {
 		long now = System.currentTimeMillis();
 		return now - creationTime > EXPIRATION_TIME;
 	}
+	
 }
 

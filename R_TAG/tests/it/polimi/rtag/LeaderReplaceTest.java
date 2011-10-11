@@ -49,7 +49,7 @@ public class LeaderReplaceTest {
 			node.start();
 			nodes.add(node);
 			urls.add("reds-tcp:"+ host + ":" + port);
-			nodesById.put(node.getID(), node);
+			nodesById.put(node.getNodeDescriptor(), node);
 		}
 	}
 
@@ -100,6 +100,6 @@ public class LeaderReplaceTest {
 		
 		Assert.assertEquals(parentUniverse.getLeader(), childUniverse.getParentLeader());
 		Assert.assertNotNull(childUniverse.getLeader());
-		Assert.assertFalse(childUniverse.isMember(childLeaderNode.getID()));
+		Assert.assertFalse(childUniverse.isMember(childLeaderNode.getNodeDescriptor()));
 	}
 }

@@ -6,17 +6,21 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.UUID;
 
+import lights.Tuple;
+import lights.interfaces.IField;
+
 
 import com.google.common.collect.HashMultimap;
 
-import it.polimi.rtag.filters.GroupcastFilter;
-import it.polimi.rtag.filters.UnicastFilter;
 import it.polimi.rtag.messaging.Ack;
+import it.polimi.rtag.messaging.GroupcastTupleMessage;
 import it.polimi.rtag.messaging.MessageSubjects;
 import it.polimi.rtag.messaging.TupleMessage;
+import it.polimi.rtag.messaging.UnicastTupleMessage;
 import polimi.reds.Filter;
 import polimi.reds.MessageID;
 import polimi.reds.NodeDescriptor;
+import polimi.reds.broker.overlay.AlreadyNeighborException;
 import polimi.reds.broker.overlay.GenericOverlay;
 import polimi.reds.broker.overlay.Overlay;
 import polimi.reds.broker.overlay.PacketListener;
@@ -74,48 +78,6 @@ public class Node implements PacketListener {
 		return overlay;
 	}
 	
-	/**
-	 * @param tmessage
-	 * @param filter
-	 * 
-	 * TODO integrate this better with the grouping
-	 */
-	public void sendGroupcast(TupleMessage tmessage, GroupcastFilter filter) {
-		GroupDescriptor group = filter.getGroupDescriptor();
-		if (group.isMember(currentDescriptor)) {
-			// TODO add to tuplespace
-			// TODO move this code to the GroupCommunicationManager
-			if (group.isLeader(currentDescriptor)) {
-				for (NodeDescriptor recipient: group.getFollowers()) {
-					sendMessageCommunication(recipient, tmessage);
-				}
-				// Forward to the parent group
-				NodeDescriptor parentLeader = group.getParentLeader();
-				if (parentLeader != null) {
-					sendMessageCommunication(parentLeader, tmessage);
-				}				
-			} else {
-				// The current node is not leader. Forward this to the leader.
-				sendMessageCommunication(group.getLeader(), tmessage);
-			}
-		}
-	}
-
-	/**
-	 * @param tmessage
-	 * @param filter
-	 */
-	public void sendUnicast(TupleMessage tmessage, Filter filter) {
-		UnicastFilter unicastFilter = (UnicastFilter)filter;
-		NodeDescriptor recipient = unicastFilter.getRecipient();
-		if (recipient.equals(currentDescriptor)) {
-			// TODO add message content to the current tuple space....
-		} else {
-			// Note: followers of the same leader know each other.
-			sendMessageCommunication(recipient, tmessage);
-		}
-	}
-
 	public void setOverlay(Overlay overlay) {
 		if (this.overlay != null) {
 			throw new AssertionError("Overlay already configured");
@@ -143,7 +105,9 @@ public class Node implements PacketListener {
 		try {
 			// Handle each received message according to its subject
 			if (COMMUNICATION.equals(subject)) {
-				handleMessagePublish(sender, (TupleMessage)packet);
+				if (packet instanceof UnicastTupleMessage) {
+					handleUnicast((UnicastTupleMessage) packet);
+				}
 			} else if (COMMUNICATION_ACK.equals(subject)) {
 				handleMessageAck(sender, (Ack)packet);
 			} else {
@@ -159,6 +123,11 @@ public class Node implements PacketListener {
 	
 	
 
+
+	private void handleUnicast(UnicastTupleMessage packet) {
+	// TODO Auto-generated method stub
+	
+}
 
 	/**
 	 * Handles {@link MessageSubjects#COMMUNICATION_ACK} messages received from a neighbor.
@@ -184,8 +153,7 @@ public class Node implements PacketListener {
 	 * @param sender the sender node
 	 * @param message the message content.
 	 */
-	private void handleMessagePublish(NodeDescriptor sender,
-			TupleMessage message) {
+	public void handleGroupcast(NodeDescriptor sender, GroupcastTupleMessage message) {
 		
 		// Check if we have already received the message.
 		// Duplicated messages are discarded.
@@ -196,7 +164,11 @@ public class Node implements PacketListener {
 				return;
 			}
 		}
-	
+		
+		if (currentDescriptor.equals(sender)) {
+			throw new RuntimeException("Groupcasting itself.");
+		}
+		
 		// Check if the message is expired.
 		// Expired messages are discarded.
 		if (message.isExpired()) {
@@ -210,58 +182,28 @@ public class Node implements PacketListener {
 			recentlyReceivedMessages.add(message);
 		}
 		
+		sendGroupcast(message);
+	}
+
+	public void sendGroupcast(GroupcastTupleMessage message) {
+		GroupDescriptor recipient = message.getRecipient();
+		GroupCommunicationManager manager = 
+			groupCommunicationDispatcher.getGroupManagerWithName(recipient.getFriendlyName());
 		
-		Filter filter = message.getFilter();
-		if (filter instanceof UnicastFilter) {
-			// Unicast
-			UnicastFilter unicastFilter = (UnicastFilter)filter;
-			NodeDescriptor recipient = unicastFilter.getRecipient();
-			if (recipient.equals(currentDescriptor)) {
-				// TODO add message content to the current tuple space....
-				sendMessageAck(sender, Ack.createOkAck(message.getID()));
-				return;
-			} else {
-				// The node has received a unicast which was not for it
-				sendMessageAck(sender, Ack.createWrongRecipientAck(message.getID()));
-				return;
-			}
-		} else if (filter instanceof GroupcastFilter) {
-			// Groupcast
-			GroupcastFilter groupcastFilter = (GroupcastFilter)filter;
-			GroupDescriptor group = groupcastFilter.getGroupDescriptor();
-			if (group.isMember(currentDescriptor)) {
-				// TODO add message content to the local tuple space....
-				if (group.isLeader(currentDescriptor)) {
-					// When a leader receives a groupcast it sends it to all
-					// the followers with the exclusion of the one sending it
-					// then it forwards it to the parent group if any.
-					for (NodeDescriptor recipient: group.getFollowers()) {
-						if (sender.equals(recipient)) {
-							// We do not send the message to the sender
-							continue;
-						}
-						sendMessageCommunication(recipient, message);
-					}
-					// Forward to the parent group
-					NodeDescriptor parentLeader = group.getParentLeader();
-					if (parentLeader != null) {
-						sendMessageCommunication(parentLeader, message);
-					}
-					
-				} else {
-					// The current node is not leader. 
-					// Nothing to do.
-				}
-				sendMessageAck(sender, Ack.createOkAck(message.getID()));
-				return;
-				
-			} else {
-				sendMessageAck(sender, Ack.createNotGroupFollowerAck(message.getID()));
-				return;
-			}
+		if (manager != null) {
+			manager.handleGroupcast(message);
+			// TODO notify the application that a new message has arrived!
+			return;
 		} else {
-			// TODO shall we send an ack saying that sth went wrong?
-			throw new AssertionError("Unrecognizer filter type: " + filter);
+			GroupDescriptor localUniverse = groupCommunicationDispatcher.getLocalUniverse();
+			if (localUniverse.isLeader(currentDescriptor)) {
+				GroupCommunicationManager universeManager = 
+					groupCommunicationDispatcher.getLocalUniverseManager();
+				universeManager.handleGroupcast(message);
+			} else {
+				//Nothing to do.
+				return;
+			}
 		}
 	}
 
@@ -280,19 +222,48 @@ public class Node implements PacketListener {
 	 * @param recipient
 	 * @param message
 	 */
-	private void sendMessageCommunication(NodeDescriptor recipient, TupleMessage message) {
-		// TODO check if message and recipient matches
-		try {
-			overlay.send(COMMUNICATION, message, recipient);
-			synchronized (lock) {
-				pendingCommunicationMessages.put(recipient, message.getID());	
+	public void sendUnicast(UnicastTupleMessage message) {
+		NodeDescriptor recipient = message.getRecipient();
+		if (recipient.equals(currentDescriptor)) {
+			// TODO add message content to the current tuple space....
+		} else {
+			try {
+				recipient = addNeigboor(recipient);
+				overlay.send(COMMUNICATION, message, recipient);
+				synchronized (lock) {
+					pendingCommunicationMessages.put(recipient, message.getID());	
+				}
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		}
 	}
 	
+	private NodeDescriptor addNeigboor(NodeDescriptor descriptor) {
+		if (currentDescriptor.equals(descriptor)) {
+			throw new RuntimeException("Trying to talk to itself. " +
+					"This should definitely NOT happen.");
+		}
+
+		if (overlay.isNeighborOf(descriptor)) {
+			return descriptor;
+		}
+		
+		NodeDescriptor node = null;
+		for (String url: descriptor.getUrls()) {
+			try {
+				// TODO this may create a deadlock
+				descriptor = getTopologyManager().addNeighbor(url);
+			} catch (AlreadyNeighborException ex) {
+				node = descriptor;
+			} catch (Exception ex) {
+				continue;
+			}
+		}
+		return node;
+	}
+
 	protected void cleanPendingMessages() {
 		// TODO clean the pendingCommunicationMessages map to avoid storing 
 		// values for undelievered messages by removing all the expired ones.
@@ -313,7 +284,7 @@ public class Node implements PacketListener {
 		}
 	}
 	
-	public NodeDescriptor getID() {
+	public NodeDescriptor getNodeDescriptor() {
 		return currentDescriptor;
 	}
 
@@ -329,14 +300,14 @@ public class Node implements PacketListener {
 	/**
 	 * @return the groupCommunicationDispatcher
 	 */
-	public GroupCommunicationDispatcher getGroupCommunicationDispatcher() {
+	GroupCommunicationDispatcher getGroupCommunicationDispatcher() {
 		return groupCommunicationDispatcher;
 	}
 
 	/**
 	 * @return the topologyManager
 	 */
-	public GroupAwareTopologyManager getTopologyManager() {
+	GroupAwareTopologyManager getTopologyManager() {
 		return topologyManager;
 	}
 
@@ -357,5 +328,8 @@ public class Node implements PacketListener {
 		
 	}
 
+	public GroupDescriptor getGroup(String friendlyName) {
+		return groupCommunicationDispatcher.getGroupWithName(friendlyName);
+	}
 
 }

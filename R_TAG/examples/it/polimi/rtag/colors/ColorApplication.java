@@ -6,10 +6,16 @@ package it.polimi.rtag.colors;
 import java.net.ConnectException;
 import java.net.MalformedURLException;
 
+import lights.Field;
+import lights.Tuple;
+
 import polimi.reds.broker.overlay.AlreadyNeighborException;
 import polimi.reds.broker.overlay.NotRunningException;
 import it.polimi.rtag.GroupCommunicationDispatcher;
+import it.polimi.rtag.GroupDescriptor;
 import it.polimi.rtag.Node;
+import it.polimi.rtag.colors.ColorApplication.Color;
+import it.polimi.rtag.messaging.*;
 
 /**
  * @author Panteha Saeedi (saeedi@elet.polimi.it)
@@ -17,6 +23,8 @@ import it.polimi.rtag.Node;
  */
 public class ColorApplication {
 	
+	
+	private static TupleMessage GROUPCAST;
 	
 	public static String RED = "Red";
 	public static String GREEN = "Green";
@@ -26,7 +34,8 @@ public class ColorApplication {
 	public static String PURPLE = "Purple";
 	public static String WHITE = "White";
 	public static String BLACK = "Black";
-    
+	
+	
 	private Node node;
 	private Color currentColor = Color.RED;
 	
@@ -531,11 +540,24 @@ public class ColorApplication {
 	 public void tearDown() {
 		node.stop();
 	}
-
-
+	 
 	public enum Color {
 		RED, BLUE, YELLOW, GREEN, PURPLE, WHITE, ORANGE, BLACK;
 	}
+
+
+	public void sendGroupcast(Color color, String command) {
+    	GroupDescriptor colorGroup = node.getGroup(color.toString());
+    	if (colorGroup == null) {
+    		return;
+    	}
+
+    	GroupcastTupleMessage message = null;
+    	// TODO instantiate the message
+    	node.sendGroupcast(message);
+	}
+
+
 
 
 	

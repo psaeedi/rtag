@@ -104,7 +104,7 @@ public class GroupCommunicationDispatcher implements
 	public void addGroupManager(GroupCommunicationManager manager) {
 		GroupDescriptor groupDescriptor = manager.getGroupDescriptor();	
 		synchronized (lock) {
-			if (groupDescriptor.isLeader(node.getID())) {
+			if (groupDescriptor.isLeader(node.getNodeDescriptor())) {
 				if (getLeadedGroupByFriendlyName(groupDescriptor.getFriendlyName()) != null) {
 					throw new RuntimeException("Already leading a group matching: " + groupDescriptor);
 				}
@@ -440,17 +440,25 @@ public class GroupCommunicationDispatcher implements
 		}
 	}
 	
-	public GroupDescriptor getGroupWithName(String friendlyName) {
+	public GroupCommunicationManager getGroupManagerWithName(String friendlyName) {
 		synchronized (lock) {
 			GroupCommunicationManager manager = null;
 			manager = getLeadedGroupByFriendlyName(friendlyName);
 			if (manager != null) {
-				return manager.getGroupDescriptor();
+				return manager;
 			}
 			manager = getFollowedGroupByFriendlyName(friendlyName);
 			if (manager != null) {
-				return manager.getGroupDescriptor();
+				return manager;
 			}
+		}
+		return null;
+	}
+	
+	public GroupDescriptor getGroupWithName(String friendlyName) {
+		GroupCommunicationManager manager = getGroupManagerWithName(friendlyName);
+		if (manager != null) {
+			return manager.getGroupDescriptor();
 		}
 		return null;
 	}
@@ -505,7 +513,7 @@ public class GroupCommunicationDispatcher implements
 		addGroupManager(manager);
 		try {
 			getLocalUniverseManager().sendMessageGroupCreatedNotification(
-					node.getID(),
+					node.getNodeDescriptor(),
 					manager.getGroupDescriptor());
 		} catch (Exception ex) {
 			ex.printStackTrace();

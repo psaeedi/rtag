@@ -97,10 +97,10 @@ public class JoinAndMergeGroupsTest {
 		Assert.assertEquals(universe1, universe2);
 		
 		Assert.assertEquals(2, universe1.getMembers().size());
-		Assert.assertTrue(nodes.get(0).getOverlay().isNeighborOf(nodes.get(1).getID()));
+		Assert.assertTrue(nodes.get(0).getOverlay().isNeighborOf(nodes.get(1).getNodeDescriptor()));
 		
-		Node leader = (universe1.getLeader() == nodes.get(0).getID()) ? nodes.get(0) : nodes.get(1);
-		Node follower = (universe1.getLeader() == nodes.get(0).getID()) ? nodes.get(1) : nodes.get(0);
+		Node leader = (universe1.getLeader() == nodes.get(0).getNodeDescriptor()) ? nodes.get(0) : nodes.get(1);
+		Node follower = (universe1.getLeader() == nodes.get(0).getNodeDescriptor()) ? nodes.get(1) : nodes.get(0);
 		
 		
 		Assert.assertEquals(1, leader.getGroupCommunicationDispatcher().getLeadedGroups().size());
@@ -139,8 +139,8 @@ public class JoinAndMergeGroupsTest {
 		NodeDescriptor leaderA = universe1.getLeader();
 		NodeDescriptor leaderB = universe3.getLeader();
 		
-		Node nodeLeaderA = leaderA == nodes.get(0).getID() ? nodes.get(0) : nodes.get(1);
-		String urlB = leaderB == nodes.get(2).getID() ? urls.get(2) : urls.get(3);
+		Node nodeLeaderA = leaderA == nodes.get(0).getNodeDescriptor() ? nodes.get(0) : nodes.get(1);
+		String urlB = leaderB == nodes.get(2).getNodeDescriptor() ? urls.get(2) : urls.get(3);
 		
 		// We add the two leaders together
 		nodeLeaderA.getOverlay().addNeighbor(urlB);
@@ -185,7 +185,7 @@ public class JoinAndMergeGroupsTest {
 		GroupDescriptor universe1 = nodes.get(0).getGroupCommunicationDispatcher().
 				getGroupWithName(GroupDescriptor.UNIVERSE);
 		
-		Node leader = universe1.getLeader() == nodes.get(0).getID() ? nodes.get(0) : nodes.get(1);
+		Node leader = universe1.getLeader() == nodes.get(0).getNodeDescriptor() ? nodes.get(0) : nodes.get(1);
 		
 		for (int i = 2; i < NUMBER_OF_NODE; i++) {
 			leader.getOverlay().addNeighbor(urls.get(i));
