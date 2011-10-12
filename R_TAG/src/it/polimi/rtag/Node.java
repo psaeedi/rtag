@@ -2,8 +2,11 @@ package it.polimi.rtag;
 
 
 import java.io.Serializable;
+import java.net.ConnectException;
+import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.UUID;
 
 import lights.Tuple;
@@ -22,6 +25,7 @@ import polimi.reds.MessageID;
 import polimi.reds.NodeDescriptor;
 import polimi.reds.broker.overlay.AlreadyNeighborException;
 import polimi.reds.broker.overlay.GenericOverlay;
+import polimi.reds.broker.overlay.NotRunningException;
 import polimi.reds.broker.overlay.Overlay;
 import polimi.reds.broker.overlay.PacketListener;
 import polimi.reds.broker.overlay.SimpleTopologyManager;
@@ -311,13 +315,13 @@ public class Node implements PacketListener {
 		return topologyManager;
 	}
 
-	public void joinGroup(String friendlyName) {
+	public GroupDescriptor joinGroup(String friendlyName) {
 		// if string is equle to the constant universe, rise an excdption
 		if (GroupDescriptor.UNIVERSE.equals(friendlyName)) {
 			throw new RuntimeException("The application cannot join the universe.");
 		}
 		// otherwise tell dispatcher to create and join a group of what we need
-		groupCommunicationDispatcher.joinGroupAndNotifyNetwork(friendlyName);
+		return groupCommunicationDispatcher.joinGroupAndNotifyNetwork(friendlyName);
 	}
 
 	public void leaveGroup(String friendlyName) {
@@ -327,9 +331,26 @@ public class Node implements PacketListener {
 		groupCommunicationDispatcher.leaveGroupsWithName(friendlyName);
 		
 	}
+	
+	public void deleteGroup(String friendlyName) {
+		groupCommunicationDispatcher.deleteGroup(friendlyName);
+	}
 
 	public GroupDescriptor getGroup(String friendlyName) {
 		return groupCommunicationDispatcher.getGroupWithName(friendlyName);
 	}
 
+	public List<GroupDescriptor> getAllGroups() {
+		return groupCommunicationDispatcher.getAllGroups();
+	}
+	
+	public NodeDescriptor addNeighbor(String url) throws AlreadyNeighborException, 
+			ConnectException, MalformedURLException, NotRunningException {
+		return overlay.addNeighbor(url);
+	}
+
+	public int getMembersCount(String friendlyName) {
+		// TODO
+		return 0;
+	}
 }

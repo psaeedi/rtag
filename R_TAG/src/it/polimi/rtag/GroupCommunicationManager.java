@@ -463,16 +463,22 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 			handleFollowerRemoved(sender);
 			
 			// Sending ack
-			commandAck = GroupFollowerCommandAck.createOkCommand(
-					message.getID(), groupDescriptor);
-			sendMessage(MessageSubjects.GROUP_FOLLOWER_COMMAND_ACK, 
-					commandAck, sender);
+			sendOkFollowerCommandAck(message.getID(), sender);
 			return;
+		} else if (ASK_DELETE_GROUP.equals(commandType)) {
+			sendOkFollowerCommandAck(message.getID(), sender);
+			deleteGroup();	
 		} else {
 			// Other commands...
 		}
 	}
 
+	private void sendOkFollowerCommandAck(MessageID id, NodeDescriptor sender) {
+		GroupFollowerCommandAck commandAck = GroupFollowerCommandAck.createOkCommand(
+				id, groupDescriptor);
+		sendMessage(MessageSubjects.GROUP_FOLLOWER_COMMAND_ACK, 
+				commandAck, sender);
+	}
 
 	/**
 	 * Handles {@link MessageSubjects#GROUP_LEADER_COMMAND_ACK} messages
@@ -516,6 +522,8 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 				createChildIfNecessary();
 				return;
 			}
+		} else if (DELETE_GROUP.equals(commandType)) {
+			return;
 		} else {
 			// unhandled commands..
 		}
@@ -632,6 +640,19 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 				sendMessage(GROUP_LEADER_COMMAND_ACK, commandAck, sender);
 			}
 			return;
+		} else if (DELETE_GROUP.equals(commandType)) {
+			// Propagate to the child group if any
+			// Propagates down
+			if (leadedChildManager != null) {
+				GroupLeaderCommand forwardedMessage = 
+					GroupLeaderCommand.createDeleteCommand(groupDescriptor);
+				leadedChildManager.sendMessageToFollowers(forwardedMessage);
+				// TODO Shall we wait for the acks before dismantling the group?
+			}
+			commandAck = GroupLeaderCommandAck.createOkCommand(
+					message.getID(), groupDescriptor);
+			sendMessage(GROUP_LEADER_COMMAND_ACK, commandAck, sender);
+			node.getGroupCommunicationDispatcher().removeGroup(this);
 		} else {
 			// unhandled commands..
 			throw new RuntimeException("Unknown GroupLeaderCommand: " + commandType);
@@ -994,6 +1015,25 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener,
 		// if universe and not the recipient forward
 		// if recipient use and forward
 		// else skip/exception
+	}
+
+
+	public void deleteGroup() {
+		if (isLeader()) {
+			// Propagates down
+			GroupLeaderCommand forwardedMessage = 
+				GroupLeaderCommand.createDeleteCommand(groupDescriptor);
+			leadedChildManager.sendMessageToFollowers(forwardedMessage);
+			// Propagates UP
+			if (followedParentManager != null) {
+				followedParentManager.deleteGroup();
+			}
+		} else {
+			// ask the leader
+			GroupFollowerCommand command =
+				GroupFollowerCommand.createDeleteCommand(groupDescriptor);
+			sendFollowerCommand(command, groupDescriptor.getLeader());
+		}
 	}
 
 

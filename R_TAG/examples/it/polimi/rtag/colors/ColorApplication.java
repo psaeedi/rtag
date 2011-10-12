@@ -530,8 +530,17 @@ public class ColorApplication {
 	
 	public void connectNeighbor(String url){
 		try {
-			node.getOverlay().addNeighbor(url);
-		} catch (Exception e) {
+			node.addNeighbor(url);
+		} catch (AlreadyNeighborException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ConnectException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (MalformedURLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (NotRunningException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

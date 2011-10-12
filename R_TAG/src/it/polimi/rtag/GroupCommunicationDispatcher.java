@@ -101,7 +101,7 @@ public class GroupCommunicationDispatcher implements
 		}
 	}
 	
-	public void addGroupManager(GroupCommunicationManager manager) {
+	void addGroupManager(GroupCommunicationManager manager) {
 		GroupDescriptor groupDescriptor = manager.getGroupDescriptor();	
 		synchronized (lock) {
 			if (groupDescriptor.isLeader(node.getNodeDescriptor())) {
@@ -125,7 +125,7 @@ public class GroupCommunicationDispatcher implements
 		
 	}
 	
-	public GroupCommunicationManager getLeadedGroupByUUID(UUID query) {
+	GroupCommunicationManager getLeadedGroupByUUID(UUID query) {
 		synchronized (lock) {
 			for (GroupCommunicationManager manager: leadedGroups) {
 				GroupDescriptor localGroup = manager.getGroupDescriptor();
@@ -137,7 +137,7 @@ public class GroupCommunicationDispatcher implements
 		}
 	}
 	
-	public GroupCommunicationManager getFollowedGroupByUUID(UUID query) {
+	GroupCommunicationManager getFollowedGroupByUUID(UUID query) {
 		synchronized (lock) {
 			for (GroupCommunicationManager manager: followedGroups) {
 				GroupDescriptor localGroup = manager.getGroupDescriptor();
@@ -149,7 +149,7 @@ public class GroupCommunicationDispatcher implements
 		}
 	}
 
-	public GroupCommunicationManager getLeadedGroupByFriendlyName(String query) {
+	GroupCommunicationManager getLeadedGroupByFriendlyName(String query) {
 		synchronized (lock) {
 			for (GroupCommunicationManager manager: leadedGroups) {
 				GroupDescriptor localGroup = manager.getGroupDescriptor();
@@ -161,7 +161,7 @@ public class GroupCommunicationDispatcher implements
 		}
 	}
 	
-	public GroupCommunicationManager getFollowedGroupByFriendlyName(String query) {
+	GroupCommunicationManager getFollowedGroupByFriendlyName(String query) {
 		synchronized (lock) {
 			for (GroupCommunicationManager manager: followedGroups) {
 				GroupDescriptor localGroup = manager.getGroupDescriptor();
@@ -358,7 +358,7 @@ public class GroupCommunicationDispatcher implements
 	/**
 	 * @return the leadedGroups
 	 */
-	public ArrayList<GroupCommunicationManager> getLeadedGroups() {
+	ArrayList<GroupCommunicationManager> getLeadedGroups() {
 		synchronized (lock) {
 			return new ArrayList<GroupCommunicationManager>(leadedGroups);	
 		}
@@ -367,13 +367,13 @@ public class GroupCommunicationDispatcher implements
 	/**
 	 * @return the followedGroups
 	 */
-	public ArrayList<GroupCommunicationManager> getFollowedGroups() {
+	ArrayList<GroupCommunicationManager> getFollowedGroups() {
 		synchronized (lock) {
 			return new ArrayList<GroupCommunicationManager>(followedGroups);			
 		}
 	}
 
-	public void reassignGroup(GroupCommunicationManager manager) {
+	void reassignGroup(GroupCommunicationManager manager) {
 		synchronized (lock) {
 			if (manager.isLeader()) {
 				if (followedGroups.contains(manager)) {
@@ -392,7 +392,7 @@ public class GroupCommunicationDispatcher implements
 		}
 	}
 	
-	public void removeGroup(GroupCommunicationManager manager) {
+	void removeGroup(GroupCommunicationManager manager) {
 		boolean wasRemoved = false;
 		synchronized (lock) {
 			if (followedGroups.contains(manager)) {
@@ -413,7 +413,7 @@ public class GroupCommunicationDispatcher implements
 		}
 	}
 	
-	public GroupCommunicationManager getLocalUniverseManager() {
+	GroupCommunicationManager getLocalUniverseManager() {
 		synchronized (lock) {
 			for (GroupCommunicationManager manager: leadedGroups) {
 				GroupDescriptor localGroup = manager.getGroupDescriptor();
@@ -431,7 +431,7 @@ public class GroupCommunicationDispatcher implements
 		return null;
 	}
 	
-	public GroupDescriptor getLocalUniverse() {
+	GroupDescriptor getLocalUniverse() {
 		GroupCommunicationManager manager = getLocalUniverseManager();
 		if (manager != null) {
 			return manager.getGroupDescriptor();
@@ -440,7 +440,7 @@ public class GroupCommunicationDispatcher implements
 		}
 	}
 	
-	public GroupCommunicationManager getGroupManagerWithName(String friendlyName) {
+	GroupCommunicationManager getGroupManagerWithName(String friendlyName) {
 		synchronized (lock) {
 			GroupCommunicationManager manager = null;
 			manager = getLeadedGroupByFriendlyName(friendlyName);
@@ -455,7 +455,7 @@ public class GroupCommunicationDispatcher implements
 		return null;
 	}
 	
-	public GroupDescriptor getGroupWithName(String friendlyName) {
+	GroupDescriptor getGroupWithName(String friendlyName) {
 		GroupCommunicationManager manager = getGroupManagerWithName(friendlyName);
 		if (manager != null) {
 			return manager.getGroupDescriptor();
@@ -463,7 +463,7 @@ public class GroupCommunicationDispatcher implements
 		return null;
 	}
 
-	public void removeAllGroupsAndDisconnect() {
+	void removeAllGroupsAndDisconnect() {
 		synchronized (lock) {
 			for (int i = leadedGroups.size() - 1; i > -1; i--) {
 				GroupCommunicationManager manager = leadedGroups.get(i);
@@ -484,7 +484,7 @@ public class GroupCommunicationDispatcher implements
 	 * This is invoked by the node when the application wants
 	 * to leave a group.  
 	 */
-	public void leaveGroupsWithName(String friendlyName) {
+	void leaveGroupsWithName(String friendlyName) {
 		synchronized (lock) {
 			GroupCommunicationManager manager = null;
 			manager = getLeadedGroupByFriendlyName(friendlyName);
@@ -501,11 +501,11 @@ public class GroupCommunicationDispatcher implements
 	/**
 	 * Create a new group and inform the network
 	 */
-	public void joinGroupAndNotifyNetwork(String friendlyName) {
+	GroupDescriptor joinGroupAndNotifyNetwork(String friendlyName) {
 		GroupDescriptor descriptor = getGroupWithName(friendlyName);
 		if (descriptor != null) {
 			// Already in that group
-			return;
+			return descriptor;
 		}
 		GroupCommunicationManager manager =
 				GroupCommunicationManager.createGroupCommunicationManager(
@@ -515,8 +515,33 @@ public class GroupCommunicationDispatcher implements
 			getLocalUniverseManager().sendMessageGroupCreatedNotification(
 					node.getNodeDescriptor(),
 					manager.getGroupDescriptor());
+			return manager.getGroupDescriptor();
 		} catch (Exception ex) {
 			ex.printStackTrace();
+			return null;
 		}
+	}
+
+	void deleteGroup(String friendlyName) {
+		GroupCommunicationManager manager = 
+			getFollowedGroupByFriendlyName(friendlyName);
+		if (manager == null) {
+			throw new RuntimeException(
+					"Cannot delete a group of which the node is not member.");
+		}
+		manager.deleteGroup();
+	}
+
+	List<GroupDescriptor> getAllGroups() {
+		ArrayList<GroupDescriptor> groups = new ArrayList<GroupDescriptor>();
+		synchronized (lock) {
+			for (GroupCommunicationManager manager: leadedGroups) {
+				groups.add(manager.getGroupDescriptor());
+			}
+			for (GroupCommunicationManager manager: followedGroups) {
+				groups.add(manager.getGroupDescriptor());
+			}
+		}
+		return getAllGroups();
 	}
 }
