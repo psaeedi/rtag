@@ -44,6 +44,8 @@ public class GroupLeaderCommand extends Message {
 	 * in an implementation of {@link GroupCoordinationStrategy}.
 	 */
 	public static final String CREATE_CHILD_GROUP = "CREATE_CHILD_GROUP";
+	
+	public static final String DELETE_GROUP = "DELETE_GROUP";
 
 	// TODO add other actions
 	
@@ -61,6 +63,13 @@ public class GroupLeaderCommand extends Message {
 			throw new IllegalArgumentException("Group descriptor cannot be null.");
 		}
 		return new GroupLeaderCommand(groupDescriptor, UPDATE_DESCRIPTOR);
+	}
+	
+	public static GroupLeaderCommand createDeleteCommand(GroupDescriptor groupDescriptor) {
+		if (groupDescriptor == null) {
+			throw new IllegalArgumentException("Group descriptor cannot be null.");
+		}
+		return new GroupLeaderCommand(groupDescriptor, DELETE_GROUP);
 	}
 	
 	public static GroupLeaderCommand createCreateChildCommand(GroupDescriptor groupDescriptor) {

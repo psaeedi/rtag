@@ -23,6 +23,8 @@ public class GroupFollowerCommand extends Message {
 	 */
 	public static final String LEAVING_NOTICE = "LEAVING_NOTICE";
 	
+	public static final String ASK_DELETE_GROUP = "ASK_DELETE_GROUP";
+	
 	private GroupDescriptor groupDescriptor;
 	private String command;
 	
@@ -31,6 +33,13 @@ public class GroupFollowerCommand extends Message {
 			throw new IllegalArgumentException("Group descriptor cannot be null.");
 		}
 		return new GroupFollowerCommand(groupDescriptor, LEAVING_NOTICE);
+	}
+	
+	public static GroupFollowerCommand createDeleteCommand(GroupDescriptor groupDescriptor) {
+		if (groupDescriptor == null) {
+			throw new IllegalArgumentException("Group descriptor cannot be null.");
+		}
+		return new GroupFollowerCommand(groupDescriptor, ASK_DELETE_GROUP);
 	}
 	
 	/**
