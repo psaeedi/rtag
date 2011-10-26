@@ -6,6 +6,11 @@ package it.polimi.rtag;
 import java.util.*;
 import java.io.Serializable;
 
+import lights.Field;
+import lights.Tuple;
+import lights.TupleSpace;
+import lights.interfaces.TupleSpaceException;
+
 import polimi.reds.NodeDescriptor;
 import polimi.reds.broker.overlay.Overlay;
 import polimi.reds.broker.overlay.PacketListener;
@@ -31,10 +36,11 @@ import static it.polimi.rtag.messaging.MessageSubjects.*;
  *
  */
 public class GroupCommunicationDispatcher implements 
-	PacketListener, GroupDiscoveredNotificationListener{
+	PacketListener{
 
+	private TupleSpace tupleSpace = new TupleSpace();
+	
 	private static final String[] SUBJECTS = {
-		GROUP_CREATED_NOTIFICATION,
 		GROUP_LEADER_COMMAND,
 		GROUP_LEADER_COMMAND_ACK,
 		GROUP_FOLLOWER_COMMAND,
@@ -200,27 +206,54 @@ public class GroupCommunicationDispatcher implements
 	 * @see it.polimi.rtag.GroupDiscoveredNotificationListener#handleGroupDiscovered
 	 * (polimi.reds.NodeDescriptor, it.polimi.rtag.GroupDescriptor)
 	 */
-	@Override
 	public void handleGroupDiscovered(NodeDescriptor sender,
 			GroupDescriptor groupDescriptor) {
-		GroupCommunicationManager manager = getLeadedGroupByFriendlyName(
-				groupDescriptor.getFriendlyName());
-		if (manager != null) {
-			// A group matching a leaded group has been found.
-			// The manager will attempt to create a hierarchy.
-			manager.handleGroupDiscovered(sender, groupDescriptor);
-			return;
-		} 
 		
-		manager = getFollowedGroupByFriendlyName(
-				groupDescriptor.getFriendlyName());
-		if (manager != null) {
-			// A group matching a followed group has been found.
-			// The manager will attempt to create a hierarchy.
-			manager.handleGroupDiscovered(sender, groupDescriptor);
-			return;
-		} 
+		updateTupleSpace(groupDescriptor);
+		
+		GroupCommunicationManager manager = getLocalUniverseManager();
+		manager.handleGroupDiscovered(sender, groupDescriptor);
 	}
+	
+	void addToTupleSpace(GroupDescriptor groupDescriptor) {
+		Tuple tuple = new Tuple();
+		tuple.add(new Field().setValue(groupDescriptor.getLeader()))
+				.add(new Field().setValue(groupDescriptor.getFriendlyName()));
+		try {
+			tupleSpace.out(tuple);
+		} catch (TupleSpaceException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	void updateTupleSpace(GroupDescriptor groupDescriptor) {
+		removeFromTupleSpace(groupDescriptor);
+		addToTupleSpace(groupDescriptor);
+	}
+
+	void removeFromTupleSpace(GroupDescriptor groupDescriptor) {
+		Tuple query = new Tuple();
+		query.add(new Field().setType(NodeDescriptor.class))
+			.add(new Field().setValue(groupDescriptor.getFriendlyName()));
+			
+		// Remove the tuple if it exist
+		try {
+			tupleSpace.rdp(query);
+		} catch (TupleSpaceException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	NodeDescriptor queryTupleSpace(String friendlyName) {
+		// TODO implement this
+		Tuple query = new Tuple();
+		query.add(new Field().setType(NodeDescriptor.class))
+			.add(new Field().setValue(friendlyName));
+		
+		// TODO retuirn the leader
+		return null;
+	}
+	
 	
 	@Override
 	public void notifyPacketArrived(String subject, NodeDescriptor sender,
@@ -240,14 +273,13 @@ public class GroupCommunicationDispatcher implements
 			handleMessageGroupCoordinationCommand(sender, (GroupCoordinationCommand)packet);
 		}else if (GROUP_COORDINATION_COMMAND_ACK.equals(subject)) {
 			handleMessageGroupCoordinationCommandAck(sender, (GroupCoordinationCommandAck)packet);
-		} else if (GROUP_CREATED_NOTIFICATION.equals(subject)) {
-			handleMessageGroupCreatedNotification(sender, (GroupDescriptor)packet);
 		} else if (GROUP_DISCOVERED_NOTIFICATION.equals(subject)) {
 			handleGroupDiscovered(sender, (GroupDescriptor)packet);
 		}
 	}
 
 
+	/*
 	private void handleMessageGroupCreatedNotification(NodeDescriptor sender,
 			GroupDescriptor groupDescriptor) {
 		GroupCommunicationManager manager = getLeadedGroupByFriendlyName(
@@ -256,8 +288,12 @@ public class GroupCommunicationDispatcher implements
 			// A group matching a leaded group has been found.
 			// The manager will attempt to create a hierarchy.
 			manager.handleMessageGroupCreatedNotification(sender, groupDescriptor);
+		} else {
+			// we use the universe to propagate this message
+			getLocalUniverseManager()
+					.handleMessageGroupCreatedNotification(sender, groupDescriptor);
 		}
-	}
+	}*/
 
 
 	private void handleMessageGroupCoordinationCommandAck(
@@ -383,7 +419,9 @@ public class GroupCommunicationDispatcher implements
 					notifyGroupManagerWasAdded(manager);
 				}
 				else {
-					addGroupManager(manager);
+					//addGroupManager(manager);
+					throw new RuntimeException(
+						"What is this???.");
 				}
 			} else  {
 				throw new RuntimeException(
@@ -507,14 +545,14 @@ public class GroupCommunicationDispatcher implements
 			// Already in that group
 			return descriptor;
 		}
-		GroupCommunicationManager manager =
-				GroupCommunicationManager.createGroupCommunicationManager(
-						node, UUID.randomUUID(), friendlyName);
-		addGroupManager(manager);
 		try {
-			getLocalUniverseManager().sendMessageGroupCreatedNotification(
-					node.getNodeDescriptor(),
-					manager.getGroupDescriptor());
+			GroupCommunicationManager manager =
+					GroupCommunicationManager.createGroupCommunicationManager(
+							node, UUID.randomUUID(), friendlyName);
+			addGroupManager(manager);
+
+			getLocalUniverseManager().sendGroupcast(GROUP_DISCOVERED_NOTIFICATION, 
+					manager.getGroupDescriptor(), null);
 			return manager.getGroupDescriptor();
 		} catch (Exception ex) {
 			ex.printStackTrace();
@@ -524,12 +562,13 @@ public class GroupCommunicationDispatcher implements
 
 	void deleteGroup(String friendlyName) {
 		GroupCommunicationManager manager = 
-			getFollowedGroupByFriendlyName(friendlyName);
+			getGroupManagerWithName(friendlyName);
 		if (manager == null) {
 			throw new RuntimeException(
 					"Cannot delete a group of which the node is not member.");
 		}
 		manager.deleteGroup();
+		removeGroup(manager);
 	}
 
 	List<GroupDescriptor> getAllGroups() {
@@ -542,6 +581,7 @@ public class GroupCommunicationDispatcher implements
 				groups.add(manager.getGroupDescriptor());
 			}
 		}
-		return getAllGroups();
+		return groups;
 	}
+
 }

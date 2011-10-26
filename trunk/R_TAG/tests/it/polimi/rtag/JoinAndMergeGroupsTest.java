@@ -58,6 +58,7 @@ public class JoinAndMergeGroupsTest {
 	public void tearDown() throws Exception {
 		for (Node node: nodes) {
 			node.stop();
+			Thread.sleep(500);
 		}
 	}
 
@@ -86,8 +87,8 @@ public class JoinAndMergeGroupsTest {
 			throws AlreadyNeighborException, ConnectException, 
 					MalformedURLException, NotRunningException, 
 					InterruptedException {
-		nodes.get(0).getOverlay().addNeighbor(urls.get(1));
-		Thread.sleep(500);
+		nodes.get(0).connectTo(urls.get(1));
+		Thread.sleep(1000);
 		
 		GroupDescriptor universe1 = nodes.get(0).getGroupCommunicationDispatcher().
 				getGroupWithName(GroupDescriptor.UNIVERSE);
@@ -114,8 +115,9 @@ public class JoinAndMergeGroupsTest {
 			throws AlreadyNeighborException, ConnectException,
 					MalformedURLException, NotRunningException,
 					InterruptedException {
-		nodes.get(0).getOverlay().addNeighbor(urls.get(1));
-		nodes.get(2).getOverlay().addNeighbor(urls.get(3));
+		nodes.get(0).connectTo(urls.get(1));
+		
+		nodes.get(2).connectTo(urls.get(3));
 		Thread.sleep(1000);
 		
 		// Node 1 and 3 should be leaders
@@ -143,7 +145,7 @@ public class JoinAndMergeGroupsTest {
 		String urlB = leaderB == nodes.get(2).getNodeDescriptor() ? urls.get(2) : urls.get(3);
 		
 		// We add the two leaders together
-		nodeLeaderA.getOverlay().addNeighbor(urlB);
+		nodeLeaderA.connectTo(urlB);
 		Thread.sleep(1000);
 		
 		universe1 = 
@@ -179,7 +181,7 @@ public class JoinAndMergeGroupsTest {
 					MalformedURLException, NotRunningException, 
 					InterruptedException {
 		
-		nodes.get(0).getOverlay().addNeighbor(urls.get(1));	
+		nodes.get(0).connectTo(urls.get(1));	
 		Thread.sleep(500);
 		
 		GroupDescriptor universe1 = nodes.get(0).getGroupCommunicationDispatcher().
@@ -188,11 +190,14 @@ public class JoinAndMergeGroupsTest {
 		Node leader = universe1.getLeader() == nodes.get(0).getNodeDescriptor() ? nodes.get(0) : nodes.get(1);
 		
 		for (int i = 2; i < NUMBER_OF_NODE; i++) {
-			leader.getOverlay().addNeighbor(urls.get(i));
-			Thread.sleep(1000);
+			leader.connectTo(urls.get(i));
+			Thread.sleep(500);
 		}
 		universe1 = leader.getGroupCommunicationDispatcher().
 				getGroupWithName(GroupDescriptor.UNIVERSE);
+		
+		Assert.assertEquals(NUMBER_OF_NODE, universe1.getMembers().size());
+		
 		for (int i = 1; i < NUMBER_OF_NODE; i++) {
 			GroupDescriptor universe2 = nodes.get(i).getGroupCommunicationDispatcher().
 					getGroupWithName(GroupDescriptor.UNIVERSE);

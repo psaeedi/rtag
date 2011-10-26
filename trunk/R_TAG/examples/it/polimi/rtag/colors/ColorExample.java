@@ -3,17 +3,12 @@
  */
 package it.polimi.rtag.colors;
 
-import it.polimi.rtag.GroupDescriptor;
 import it.polimi.rtag.colors.ColorApplication.Color;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-
-import lights.Field;
-import lights.Tuple;
-
 
 /**
  * @author Panteha Saeedi (saeedi@elet.polimi.it)
@@ -70,6 +65,7 @@ public class ColorExample {
 		//changeColor(apps.get(2), Color.ORANGE);
 		//changeColor(apps.get(5), Color.PURPLE);
 		sendGroupcast(apps.get(4), Color.RED, "Hello");
+		
     }
     
     

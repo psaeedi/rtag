@@ -60,6 +60,7 @@ public class LeaderReplaceTest {
 	public void tearDown() throws Exception {
 		for (Node node: nodes) {
 			node.stop();
+			Thread.sleep(500);
 		}
 	}
 	
@@ -69,13 +70,13 @@ public class LeaderReplaceTest {
 			throws AlreadyNeighborException, ConnectException, 
 			MalformedURLException, NotRunningException, 
 			InterruptedException {
-		nodes.get(0).getOverlay().addNeighbor(urls.get(1));
-		nodes.get(0).getOverlay().addNeighbor(urls.get(2));
-		nodes.get(3).getOverlay().addNeighbor(urls.get(4));
-		nodes.get(3).getOverlay().addNeighbor(urls.get(5));
+		nodes.get(0).connectTo(urls.get(1));
+		nodes.get(0).connectTo(urls.get(2));
+		nodes.get(3).connectTo(urls.get(4));
+		nodes.get(3).connectTo(urls.get(5));
 		
-		nodes.get(0).getOverlay().addNeighbor(urls.get(3));
-		Thread.sleep(500);
+		nodes.get(0).connectTo(urls.get(3));
+		Thread.sleep(1000);
 		
 		GroupDescriptor universe0 = nodes.get(0).getGroupCommunicationDispatcher().getLocalUniverse();
 		GroupDescriptor universe1 = nodes.get(3).getGroupCommunicationDispatcher().getLocalUniverse();
