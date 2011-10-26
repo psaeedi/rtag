@@ -78,11 +78,11 @@ public class Node implements PacketListener {
 		groupCommunicationDispatcher.addGroupManager(GroupCommunicationManager.createUniverseCommunicationManager(this));
 	}
 
-	public Overlay getOverlay() {
+	Overlay getOverlay() {
 		return overlay;
 	}
 	
-	public void setOverlay(Overlay overlay) {
+	void setOverlay(Overlay overlay) {
 		if (this.overlay != null) {
 			throw new AssertionError("Overlay already configured");
 		}
@@ -199,6 +199,8 @@ public class Node implements PacketListener {
 			// TODO notify the application that a new message has arrived!
 			return;
 		} else {
+			// This node is not part of the recipient group.
+			// We will use the universe group to forward the message.
 			GroupDescriptor localUniverse = groupCommunicationDispatcher.getLocalUniverse();
 			if (localUniverse.isLeader(currentDescriptor)) {
 				GroupCommunicationManager universeManager = 
@@ -349,6 +351,26 @@ public class Node implements PacketListener {
 		return overlay.addNeighbor(url);
 	}
 
+	public NodeDescriptor connectTo(String url) {
+		NodeDescriptor descriptor = null;
+		try {
+			descriptor = overlay.addNeighbor(url);
+		} catch (AlreadyNeighborException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ConnectException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (MalformedURLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (NotRunningException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return descriptor;
+	}
+	
 	public int getMembersCount(String friendlyName) {
 		// TODO
 		return 0;

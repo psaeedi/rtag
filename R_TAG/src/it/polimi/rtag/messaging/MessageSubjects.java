@@ -34,26 +34,6 @@ public class MessageSubjects {
 	 */
 	public static final String COMMUNICATION_ACK = "COMMUNICATION_ACK";
 
-	
-	/**
-	 * A node notify its local universe leader that it has
-	 * created a new group. </p>
-	 * The local universe leader will forward this notification to all its
-	 * followers and to its parent. If a group leader of a group with the same
-	 * tuple definition is reached then that group leader may invite the new leader
-	 * to join its group sending a {@link GroupLeaderCommand#MERGE_GROUPS}
-	 * message.</p>
-	 * 
-	 * Beside further group re-organization this message has no direct
-	 * acknowledgment.
-	 * 
-	 * TODO create a class to encapsulate this message with the creator descriptor
-	 * TODO add methods to handle this class in the Node
-	 * 
-	 * @see {@link GroupCommunicationManager#notifyPacketArrived(String, polimi.reds.NodeDescriptor, java.io.Serializable)}
-	 */
-	public static final String GROUP_CREATED_NOTIFICATION = "G_CREATED_N";
-	
 	/**
 	 * When a new node is added to a group leader the group leader inform the
 	 * new node of the existence of a group.</p>
@@ -100,7 +80,7 @@ public class MessageSubjects {
 	
 	
 	private MessageSubjects() {
-		// Contant collection. This should not be instantiated.
+		// Constant collection. This should not be instantiated.
 	}
 
 }
