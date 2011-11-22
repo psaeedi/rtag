@@ -9,14 +9,13 @@ import it.polimi.rtag.messaging.GroupFollowerCommand;
 import it.polimi.rtag.messaging.GroupFollowerCommandAck;
 import it.polimi.rtag.messaging.GroupLeaderCommand;
 import it.polimi.rtag.messaging.GroupLeaderCommandAck;
-import it.polimi.rtag.messaging.GroupcastTupleMessage;
 import it.polimi.rtag.messaging.MessageSubjects;
+import it.polimi.rtag.messaging.TupleMessage;
+import it.polimi.rtag.messaging.TupleMessage.Scope;
 
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.UUID;
-
-import javax.management.RuntimeErrorException;
 
 import polimi.reds.Message;
 import polimi.reds.MessageID;
@@ -1171,16 +1170,6 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 		coordinationStrategy = new LoadBalancingGroupCoordinationStrategy(groupDescriptor);
 	}
 
-	
-	
-	public void handleGroupcast(GroupcastTupleMessage message) {
-		// TODO Auto-generated method stub
-		// if universe and not the recipient forward
-		// if recipient use and forward
-		// else skip/exception
-	}
-
-
 	public void deleteGroup() {
 		if (isLeader()) {
 			// Propagates down
@@ -1222,5 +1211,48 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 				matchingManager.handleMatchingGroupDiscovered(discoveredGroup);
 			}
 		}
+	}
+
+	void forwardTupleMessage(TupleMessage message, NodeDescriptor sender) {
+		Scope scope = message.getScope();
+		if (scope == Scope.GROUP) {
+			GroupDescriptor recipient = (GroupDescriptor)message.getRecipient();
+			if (!groupDescriptor.equals(recipient)) {
+				// Not for this group
+				return;
+			}
+		}
+		
+		if(isLeader()) {
+			sendTupleToFollowers(message, sender);
+		} else {
+			sendTupleToLeader(message, sender);
+		}
+		// TODO if Scope == NETWORK this must be a universe group.
+		if (scope == Scope.HIERARCHY || scope == Scope.NETWORK) {
+			if (followedParentManager != null) {
+				followedParentManager.forwardTupleMessage(message, sender);
+			}
+		} 
+	}
+
+
+	private void sendTupleToFollowers(TupleMessage message,
+			NodeDescriptor sender) {
+		for (NodeDescriptor follower: groupDescriptor.getFollowers()) {
+				if (sender.equals(follower)) {
+					continue;
+				}
+				sendMessage(TupleMessage.TUPLE_MESSAGE, message, follower);
+			}
+	}
+
+
+	private void sendTupleToLeader(TupleMessage message, NodeDescriptor sender) {
+		NodeDescriptor leader = groupDescriptor.getLeader();
+		if (leader.equals(sender)) {
+			return;
+		}
+		sendMessage(TupleMessage.TUPLE_MESSAGE, message, leader);
 	}
 }
