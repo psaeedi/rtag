@@ -3,7 +3,7 @@
  */
 package it.polimi.rtag.messaging;
 
-import lights.Tuple;
+import java.io.Serializable;
 
 /**
  * @author Panteha Saeedi (saeedi@elet.polimi.it)</p>.
@@ -12,6 +12,24 @@ import lights.Tuple;
  */
 public abstract class TupleMessage extends polimi.reds.Message {
 
+	/**
+	 * Defines the scope of this message
+	 */
+	public enum Scope {
+		/** Node tuples are directed to the given node */
+		NODE,
+		/** Group tuples are local to the sender group */
+		GROUP,
+		/** 
+		 * Hierarchy tuples need to 
+		 * be propagated to the whole hierarchy */
+		HIERARCHY,
+		/** 
+		 * Network tuples are spread over the whole network 
+		 * using the universe group*/
+		NETWORK
+	}
+	
 	/**
 	 * Messages are valid for 5 minutes.
 	 * After that they should not be broadcasted any more. 
@@ -23,26 +41,34 @@ public abstract class TupleMessage extends polimi.reds.Message {
 	 */
 	private static final long serialVersionUID = -7291797665468391009L;
 
-	private Tuple content;
 	private long creationTime;
+	private Scope scope;
 	
-	public TupleMessage(Tuple content) {
+	private Serializable recipient;
+	
+	public TupleMessage(Scope scope, Serializable recipient) {
 		createID();
-		this.content = content;
 		creationTime = System.currentTimeMillis();
+		this.scope = scope;
+		this.recipient = recipient;
 	}
 
-	/**
-	 * @return the content
-	 */
-	public Tuple getContent() {
-		return content;
-	}
-	
 	public boolean isExpired() {
 		long now = System.currentTimeMillis();
 		return now - creationTime > EXPIRATION_TIME;
 	}
-	
-}
 
+	public long getExpireTime() {
+		return creationTime + EXPIRATION_TIME;
+	}
+	
+	public Scope getScope() {
+		return scope;
+	}
+
+	public Serializable getRecipient() {
+		return recipient;
+	}
+
+	public abstract String getSubject();
+}

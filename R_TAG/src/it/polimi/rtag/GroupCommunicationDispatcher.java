@@ -21,6 +21,7 @@ import it.polimi.rtag.messaging.GroupFollowerCommand;
 import it.polimi.rtag.messaging.GroupFollowerCommandAck;
 import it.polimi.rtag.messaging.GroupLeaderCommand;
 import it.polimi.rtag.messaging.GroupLeaderCommandAck;
+import it.polimi.rtag.messaging.TupleMessage;
 
 import static it.polimi.rtag.messaging.MessageSubjects.*;
 
@@ -38,16 +39,10 @@ import static it.polimi.rtag.messaging.MessageSubjects.*;
 public class GroupCommunicationDispatcher implements 
 	PacketListener{
 
-	private TupleSpace tupleSpace = new TupleSpace();
-	
+
 	private static final String[] SUBJECTS = {
-		GROUP_LEADER_COMMAND,
-		GROUP_LEADER_COMMAND_ACK,
-		GROUP_FOLLOWER_COMMAND,
-		GROUP_FOLLOWER_COMMAND_ACK,
-		GROUP_COORDINATION_COMMAND,
-		GROUP_COORDINATION_COMMAND_ACK,
-		GROUP_DISCOVERED_NOTIFICATION
+		TUPLE_COMMAND,
+		TUPLE_COMMAND_ACK
 	};
 	
 	private Object lock = new Object();
@@ -209,50 +204,10 @@ public class GroupCommunicationDispatcher implements
 	public void handleGroupDiscovered(NodeDescriptor sender,
 			GroupDescriptor groupDescriptor) {
 		
-		updateTupleSpace(groupDescriptor);
-		
 		GroupCommunicationManager manager = getLocalUniverseManager();
 		manager.handleGroupDiscovered(sender, groupDescriptor);
 	}
-	
-	void addToTupleSpace(GroupDescriptor groupDescriptor) {
-		Tuple tuple = new Tuple();
-		tuple.add(new Field().setValue(groupDescriptor.getLeader()))
-				.add(new Field().setValue(groupDescriptor.getFriendlyName()));
-		try {
-			tupleSpace.out(tuple);
-		} catch (TupleSpaceException e) {
-			e.printStackTrace();
-		}
-	}
-	
-	void updateTupleSpace(GroupDescriptor groupDescriptor) {
-		removeFromTupleSpace(groupDescriptor);
-		addToTupleSpace(groupDescriptor);
-	}
 
-	void removeFromTupleSpace(GroupDescriptor groupDescriptor) {
-		Tuple query = new Tuple();
-		query.add(new Field().setType(NodeDescriptor.class))
-			.add(new Field().setValue(groupDescriptor.getFriendlyName()));
-			
-		// Remove the tuple if it exist
-		try {
-			tupleSpace.rdp(query);
-		} catch (TupleSpaceException e) {
-			e.printStackTrace();
-		}
-	}
-	
-	NodeDescriptor queryTupleSpace(String friendlyName) {
-		// TODO implement this
-		Tuple query = new Tuple();
-		query.add(new Field().setType(NodeDescriptor.class))
-			.add(new Field().setValue(friendlyName));
-		
-		// TODO retuirn the leader
-		return null;
-	}
 	
 	
 	@Override
@@ -261,20 +216,8 @@ public class GroupCommunicationDispatcher implements
 		
 		// TODO return ko if a message was not handled?
 		
-		if (GROUP_FOLLOWER_COMMAND.equals(subject)) {
-			handleMessageGroupFollowerCommand(sender, (GroupFollowerCommand)packet);
-		} else if (GROUP_FOLLOWER_COMMAND_ACK.equals(subject)) {
-			handleMessageGroupFollowerCommandAck(sender, (GroupFollowerCommandAck)packet);
-		} else if (GROUP_LEADER_COMMAND.equals(subject)) {
-			handleMessageGroupLeaderCommand(sender, (GroupLeaderCommand)packet);
-		} else if (GROUP_LEADER_COMMAND_ACK.equals(subject)) {
-			handleMessageGroupLeaderCommandAck(sender, (GroupLeaderCommandAck)packet);
-		} else if (GROUP_COORDINATION_COMMAND.equals(subject)) {
-			handleMessageGroupCoordinationCommand(sender, (GroupCoordinationCommand)packet);
-		}else if (GROUP_COORDINATION_COMMAND_ACK.equals(subject)) {
-			handleMessageGroupCoordinationCommandAck(sender, (GroupCoordinationCommandAck)packet);
-		} else if (GROUP_DISCOVERED_NOTIFICATION.equals(subject)) {
-			handleGroupDiscovered(sender, (GroupDescriptor)packet);
+		if (TupleMessage.TUPLE_MESSAGE.equals(subject)) {
+			handleTupleMessage()
 		}
 	}
 
