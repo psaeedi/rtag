@@ -10,6 +10,9 @@ import polimi.reds.NodeDescriptor;
 import polimi.reds.broker.overlay.NotConnectedException;
 import polimi.reds.broker.overlay.NotRunningException;
 import polimi.reds.broker.overlay.Overlay;
+import polimi.reds.broker.overlay.PacketListener;
+import it.polimi.rtag.messaging.TupleGroupCommand;
+import it.polimi.rtag.messaging.TupleGroupCommandAck;
 import it.polimi.rtag.messaging.TupleMessage;
 import it.polimi.rtag.messaging.TupleNetworkNotification;
 import it.polimi.rtag.messaging.TupleMessage.Scope;
@@ -24,13 +27,42 @@ import lights.interfaces.TupleSpaceException;
  * @author Panteha Saeedi (saeedi@elet.polimi.it)
  *
  */
-public class TupleSpaceManager {
+public class TupleSpaceManager implements PacketListener, NeighborhoodChangeListener {
 
+	private static final String[] SUBJECTS = {
+		TupleGroupCommand.SUBJECT,
+		TupleGroupCommandAck.SUBJECT,
+	};
+
+	
 	private TupleSpace tupleSpace = new TupleSpace();
 
 	private Overlay overlay;
 	private GroupCommunicationDispatcher dispatcher;
 	private NodeDescriptor currentNode;
+	
+
+	public TupleSpaceManager(Overlay overlay,
+			GroupCommunicationDispatcher dispatcher) {
+		this.dispatcher = dispatcher;
+		setOverlay(overlay);
+	}
+	
+	/**
+	 * @param overlay the overlay to set
+	 */
+	private void setOverlay(Overlay overlay) {
+		if (this.overlay != null) {
+			throw new AssertionError("Overlay already configured");
+		}
+		if (overlay == null) {
+			throw new AssertionError("Overlay cannot be null");
+		}
+		this.overlay = overlay;
+		for (String subject: SUBJECTS) {
+			overlay.addPacketListener(this, subject);
+		}
+	}
 	
 	/**
 	 * Query the tuple space if there is a {@link Scope#NETWORK} tuple
@@ -171,7 +203,7 @@ public class TupleSpaceManager {
 	private void sendToNode(NodeDescriptor recipient, TupleMessage message) {
 		if (overlay.isNeighborOf(recipient)) {
 			try {
-				overlay.send(TupleMessage.getSubject(), message, recipient);
+				overlay.send(message.getSubject(), message, recipient);
 				removeMessage(message);
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -201,40 +233,18 @@ public class TupleSpaceManager {
 	
 	public void removeExpiredMessages() {}
 	
-	public int count(ITuple tuple) throws TupleSpaceException {
-		return tupleSpace.count(tuple);
-	}
 
-	public ITuple in(ITuple tuple) throws TupleSpaceException {
-		return tupleSpace.in(tuple);
-	}
-
-	public ITuple[] ing(ITuple tuple) throws TupleSpaceException {
-		return tupleSpace.ing(tuple);
-	}
-
-	public ITuple inp(ITuple tuple) throws TupleSpaceException {
-		return tupleSpace.inp(tuple);
-	}
-
-	public void out(ITuple tuple) throws TupleSpaceException {
-		tupleSpace.out(tuple);
-	}
-
-	public void outg(ITuple[] tuple) throws TupleSpaceException {
-		tupleSpace.outg(tuple);
-	}
-
-	public ITuple rd(ITuple tuple) throws TupleSpaceException {
-		return tupleSpace.rd(tuple);
-	}
-
-	public ITuple[] rdg(ITuple tuple) throws TupleSpaceException {
-		return tupleSpace.rdg(tuple);
-	}
-
-	public ITuple rdp(ITuple tuple) throws TupleSpaceException {
-		return tupleSpace.rdp(tuple);
+	@Override
+	public void notifyPacketArrived(String subject, NodeDescriptor sender,
+			Serializable message) {
+		if (TupleGroupCommand.SUBJECT.equals(subject)) {
+			storeAndSend((TupleMessage) message);
+		} else if (TupleGroupCommandAck.SUBJECT.equals(subject)) {
+			removeMessageAndPropagateAck((TupleGroupCommandAck) message);
+		} else if (TupleNetworkNotification.SUBJECT.equals(subject)) {
+			storeAndSend((TupleMessage) message);
+		}
+		
 	}
 		
 }

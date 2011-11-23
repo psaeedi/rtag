@@ -43,14 +43,16 @@ public abstract class TupleMessage extends polimi.reds.Message {
 
 	private long creationTime;
 	private Scope scope;
-	
 	private Serializable recipient;
-	
-	public TupleMessage(Scope scope, Serializable recipient) {
+	private Serializable content;
+
+	public TupleMessage(Scope scope, Serializable recipient,
+			Serializable content) {
 		createID();
 		creationTime = System.currentTimeMillis();
 		this.scope = scope;
 		this.recipient = recipient;
+		this.content = content;
 	}
 
 	public boolean isExpired() {
@@ -68,6 +70,10 @@ public abstract class TupleMessage extends polimi.reds.Message {
 
 	public Serializable getRecipient() {
 		return recipient;
+	}
+	
+	public Serializable getContent() {
+		return content;
 	}
 
 	public abstract String getSubject();

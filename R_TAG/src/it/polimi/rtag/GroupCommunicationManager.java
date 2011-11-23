@@ -3,14 +3,10 @@
 
 package it.polimi.rtag;
 
-import it.polimi.rtag.messaging.GroupCoordinationCommand;
-import it.polimi.rtag.messaging.GroupCoordinationCommandAck;
-import it.polimi.rtag.messaging.GroupFollowerCommand;
-import it.polimi.rtag.messaging.GroupFollowerCommandAck;
-import it.polimi.rtag.messaging.GroupLeaderCommand;
-import it.polimi.rtag.messaging.GroupLeaderCommandAck;
-import it.polimi.rtag.messaging.MessageSubjects;
+import it.polimi.rtag.messaging.TupleGroupCommand;
+import it.polimi.rtag.messaging.TupleGroupCommandAck;
 import it.polimi.rtag.messaging.TupleMessage;
+import it.polimi.rtag.messaging.TupleNetworkNotification;
 import it.polimi.rtag.messaging.TupleMessage.Scope;
 
 import java.io.Serializable;
@@ -22,11 +18,6 @@ import polimi.reds.MessageID;
 import polimi.reds.NodeDescriptor;
 import polimi.reds.broker.overlay.NeighborhoodChangeListener;
 import polimi.reds.broker.overlay.Overlay;
-
-import static it.polimi.rtag.messaging.MessageSubjects.*;
-import static it.polimi.rtag.messaging.GroupLeaderCommand.*;
-import static it.polimi.rtag.messaging.GroupFollowerCommand.*;
-import static it.polimi.rtag.messaging.GroupCoordinationCommand.*;
 
 /**
  * Handles the communication of a group and also keep the group descriptor updated.
@@ -53,10 +44,8 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 	
 	private GroupDescriptor groupDescriptor;
 	private NodeDescriptor currentNodeDescriptor;
-	private Overlay overlay;
 	private GroupCoordinationStrategy coordinationStrategy;
-	
-	private HashMap<MessageID, Message> pendingMessages = new HashMap<MessageID, Message>();
+	private TupleSpaceManager tupleSpaceManager;
 	
 	/**
 	 * Create a new group and the current node becomes a leader.
@@ -87,7 +76,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 			GroupDescriptor groupDescriptor) {
 		
 		GroupCommunicationManager manager = new GroupCommunicationManager(
-				node, groupDescriptor, node.getOverlay());
+				node, groupDescriptor, node.getTupleSpaceManager());
 		return manager;
 	}
 	
@@ -119,10 +108,10 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 	private GroupCommunicationManager(
 			Node node, 
 			GroupDescriptor groupDescriptor,
-			Overlay overlay) {
+			TupleSpaceManager tupleSpaceManager) {
 		this.node = node;
 		this.currentNodeDescriptor = node.getNodeDescriptor();
-		setOverlay(overlay);
+		this.tupleSpaceManager = tupleSpaceManager;
 		setGroupDescriptor(groupDescriptor);		
 	}
 	
@@ -207,17 +196,11 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 	}
 
 	
-	/**
-	 * Notify this group manager that a new node has been discovered. 
-	 * If the new discovered node is
-	 * already a group member (which can happen in case of internal delay)
-	 * nothing is done. Otherwise if the new node is not a member of the group
-	 * the leader will send it a {@link MessageSubjects#GROUP_DISCOVERED_NOTIFICATION}.
-	 * 
-	 * @see polimi.reds.broker.overlay.NeighborhoodChangeListener#notifyNeighborAdded(polimi.reds.NodeDescriptor, java.io.Serializable)
-	 */
+
 	@Override
 	public void notifyNeighborAdded(NodeDescriptor addedNode, Serializable reconfigurationInfo) {
+		// DO nothing.
+		/*
 		if (followedParentManager != null) {
 			// The followedParentManager will do this.
 			return;
@@ -233,9 +216,10 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 			// Notify the other node of the existence of this group
 			overlay.send(MessageSubjects.GROUP_DISCOVERED_NOTIFICATION, 
 					groupDescriptor, addedNode);
+			
 		} catch (Exception e) {
 			e.printStackTrace();
-		}
+		}*/
 	}
 	
 	/**
@@ -253,13 +237,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 		if (currentNodeDescriptor.equals(deadNode)) {
 			throw new RuntimeException("Notified of its own death");
 		}
-		
-		// Also the topology receives this event independently.
-		// Do NOT invoke it twice
-		System.out.println("GM " + groupDescriptor.getFriendlyName() + " for " + 
-				currentNodeDescriptor + " has been notified that " + 
-				deadNode + " is dead. " + reconfigurationInfo);
-		
+			
 		if (!groupDescriptor.isMember(deadNode)) {
 			// Not a group member
 			return;
@@ -270,11 +248,10 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 			groupDescriptor.setParentLeader(null);
 			
 			if (isLeader()) {
-				GroupLeaderCommand updateCommand = 
-						GroupLeaderCommand.createUpdateCommand(groupDescriptor);
-				sendMessageToFollowers(updateCommand);
+				TupleGroupCommand command = 
+					TupleGroupCommand.createUpdateGroupCommand(groupDescriptor);
+				tupleSpaceManager.storeAndSend(command);
 			} 
-			
 			return;
 		}
 				
@@ -282,9 +259,9 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 		if (!groupDescriptor.isLeader(deadNode)) {
 			groupDescriptor.removeFollower(deadNode);
 			if (isLeader()) {
-				GroupLeaderCommand updateCommand = 
-						GroupLeaderCommand.createUpdateCommand(groupDescriptor);
-				sendMessageToFollowers(updateCommand);
+				TupleGroupCommand command = 
+					TupleGroupCommand.createUpdateGroupCommand(groupDescriptor);
+				tupleSpaceManager.storeAndSend(command);
 			} 
 			return;
 		} else {
@@ -307,9 +284,9 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 					// the current node should join the parent group
 					NodeDescriptor parent = groupDescriptor.getParentLeader();
 					if (parent != null) {
-						GroupCoordinationCommand command = 
-							GroupCoordinationCommand.createAdoptGroupCommand(groupDescriptor);
-						sendCoordinationCommand(command, parent);
+						TupleGroupCommand command = 
+							TupleGroupCommand.createAdoptGroupCommand(parent, groupDescriptor);
+						tupleSpaceManager.storeAndSend(command);
 					}
 				}
 			} else {
@@ -324,20 +301,19 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 	 * When a leader crash and the new leader was already a child leader.
 	 */
 	private void migrateAllFollowersAndAskAdoption(GroupDescriptor remoteGroup) {
-		for (NodeDescriptor node: remoteGroup.getFollowers()) {
-			GroupCoordinationCommand command = GroupCoordinationCommand
-					.createMigrateToGroupCommand(groupDescriptor);
-			sendCoordinationCommand(command, node);
-		}
+		TupleGroupCommand command = 
+				TupleGroupCommand.createMigrateToGroupCommand(remoteGroup, groupDescriptor);
+		tupleSpaceManager.storeAndSend(command);
+		
 		if (groupDescriptor.getParentLeader() != null) {
 			return;
 		}
 		// Join the parent group
 		NodeDescriptor parent = remoteGroup.getParentLeader();
 		if (parent != null) {
-			GroupCoordinationCommand command = 
-				GroupCoordinationCommand.createAdoptGroupCommand(groupDescriptor);
-			sendCoordinationCommand(command, parent);
+			TupleGroupCommand AdoptionCommand = 
+				TupleGroupCommand.createAdoptGroupCommand(parent, groupDescriptor);
+			tupleSpaceManager.storeAndSend(command);
 		}
 	}
 
@@ -353,59 +329,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 		notifyNeighborDead(removedNode, null);
 	}
 
-	/**
-	 * @return the overlay
-	 */
-	public Overlay getOverlay() {
-		return overlay;
-	}
-
-	/**
-	 * @param overlay the overlay to set
-	 */
-	private void setOverlay(Overlay overlay) {
-		if (this.overlay != null) {
-			throw new AssertionError("Overlay already configured");
-		}
-		if (overlay == null) {
-			throw new AssertionError("Overlay cannot be null");
-		}
-		this.overlay = overlay;
-	}
-	
-	/**
-	 * Starts sending a broadcast. If this node is a follower it
-	 * delegates its leader. If the node is a leader then it
-	 * forwards the message to its followers and to the parent
-	 * if it exits.
-	 * 
-	 * @param subject
-	 * @param message
-	 */
-	void sendGroupcast(String subject, Serializable message,
-			LeadedChildCommandDelegate delegate) {
-		handleGroupast(subject, message, delegate, this.currentNodeDescriptor);
-	}
-	
-	private void handleGroupast(String subject, Serializable message,
-			LeadedChildCommandDelegate delegate, NodeDescriptor sender) {
-		if (isLeader()) {
-			// Forward to the parent and to the follower
-			sendMessageToParent(subject, message, sender);
-			sendMessageToFollowers(subject, message, sender);
-			if (delegate != null) {
-				delegate.invokeCommand(this, message);
-			}
-		} else {
-			// Forward to the leader
-			sendMessageToLeader(subject, message, sender);
-			if (leadedChildManager != null) {
-				leadedChildManager.handleGroupast(subject, message, delegate, sender);
-				return;
-			}
-		}
-	}
-	
+	/*
 	private void sendMessageToLeader(String subject, Serializable message, NodeDescriptor sender) {
 		if (isLeader()) {
 			throw new RuntimeException("The leader should not talk to itself.");
@@ -444,7 +368,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 			return;
 		}
 		sendMessage(subject, message, parent);
-	}
+	}*/
 
 /*
 	public void sendMessageGroupCreatedNotification(NodeDescriptor sender,
@@ -697,47 +621,6 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 		} 
 	}
 	
-	private void sendCoordinationCommand(
-			GroupCoordinationCommand message, NodeDescriptor recipient) {
-		sendMessage(GROUP_COORDINATION_COMMAND, message, recipient);
-		synchronized (pendingMessages) {
-			pendingMessages.put(message.getID(), message);
-		}
-		
-	}
-	
-	private void sendLeaderCommand(
-			GroupLeaderCommand message, NodeDescriptor recipient) {
-		sendMessage(GROUP_LEADER_COMMAND, message, recipient);
-		synchronized (pendingMessages) {
-			pendingMessages.put(message.getID(), message);
-		}
-	}
-	
-	private void sendFollowerCommand(
-			GroupFollowerCommand message, NodeDescriptor recipient) {
-		sendMessage(GROUP_FOLLOWER_COMMAND, message, recipient);
-		synchronized (pendingMessages) {
-			pendingMessages.put(message.getID(), message);
-		}
-		
-	}
-	
-	private void sendMessageToFollowers(GroupLeaderCommand message) {
-		for (NodeDescriptor follower: groupDescriptor.getFollowers()) {
-			if (currentNodeDescriptor.equals(follower)) {
-				throw new RuntimeException(
-						"Trying to talk to itself. " +
-						"This should NOT happen.");
-			}
-			sendLeaderCommand(message, follower);
-		}
-	}
-	
-	protected void cleanPendingMessages() {
-		// TODO clean the pendingCommunicationMessages map to avoid storing 
-		// values for undelievered messages by removing all the expired ones.
-	}
 	
 	/**
 	 * Handles {@link MessageSubjects#GROUP_LEADER_COMMAND} messages by performing
@@ -1167,30 +1050,21 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 	 */
 	private void setGroupDescriptor(GroupDescriptor groupDescriptor) {
 		this.groupDescriptor = groupDescriptor;
+		// TODO WE should keep a statefull strategy!
 		coordinationStrategy = new LoadBalancingGroupCoordinationStrategy(groupDescriptor);
 	}
 
 	public void deleteGroup() {
-		if (isLeader()) {
-			// Propagates down
-			GroupLeaderCommand forwardedMessage = 
-				GroupLeaderCommand.createDeleteCommand(groupDescriptor);
-			sendMessageToFollowers(forwardedMessage);
-			// Propagates UP
-			if (followedParentManager != null) {
-				followedParentManager.deleteGroup();
-			}
-		} else {
-			// ask the leader
-			GroupFollowerCommand command =
-				GroupFollowerCommand.createDeleteCommand(groupDescriptor);
-			sendFollowerCommand(command, groupDescriptor.getLeader());
-		}
+		TupleGroupCommand command = 
+				TupleGroupCommand.createDeleteGroupCommand(groupDescriptor);
+		tupleSpaceManager.storeAndSend(command);
 	}
 
+	/*
 	interface LeadedChildCommandDelegate {
 		public void invokeCommand(GroupCommunicationManager manager, Serializable message);
 	}
+	*/
 	
 	class DeleteGroupCommandDelegate implements LeadedChildCommandDelegate {
 
@@ -1213,7 +1087,39 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 		}
 	}
 
-	void forwardTupleMessage(TupleMessage message, NodeDescriptor sender) {
+	void handleAndForwardTupleMessage(TupleMessage message, NodeDescriptor sender) {
+		if (message instanceof TupleGroupCommand) {
+			handleTupleGroupCommand((TupleGroupCommand) message, sender);
+		} else if (message instanceof TupleGroupCommandAck) {
+			handleTupleGroupCommandAck((TupleGroupCommandAck) message, sender);
+		} else if (message instanceof TupleNetworkNotification) {
+			handleTupleNetworkNotification((TupleNetworkNotification) message, sender);
+		}
+		forwardTupleMessage(message, sender);
+	}
+	
+	private void handleTupleNetworkNotification(
+			TupleNetworkNotification message, NodeDescriptor sender) {
+		// TODO Auto-generated method stub
+		
+	}
+
+
+	private void handleTupleGroupCommandAck(TupleGroupCommandAck message,
+			NodeDescriptor sender) {
+		// TODO Auto-generated method stub
+		
+	}
+
+
+	private void handleTupleGroupCommand(TupleGroupCommand message,
+			NodeDescriptor sender) {
+		// TODO Auto-generated method stub
+		
+	}
+
+
+	private void forwardTupleMessage(TupleMessage message, NodeDescriptor sender) {
 		Scope scope = message.getScope();
 		if (scope == Scope.GROUP) {
 			GroupDescriptor recipient = (GroupDescriptor)message.getRecipient();
@@ -1236,14 +1142,13 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 		} 
 	}
 
-
 	private void sendTupleToFollowers(TupleMessage message,
 			NodeDescriptor sender) {
 		for (NodeDescriptor follower: groupDescriptor.getFollowers()) {
 				if (sender.equals(follower)) {
 					continue;
 				}
-				sendMessage(TupleMessage.TUPLE_MESSAGE, message, follower);
+				sendMessage(message.getSubject(), message, follower);
 			}
 	}
 
@@ -1253,6 +1158,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 		if (leader.equals(sender)) {
 			return;
 		}
-		sendMessage(TupleMessage.TUPLE_MESSAGE, message, leader);
+		sendMessage(message.getSubject(), message, leader);
 	}
+	
 }

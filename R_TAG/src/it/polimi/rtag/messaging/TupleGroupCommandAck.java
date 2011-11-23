@@ -3,8 +3,6 @@
  */
 package it.polimi.rtag.messaging;
 
-import it.polimi.rtag.GroupDescriptor;
-
 import java.io.Serializable;
 
 import polimi.reds.MessageID;
@@ -34,20 +32,23 @@ public class TupleGroupCommandAck extends TupleMessage {
 	
 	public static final String SUBJECT = "TupleGroupCommandAck";
 	
-	private MessageID originalMessage;
-	private GroupDescriptor groupDescriptor;
 	private String response;
-	
-	/**
-	 * @param scope
-	 * @param recipient
-	 */
-	public TupleGroupCommandAck(Scope scope, Serializable recipient) {
-		super(scope, recipient);
-		// TODO Auto-generated constructor stub
-	}
 
+	public TupleGroupCommandAck(Scope scope, Serializable recipient,
+			TupleGroupCommand originalMessage) {
+		super(scope, recipient, originalMessage);
+	}
+	
 	public String getSubject() {
 		return SUBJECT;
 	}
+	
+	public TupleGroupCommand getOriginalMessage() {
+		return (TupleGroupCommand) getContent();
+	}
+	
+	public String getResponse() {
+		return response;
+	}
+
 }

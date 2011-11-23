@@ -15,15 +15,9 @@ import polimi.reds.NodeDescriptor;
 import polimi.reds.broker.overlay.Overlay;
 import polimi.reds.broker.overlay.PacketListener;
 
-import it.polimi.rtag.messaging.GroupCoordinationCommand;
-import it.polimi.rtag.messaging.GroupCoordinationCommandAck;
-import it.polimi.rtag.messaging.GroupFollowerCommand;
-import it.polimi.rtag.messaging.GroupFollowerCommandAck;
-import it.polimi.rtag.messaging.GroupLeaderCommand;
-import it.polimi.rtag.messaging.GroupLeaderCommandAck;
+import it.polimi.rtag.messaging.TupleGroupCommand;
+import it.polimi.rtag.messaging.TupleGroupCommandAck;
 import it.polimi.rtag.messaging.TupleMessage;
-
-import static it.polimi.rtag.messaging.MessageSubjects.*;
 
 
 /**
@@ -36,15 +30,9 @@ import static it.polimi.rtag.messaging.MessageSubjects.*;
  * @author Panteha Saeedi (saeedi@elet.polimi.it)
  *
  */
-public class GroupCommunicationDispatcher implements 
-	PacketListener{
+public class GroupCommunicationDispatcher {
 
 
-	private static final String[] SUBJECTS = {
-		TUPLE_COMMAND,
-		TUPLE_COMMAND_ACK
-	};
-	
 	private Object lock = new Object();
 	
 	private Node node;
@@ -59,7 +47,7 @@ public class GroupCommunicationDispatcher implements
 	 */
 	public GroupCommunicationDispatcher(Node node) {
 		this.node = node;
-		setOverlay(node.getOverlay());
+		this.overlay = node.getOverlay();
 	}
 	
 	private void notifyNewGroupManagerOfExistingManagers(
@@ -175,23 +163,6 @@ public class GroupCommunicationDispatcher implements
 	}
 	
 	/**
-	 * @param overlay the overlay to set
-	 */
-	private void setOverlay(Overlay overlay) {
-		if (this.overlay != null) {
-			throw new AssertionError("Overlay already configured");
-		}
-		if (overlay == null) {
-			throw new AssertionError("Overlay cannot be null");
-		}
-		this.overlay = overlay;
-		for (String subject: SUBJECTS) {
-			overlay.addPacketListener(this, subject);
-		}
-	}
-
-
-	/**
 	 * The dispatcher will forward the group discovery notification
 	 * to the leaded group which matches the discovered one, if any.
 	 * 
@@ -208,20 +179,6 @@ public class GroupCommunicationDispatcher implements
 		manager.handleGroupDiscovered(sender, groupDescriptor);
 	}
 
-	
-	
-	@Override
-	public void notifyPacketArrived(String subject, NodeDescriptor sender,
-			Serializable packet) {
-		
-		// TODO return ko if a message was not handled?
-		
-		if (TupleMessage.TUPLE_MESSAGE.equals(subject)) {
-			handleTupleMessage()
-		}
-	}
-
-
 	/*
 	private void handleMessageGroupCreatedNotification(NodeDescriptor sender,
 			GroupDescriptor groupDescriptor) {
@@ -237,102 +194,6 @@ public class GroupCommunicationDispatcher implements
 					.handleMessageGroupCreatedNotification(sender, groupDescriptor);
 		}
 	}*/
-
-
-	private void handleMessageGroupCoordinationCommandAck(
-			NodeDescriptor sender, GroupCoordinationCommandAck packet) {
-		// Only a leader can receive an ack
-		GroupCommunicationManager manager = getLeadedGroupByFriendlyName(
-				packet.getGroupDescriptor().getFriendlyName());
-		if (manager != null) {
-			manager.handleMessageGroupCoordinationCommandAck(sender, packet);
-		}
-	}
-
-
-	private void handleMessageGroupCoordinationCommand(
-			NodeDescriptor sender, GroupCoordinationCommand packet) {
-		GroupDescriptor remoteDescriptor = packet.getGroupDescriptor();
-		// TODO add recipient group in coordination messages
-		
-		// Attempt to find a leaded group
-		GroupCommunicationManager manager = getLeadedGroupByFriendlyName(
-				remoteDescriptor.getFriendlyName());
-		if (manager != null) {
-			manager.handleMessageGroupCoordinationCommand(sender, packet);
-			return;
-		}
-		// Try to find a followed group
-		manager = getFollowedGroupByFriendlyName(
-				remoteDescriptor.getFriendlyName());
-		if (manager != null) {
-			manager.handleMessageGroupCoordinationCommand(sender, packet);
-			return;
-		}
-		
-	}
-
-
-	private void handleMessageGroupLeaderCommandAck(NodeDescriptor sender,
-			GroupLeaderCommandAck packet) {
-		GroupDescriptor remoteDescriptor = packet.getGroupDescriptor();
-		// TODO add recipient group in coordination messages
-		
-		// Attempt to find a leaded group
-		GroupCommunicationManager manager = getLeadedGroupByUUID(
-				remoteDescriptor.getUniqueId());
-		if (manager != null) {
-			manager.handleMessageGroupLeaderCommandAck(sender, packet);
-			return;
-		}
-	}
-
-
-	private void handleMessageGroupLeaderCommand(NodeDescriptor sender,
-			GroupLeaderCommand packet) {
-		
-		GroupDescriptor remoteDescriptor = packet.getGroupDescriptor();
-		// TODO add recipient group in coordination messages
-		
-		// Attempt to find a leaded group
-		GroupCommunicationManager manager = getFollowedGroupByUUID(
-				remoteDescriptor.getUniqueId());
-		if (manager != null) {
-			manager.handleMessageGroupLeaderCommand(sender, packet);
-			return;
-		}
-	}
-
-
-	private void handleMessageGroupFollowerCommandAck(NodeDescriptor sender,
-			GroupFollowerCommandAck packet) {
-		GroupDescriptor remoteDescriptor = packet.getGroupDescriptor();
-		// TODO add recipient group in coordination messages
-		
-		// Attempt to find a leaded group
-		GroupCommunicationManager manager = getFollowedGroupByUUID(
-				remoteDescriptor.getUniqueId());
-		if (manager != null) {
-			manager.handleMessageGroupFollowerCommandAck(sender, packet);
-			return;
-		}
-	}
-
-
-	private void handleMessageGroupFollowerCommand(NodeDescriptor sender,
-			GroupFollowerCommand packet) {
-		
-		GroupDescriptor remoteDescriptor = packet.getGroupDescriptor();
-		// TODO add recipient group in coordination messages
-		
-		// Attempt to find a leaded group
-		GroupCommunicationManager manager = getLeadedGroupByUUID(
-				remoteDescriptor.getUniqueId());
-		if (manager != null) {
-			manager.handleMessageGroupFollowerCommand(sender, packet);
-			return;
-		}
-	}
 
 	/**
 	 * @return the leadedGroups
@@ -454,9 +315,6 @@ public class GroupCommunicationDispatcher implements
 				GroupCommunicationManager manager = followedGroups.get(i);
 				removeGroup(manager);
 			}
-		}
-		for (String subject: SUBJECTS) {
-			overlay.removePacketListener(this, subject);
 		}
 	}
 
