@@ -7,6 +7,8 @@ import it.polimi.rtag.GroupDescriptor;
 
 import java.io.Serializable;
 
+import polimi.reds.NodeDescriptor;
+
 /**
  * @author Panteha Saeedi (saeedi@elet.polimi.it)
  *
@@ -38,19 +40,47 @@ public class TupleGroupCommand extends TupleMessage {
 	
 	public static final String SUBJECT = "TupleGroupCommand";
 	
-	private GroupDescriptor groupDescriptor;
 	private String command;
 	
-	/**
-	 * @param scope
-	 * @param recipient
-	 */
-	public TupleGroupCommand(Scope scope, Serializable recipient) {
-		super(scope, recipient);
-		// TODO Auto-generated constructor stub
+
+	public static TupleGroupCommand createDeleteGroupCommand(GroupDescriptor groupDescriptor) {
+		return new TupleGroupCommand(Scope.GROUP, groupDescriptor, null, DELETE_GROUP);
+	}
+	
+	
+	public TupleGroupCommand(Scope scope, Serializable recipient,
+			Serializable content, String command) {
+		super(scope, recipient, content);
+		this.command = command;
 	}
 
 	public String getSubject() {
 		return SUBJECT;
 	}
+	
+	public String getCommand() {
+		return command;
+	}
+
+
+	public static TupleGroupCommand createUpdateGroupCommand(
+			GroupDescriptor groupDescriptor) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+
+	public static TupleGroupCommand createAdoptGroupCommand(
+			NodeDescriptor parent, GroupDescriptor groupDescriptor) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+
+	public static TupleGroupCommand createMigrateToGroupCommand(
+			GroupDescriptor remoteGroup, GroupDescriptor groupDescriptor) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

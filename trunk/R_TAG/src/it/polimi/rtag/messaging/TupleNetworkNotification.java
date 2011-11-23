@@ -17,13 +17,10 @@ public class TupleNetworkNotification extends TupleMessage {
 	private static final long serialVersionUID = -3969953716207972579L;
 
 	public static final String SUBJECT = "TupleNetworkNotification";
-	
-	/**
-	 * @param scope
-	 * @param recipient
-	 */
-	public TupleNetworkNotification(Scope scope, Serializable recipient) {
-		super(scope, recipient);
+
+	public TupleNetworkNotification(Scope scope, Serializable recipient,
+			Serializable content) {
+		super(scope, recipient, content);
 		// TODO Auto-generated constructor stub
 	}
 

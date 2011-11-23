@@ -2,11 +2,8 @@ package it.polimi.rtag;
 
 import java.net.ConnectException;
 import java.net.MalformedURLException;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 
-import it.polimi.rtag.messaging.TupleMessage;
 import polimi.reds.NodeDescriptor;
 import polimi.reds.broker.overlay.AlreadyNeighborException;
 import polimi.reds.broker.overlay.NotRunningException;
@@ -27,6 +24,7 @@ public class Node {
     
     private GroupAwareTopologyManager topologyManager;
     private Overlay overlay;
+    private TupleSpaceManager tupleSpaceManager;
     
     private GroupCommunicationDispatcher groupCommunicationDispatcher;
 
@@ -48,10 +46,15 @@ public class Node {
 		setOverlay(new MessageCountingGenericOverlay(topologyManager, transport));
 		
 		groupCommunicationDispatcher = new GroupCommunicationDispatcher(this);
+		tupleSpaceManager = new TupleSpaceManager(overlay, groupCommunicationDispatcher);
 		
 		groupCommunicationDispatcher.addGroupManager(GroupCommunicationManager.createUniverseCommunicationManager(this));
 	}
 
+	TupleSpaceManager getTupleSpaceManager() {
+		return tupleSpaceManager;
+	}
+	
 	Overlay getOverlay() {
 		return overlay;
 	}
@@ -66,31 +69,6 @@ public class Node {
 		// Set listeners
 	    //overlay.setTrafficClass(COMMUNICATION_ACK, COMMUNICATION_ACK);
 	}	
-	
-	/*
-	private NodeDescriptor addNeigboor(NodeDescriptor descriptor) {
-		if (currentDescriptor.equals(descriptor)) {
-			throw new RuntimeException("Trying to talk to itself. " +
-					"This should definitely NOT happen.");
-		}
-
-		if (overlay.isNeighborOf(descriptor)) {
-			return descriptor;
-		}
-		
-		NodeDescriptor node = null;
-		for (String url: descriptor.getUrls()) {
-			try {
-				// TODO this may create a deadlock
-				descriptor = getTopologyManager().addNeighbor(url);
-			} catch (AlreadyNeighborException ex) {
-				node = descriptor;
-			} catch (Exception ex) {
-				continue;
-			}
-		}
-		return node;
-	}*/
 	
 	public NodeDescriptor getNodeDescriptor() {
 		return currentDescriptor;
@@ -157,24 +135,10 @@ public class Node {
 		NodeDescriptor descriptor = null;
 		try {
 			descriptor = overlay.addNeighbor(url);
-		} catch (AlreadyNeighborException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ConnectException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (MalformedURLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (NotRunningException e) {
-			// TODO Auto-generated catch block
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return descriptor;
 	}
 	
-	public int getMembersCount(String friendlyName) {
-		// TODO
-		return 0;
-	}
 }
