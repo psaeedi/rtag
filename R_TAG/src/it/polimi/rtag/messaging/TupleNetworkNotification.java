@@ -3,7 +3,7 @@
  */
 package it.polimi.rtag.messaging;
 
-import java.io.Serializable;
+import it.polimi.rtag.GroupDescriptor;
 
 /**
  * @author Panteha Saeedi (saeedi@elet.polimi.it)
@@ -18,9 +18,9 @@ public class TupleNetworkNotification extends TupleMessage {
 
 	public static final String SUBJECT = "TupleNetworkNotification";
 
-	public TupleNetworkNotification(Scope scope, Serializable recipient,
-			Serializable content) {
-		super(scope, recipient, content);
+	public TupleNetworkNotification(
+			GroupDescriptor groupDescriptor) {
+		super(Scope.NETWORK, "*", groupDescriptor);
 		// TODO Auto-generated constructor stub
 	}
 

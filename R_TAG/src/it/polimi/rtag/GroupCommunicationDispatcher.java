@@ -37,7 +37,16 @@ public class GroupCommunicationDispatcher {
 	
 	private Node node;
 	private Overlay overlay;
+	private TupleSpaceManager tupleSpaceManager;
 	
+	public TupleSpaceManager getTupleSpaceManager() {
+		return tupleSpaceManager;
+	}
+
+	public void setTupleSpaceManager(TupleSpaceManager tupleSpaceManager) {
+		this.tupleSpaceManager = tupleSpaceManager;
+	}
+
 	// TODO synchronize them
 	private ArrayList<GroupCommunicationManager> leadedGroups = new ArrayList<GroupCommunicationManager>();
 	private ArrayList<GroupCommunicationManager> followedGroups = new ArrayList<GroupCommunicationManager>();
@@ -162,39 +171,6 @@ public class GroupCommunicationDispatcher {
 		}
 	}
 	
-	/**
-	 * The dispatcher will forward the group discovery notification
-	 * to the leaded group which matches the discovered one, if any.
-	 * 
-	 * @param sender the node sending the group notification
-	 * @param groupDescriptor the remote group descriptor
-	 * 
-	 * @see it.polimi.rtag.GroupDiscoveredNotificationListener#handleGroupDiscovered
-	 * (polimi.reds.NodeDescriptor, it.polimi.rtag.GroupDescriptor)
-	 */
-	public void handleGroupDiscovered(NodeDescriptor sender,
-			GroupDescriptor groupDescriptor) {
-		
-		GroupCommunicationManager manager = getLocalUniverseManager();
-		manager.handleGroupDiscovered(sender, groupDescriptor);
-	}
-
-	/*
-	private void handleMessageGroupCreatedNotification(NodeDescriptor sender,
-			GroupDescriptor groupDescriptor) {
-		GroupCommunicationManager manager = getLeadedGroupByFriendlyName(
-				groupDescriptor.getFriendlyName());
-		if (manager != null) {
-			// A group matching a leaded group has been found.
-			// The manager will attempt to create a hierarchy.
-			manager.handleMessageGroupCreatedNotification(sender, groupDescriptor);
-		} else {
-			// we use the universe to propagate this message
-			getLocalUniverseManager()
-					.handleMessageGroupCreatedNotification(sender, groupDescriptor);
-		}
-	}*/
-
 	/**
 	 * @return the leadedGroups
 	 */
@@ -345,7 +321,7 @@ public class GroupCommunicationDispatcher {
 		if (descriptor != null) {
 			// Already in that group
 			return descriptor;
-		}
+		}/*
 		try {
 			GroupCommunicationManager manager =
 					GroupCommunicationManager.createGroupCommunicationManager(
@@ -354,6 +330,24 @@ public class GroupCommunicationDispatcher {
 
 			getLocalUniverseManager().sendGroupcast(GROUP_DISCOVERED_NOTIFICATION, 
 					manager.getGroupDescriptor(), null);
+			return manager.getGroupDescriptor();
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			return null;
+		}*/
+		try {
+			GroupCommunicationManager manager =
+					GroupCommunicationManager.createGroupCommunicationManager(
+							node, UUID.randomUUID(), friendlyName);
+			addGroupManager(manager);
+			GroupDescriptor parentGroup = 
+					tupleSpaceManager.getLeaderForHierarchy(friendlyName);
+			if (parentGroup != null) {
+				
+				manager.joinParent(parentGroup);
+			} else {
+				tupleSpaceManager.setLeaderForHierarchy(manager.getGroupDescriptor());
+			}
 			return manager.getGroupDescriptor();
 		} catch (Exception ex) {
 			ex.printStackTrace();
@@ -383,6 +377,12 @@ public class GroupCommunicationDispatcher {
 			}
 		}
 		return groups;
+	}
+
+	public GroupCommunicationManager getGroupManagerForDescriptor(
+			GroupDescriptor recipient) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

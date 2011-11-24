@@ -39,7 +39,6 @@ public class Node {
 		 * <code>ReplyTable</code>.
 		 */
 		
-		// TODO implement a new routing topology manager
 		topologyManager = new GroupAwareTopologyManager();
 		Transport transport = new TCPTransport(port);
 			
@@ -47,6 +46,7 @@ public class Node {
 		
 		groupCommunicationDispatcher = new GroupCommunicationDispatcher(this);
 		tupleSpaceManager = new TupleSpaceManager(overlay, groupCommunicationDispatcher);
+		groupCommunicationDispatcher.setTupleSpaceManager(tupleSpaceManager);
 		
 		groupCommunicationDispatcher.addGroupManager(GroupCommunicationManager.createUniverseCommunicationManager(this));
 	}
@@ -66,8 +66,6 @@ public class Node {
 		this.overlay = overlay;
 		// TODO we want the ExtendedNodeDescriptor not the NodeDescriptor
 		currentDescriptor = overlay.getNodeDescriptor();
-		// Set listeners
-	    //overlay.setTrafficClass(COMMUNICATION_ACK, COMMUNICATION_ACK);
 	}	
 	
 	public NodeDescriptor getNodeDescriptor() {
