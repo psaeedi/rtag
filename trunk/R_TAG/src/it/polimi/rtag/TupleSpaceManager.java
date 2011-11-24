@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.Serializable;
 
 import polimi.reds.NodeDescriptor;
+import polimi.reds.broker.overlay.NeighborhoodChangeListener;
 import polimi.reds.broker.overlay.NotConnectedException;
 import polimi.reds.broker.overlay.NotRunningException;
 import polimi.reds.broker.overlay.Overlay;
@@ -62,6 +63,7 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 		for (String subject: SUBJECTS) {
 			overlay.addPacketListener(this, subject);
 		}
+		overlay.addNeighborhoodChangeListener(this);
 	}
 	
 	/**
@@ -76,17 +78,17 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 	 * 
 	 * @return the node descriptor of the hierarchy top leader.
 	 */
-	public NodeDescriptor getLeaderForHierarchy(String hierarchyName) {
+	public GroupDescriptor getLeaderForHierarchy(String hierarchyName) {
 		ITuple template = new Tuple()
 				.add(new Field().setValue(Scope.NETWORK))
 				.add(new Field().setType(long.class))
 				.add(new Field().setValue(hierarchyName))
 				.add(new Field().setValue(TupleNetworkNotification.SUBJECT))
-				.add(new Field().setType(NodeDescriptor.class));
+				.add(new Field().setType(GroupDescriptor.class));
 		try {
-			ITuple tuple = rdp(template);
+			ITuple tuple = tupleSpace.rdp(template);
 			if (tuple != null) {
-				return (NodeDescriptor)tuple.getFields()[4].getValue(); //TODO this does not work
+				return (GroupDescriptor)tuple.getFields()[4].getValue(); //TODO this does not work
 			}
 		} catch (TupleSpaceException e) {
 			// TODO Auto-generated catch block
@@ -98,8 +100,9 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 	/**
 	 * Sets a leader for the given hierarchy 
 	 */
-	public void setLeaderForHierarchy(String hierarchyName, NodeDescriptor leader) {
-		TupleMessage message = TupleMessage.createNotifyLeaderForHyerarchy(hierarchyName, leader);
+	public void setLeaderForHierarchy(GroupDescriptor groupDescriptor) {
+		TupleMessage message = new TupleNetworkNotification(
+				groupDescriptor);
 		storeAndSend(message);
 	}
 	
@@ -130,7 +133,6 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 		// TODO
 	}
 		
-	
 	public void storeAndSend(TupleMessage message) {
 		if (message.isExpired()) {
 			// the tuple is expired
@@ -144,11 +146,19 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 			.add(new Field().setValue(message));
 		
 		try {
-			out(tuple);
+			tupleSpace.out(tuple);
 		} catch (TupleSpaceException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		send(message);
+	}
+	
+	public void sendWithoutStoring(TupleMessage message) {
+		send(message);
+	}
+	
+	private void send(TupleMessage message) {
 		switch (message.getScope()) {
 			case NODE: {
 				sendToNode((NodeDescriptor)message.getRecipient(), message);
@@ -240,10 +250,28 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 		if (TupleGroupCommand.SUBJECT.equals(subject)) {
 			storeAndSend((TupleMessage) message);
 		} else if (TupleGroupCommandAck.SUBJECT.equals(subject)) {
-			removeMessageAndPropagateAck((TupleGroupCommandAck) message);
+			storeAndSend((TupleGroupCommandAck) message);
 		} else if (TupleNetworkNotification.SUBJECT.equals(subject)) {
 			storeAndSend((TupleMessage) message);
 		}
+		
+	}
+
+	@Override
+	public void notifyNeighborAdded(NodeDescriptor arg0, Serializable arg1) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void notifyNeighborDead(NodeDescriptor arg0, Serializable arg1) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void notifyNeighborRemoved(NodeDescriptor arg0) {
+		// TODO Auto-generated method stub
 		
 	}
 		
