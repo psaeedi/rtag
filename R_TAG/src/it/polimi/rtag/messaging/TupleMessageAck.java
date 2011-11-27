@@ -3,15 +3,15 @@
  */
 package it.polimi.rtag.messaging;
 
-import java.io.Serializable;
+import it.polimi.rtag.GroupDescriptor;
 
-import polimi.reds.MessageID;
+import java.io.Serializable;
 
 /**
  * @author Panteha Saeedi (saeedi@elet.polimi.it)
  *
  */
-public class TupleGroupCommandAck extends TupleMessage {
+public class TupleMessageAck extends TupleMessage {
 
 	/**
 	 * 
@@ -32,11 +32,20 @@ public class TupleGroupCommandAck extends TupleMessage {
 	
 	public static final String SUBJECT = "TupleGroupCommandAck";
 	
-	private String response;
-
-	public TupleGroupCommandAck(Scope scope, Serializable recipient,
-			TupleGroupCommand originalMessage) {
-		super(scope, recipient, originalMessage);
+	
+	public static TupleMessageAck createOkAck(Scope scope, Serializable recipient,
+			TupleMessage originalMessage) {
+		return new TupleMessageAck(scope, recipient, originalMessage, OK);
+	}
+	
+	public static TupleMessageAck createKoAck(Scope scope, Serializable recipient,
+			TupleMessage originalMessage) {
+		return new TupleMessageAck(scope, recipient, originalMessage, KO);
+	}
+	
+	protected TupleMessageAck(Scope scope, Serializable recipient,
+			TupleMessage originalMessage, String command) {
+		super(scope, recipient, originalMessage, command);
 	}
 	
 	public String getSubject() {
@@ -47,8 +56,4 @@ public class TupleGroupCommandAck extends TupleMessage {
 		return (TupleGroupCommand) getContent();
 	}
 	
-	public String getResponse() {
-		return response;
-	}
-
 }

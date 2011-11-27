@@ -45,7 +45,7 @@ public class Node {
 		setOverlay(new MessageCountingGenericOverlay(topologyManager, transport));
 		
 		groupCommunicationDispatcher = new GroupCommunicationDispatcher(this);
-		tupleSpaceManager = new TupleSpaceManager(overlay, groupCommunicationDispatcher);
+		tupleSpaceManager = new TupleSpaceManager(overlay, this);
 		groupCommunicationDispatcher.setTupleSpaceManager(tupleSpaceManager);
 		
 		groupCommunicationDispatcher.addGroupManager(GroupCommunicationManager.createUniverseCommunicationManager(this));
