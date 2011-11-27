@@ -3,24 +3,21 @@
  */
 package it.polimi.rtag;
 
-import java.io.IOException;
 import java.io.Serializable;
 
 import polimi.reds.NodeDescriptor;
 import polimi.reds.broker.overlay.NeighborhoodChangeListener;
-import polimi.reds.broker.overlay.NotConnectedException;
-import polimi.reds.broker.overlay.NotRunningException;
 import polimi.reds.broker.overlay.Overlay;
 import polimi.reds.broker.overlay.PacketListener;
 import it.polimi.rtag.messaging.TupleGroupCommand;
-import it.polimi.rtag.messaging.TupleGroupCommandAck;
+import it.polimi.rtag.messaging.TupleMessageAck;
 import it.polimi.rtag.messaging.TupleMessage;
 import it.polimi.rtag.messaging.TupleNetworkNotification;
+import it.polimi.rtag.messaging.TupleNodeNotification;
 import it.polimi.rtag.messaging.TupleMessage.Scope;
 import lights.Field;
 import lights.Tuple;
 import lights.TupleSpace;
-import lights.interfaces.IField;
 import lights.interfaces.ITuple;
 import lights.interfaces.TupleSpaceException;
 
@@ -32,7 +29,9 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 
 	private static final String[] SUBJECTS = {
 		TupleGroupCommand.SUBJECT,
-		TupleGroupCommandAck.SUBJECT,
+		TupleMessageAck.SUBJECT,
+		TupleNodeNotification.SUBJECT,
+		TupleNetworkNotification.SUBJECT
 	};
 
 	
@@ -44,8 +43,9 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 	
 
 	public TupleSpaceManager(Overlay overlay,
-			GroupCommunicationDispatcher dispatcher) {
-		this.dispatcher = dispatcher;
+			Node node) {
+		this.currentNode = node.getNodeDescriptor();
+		this.dispatcher = node.getGroupCommunicationDispatcher();
 		setOverlay(overlay);
 	}
 	
@@ -66,6 +66,37 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 		overlay.addNeighborhoodChangeListener(this);
 	}
 	
+	private ITuple createTemplate(Scope scope, Long expireTime,
+			Serializable recipient, String subject, String command,
+			Class clazz) {
+		ITuple template = new Tuple()
+			.add(scope == null ? new Field().setType(Scope.class):
+					new Field().setValue(scope)) //scope
+			.add(expireTime == null ? new Field().setType(Long.class):
+					new Field().setValue(expireTime)) // expire
+			.add(recipient == null ? new Field().setType(Serializable.class):
+					new Field().setValue(recipient)) //recipient
+			.add(subject == null ? new Field().setType(String.class):
+					new Field().setValue(subject)) // subject
+			.add(command == null ? new Field().setType(String.class):
+					new Field().setValue(command)) // command
+			.add(new Field().setType(clazz)); //original message
+		return template;
+	}
+	
+	private ITuple createTuple(Scope scope, Long expireTime,
+			Serializable recipient, String subject, String command,
+			TupleMessage message) {
+		ITuple tuple = new Tuple()
+			.add(new Field().setValue(scope)) //scope
+			.add(new Field().setValue(expireTime)) //timeout
+			.add(new Field().setValue(recipient)) // recipient
+			.add(new Field().setValue(subject)) // subject
+			.add(new Field().setValue(command)) // subject
+			.add(new Field().setValue(message)); // original message
+		return tuple;
+	}
+	
 	/**
 	 * Query the tuple space if there is a {@link Scope#NETWORK} tuple
 	 * identifying the give hierarchy name.>(p>
@@ -79,16 +110,15 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 	 * @return the node descriptor of the hierarchy top leader.
 	 */
 	public GroupDescriptor getLeaderForHierarchy(String hierarchyName) {
-		ITuple template = new Tuple()
-				.add(new Field().setValue(Scope.NETWORK))
-				.add(new Field().setType(long.class))
-				.add(new Field().setValue(hierarchyName))
-				.add(new Field().setValue(TupleNetworkNotification.SUBJECT))
-				.add(new Field().setType(GroupDescriptor.class));
+		ITuple template = createTemplate(Scope.NETWORK, null, hierarchyName,
+				TupleNetworkNotification.SUBJECT, TupleNetworkNotification.ADD, 
+				TupleNetworkNotification.class);
 		try {
 			ITuple tuple = tupleSpace.rdp(template);
 			if (tuple != null) {
-				return (GroupDescriptor)tuple.getFields()[4].getValue(); //TODO this does not work
+				TupleNetworkNotification message = (TupleNetworkNotification)
+						((Field)tuple.getFields()[5]).getValue();
+				return message.getGroupDescriptor();
 			}
 		} catch (TupleSpaceException e) {
 			// TODO Auto-generated catch block
@@ -102,49 +132,160 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 	 */
 	public void setLeaderForHierarchy(GroupDescriptor groupDescriptor) {
 		TupleMessage message = new TupleNetworkNotification(
-				groupDescriptor);
+				groupDescriptor, TupleNetworkNotification.ADD);
 		storeAndSend(message);
 	}
 	
 	/**
 	 * When the top leader collapses this entry is removed.
 	 */
-	public void removeLeaderForHierarchy(String hierarchyName, NodeDescriptor leader) {
+	private void removeLeaderForHierarchy(GroupDescriptor groupDescriptor) {
+		ITuple template = createTemplate(Scope.NETWORK,
+				null, groupDescriptor.getFriendlyName(),
+				TupleNetworkNotification.SUBJECT, TupleNetworkNotification.ADD,
+				TupleNetworkNotification.class);
+		try {
+			tupleSpace.inp(template);
+		} catch (TupleSpaceException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		storeAndSend(new TupleNetworkNotification(
+				groupDescriptor, TupleNetworkNotification.REMOVE));
+	}
+	
+	private TupleMessage[] getMessages(Scope scope, Serializable recipient) {
+		ITuple template = createTemplate(scope, null, recipient,
+				null, null, TupleMessage.class);
+		try {
+			ITuple[] results = tupleSpace.rdg(template);
+			if (results == null) {
+				return new TupleMessage[0];
+			}
+			TupleMessage[] messages = new TupleMessage[results.length];
+			for (int i = 0; i < results.length; i++) {
+				ITuple t = results[i];
+				messages[i] = (TupleMessage)((Field)t.getFields()[4]).getValue();
+			}
+			return messages;
+		} catch (TupleSpaceException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	/**
+	 * Removes all the messages of a given scope for a given recipient.
+	 * This is useful when leaving a group or a hierarchy. 
+	 */
+	private void removeMessage(Scope scope, Serializable recipient) {
+		ITuple template = createTemplate(scope, null,
+				recipient, null, null, TupleMessage.class); // TODO confirm this works
+		try {
+			tupleSpace.ing(template);
+		} catch (TupleSpaceException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	
+	private void removeMessage(TupleMessage message) {
+		ITuple template = new Tuple()
+				.add(new Field().setType(Scope.class))
+				.add(new Field().setType(long.class))
+				.add(new Field().setType(Serializable.class))
+				.add(new Field().setType(String.class))
+				.add(new Field().setType(String.class))
+				.add(new Field().setValue(message));
+		try {
+			tupleSpace.inp(template);
+		} catch (TupleSpaceException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+		
+	public void storeHandleAndForward(TupleMessage message, NodeDescriptor sender) {
+		if (message.isExpired()) {
+			// the tuple is expired
+			return;
+		}
+		System.out.println("storeHandleAndForward " + message.getSubject() + " " + message.getCommand());
+		ITuple tuple = createTuple(message.getScope(),
+				new Long(message.getExpireTime()), message.getRecipient(),
+				message.getSubject(), message.getCommand(), message);		
+		try {
+			tupleSpace.out(tuple);
+		} catch (TupleSpaceException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		switch (message.getScope()) {
+			case NODE: {
+				if (message instanceof TupleNodeNotification) {
+					handleNodeMessage(
+							(NodeDescriptor)message.getRecipient(),
+							(TupleNodeNotification)message,
+							sender);
+				} else {
+					// TODO handle acks
+				}
+				break;
+			}
+			case GROUP: {
+				handleGroupMessage(
+						(GroupDescriptor)message.getRecipient(),
+						(TupleGroupCommand)message,
+						sender);
+				break;
+			}
+			case HIERARCHY: {
+				handleHierarchyMessage((String)message.getRecipient(), message, sender);
+				break;
+			}
+			case NETWORK: {
+				handleNetworkMessage((String)message.getRecipient(), message, sender);
+				break;
+			}
+		}
+	}
+	
+	private void handleNetworkMessage(String recipient, TupleMessage message,
+			NodeDescriptor sender) {
+		// TODO Auto-generated method stub
 		
 	}
-	
-	public void setMessage(Scope scope, String recipient, TupleMessage message) {
-		// TODO
-	}
-	
-	public TupleMessage getMessage(Scope scope, String recipient) {
-		// TODO
-	}
-	
-	public TupleMessage[] getMessages(Scope scope, String recipient) {
-		// TODO
-	}
-	
-	public TupleMessage[] getAllMessages() {
-		// TODO
-	}
-	
-	public void removeMessage(TupleMessage message) {
-		// TODO
-	}
+
+	private void handleHierarchyMessage(String recipient, TupleMessage message,
+			NodeDescriptor sender) {
+		// TODO Auto-generated method stub
 		
+	}
+
+	private void handleGroupMessage(GroupDescriptor recipient,
+			TupleGroupCommand message, NodeDescriptor sender) {
+		GroupCommunicationManager manager = 
+				dispatcher.getGroupManagerForDescriptor(recipient);
+		manager.handleAndForwardTupleMessage(message, sender);
+	}
+
+	private void handleNodeMessage(NodeDescriptor recipient,
+			TupleNodeNotification message, NodeDescriptor sender) {
+		dispatcher.handleNodeMessage(message, sender);
+	}
+	
+
 	public void storeAndSend(TupleMessage message) {
 		if (message.isExpired()) {
 			// the tuple is expired
 			return;
 		}
-		ITuple tuple = new Tuple()
-			.add(new Field().setValue(message.getScope()))
-			.add(new Field().setValue(message.getExpireTime()))
-			.add(new Field().setValue(message.getRecipient()))
-			.add(new Field().setValue(message.getSubject()))
-			.add(new Field().setValue(message));
-		
+		System.out.println("storeAndSend " + message.getSubject() + " " + message.getCommand());
+		ITuple tuple = createTuple(message.getScope(),
+				new Long(message.getExpireTime()), message.getRecipient(),
+				message.getSubject(), message.getCommand(), message);
 		try {
 			tupleSpace.out(tuple);
 		} catch (TupleSpaceException e) {
@@ -155,6 +296,10 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 	}
 	
 	public void sendWithoutStoring(TupleMessage message) {
+		if (message.isExpired()) {
+			// the tuple is expired
+			return;
+		}
 		send(message);
 	}
 	
@@ -201,6 +346,10 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 				dispatcher.getGroupManagerForDescriptor(recipient);
 		if (manager != null) {
 			manager.forwardTupleMessage(message, currentNode);
+		} else {
+			System.out.println("sendToGroup: null manager for " + recipient);
+			System.out.println(dispatcher.getGroupManagerForDescriptor(
+					(GroupDescriptor)message.getContent()));
 		}
 	}
 
@@ -221,58 +370,82 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 		}
 	}
 
-	public void synchNode() {
-		// TODO
-	}
-	public void synchGroup() {
-		// TODO
-	}
-	public void synchHierarchy() {
-		// TODO
-	}
-	public void synchNetwork() {
-		// TODO
-	}
 	
-	
-	/**
-	 * Removes all the messages of a given scope for a given recipient.
-	 * This is useful when leaving a group or a hierarchy. 
-	 */
-	public void removeMessage(Scope scope, String recipient) {}
-	
-	public void removeExpiredMessages() {}
+	private void removeExpiredMessages() {}
 	
 
 	@Override
 	public void notifyPacketArrived(String subject, NodeDescriptor sender,
 			Serializable message) {
-		if (TupleGroupCommand.SUBJECT.equals(subject)) {
-			storeAndSend((TupleMessage) message);
-		} else if (TupleGroupCommandAck.SUBJECT.equals(subject)) {
-			storeAndSend((TupleGroupCommandAck) message);
-		} else if (TupleNetworkNotification.SUBJECT.equals(subject)) {
-			storeAndSend((TupleMessage) message);
-		}
-		
+		storeHandleAndForward((TupleMessage)message, sender);
 	}
 
+	/**
+	 * Send network tuples to new neigbors
+	 */
 	@Override
-	public void notifyNeighborAdded(NodeDescriptor arg0, Serializable arg1) {
-		// TODO Auto-generated method stub
+	public void notifyNeighborAdded(NodeDescriptor nodeDescriptor,
+			Serializable reconfigurationInfo) {
+		ITuple template = createTemplate(Scope.NETWORK, null,
+				null, null, null, TupleNetworkNotification.class);
+		try {
+			ITuple[] results = tupleSpace.rdg(template);
+			if (results != null) {
+				for (ITuple tuple: results) {
+					TupleNetworkNotification message = (TupleNetworkNotification)
+							((Field)tuple.getFields()[5]).getValue();
+					sendWithoutStoring(message);
+				}
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
 		
+
+		template = createTemplate(Scope.NODE, null,
+				null, null, null, TupleNodeNotification.class);
+		try {
+			ITuple[] results = tupleSpace.rdg(template);
+			if (results != null) {
+				for (ITuple tuple: results) {
+					TupleNodeNotification message = (TupleNodeNotification)
+							((Field)tuple.getFields()[5]).getValue();
+					sendWithoutStoring(message);
+				}
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
 	}
 
 	@Override
 	public void notifyNeighborDead(NodeDescriptor arg0, Serializable arg1) {
 		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
 	public void notifyNeighborRemoved(NodeDescriptor arg0) {
 		// TODO Auto-generated method stub
-		
+	}
+
+	/**
+	 * The dispatcher has created a new local group. 
+	 */
+	void handleNewLocalGroupCreated(GroupCommunicationManager manager) {
+		GroupDescriptor groupDescriptor = manager.getGroupDescriptor();
+		// If the current node is the leader notify the network
+		if (groupDescriptor.isLeader(currentNode)) {
+			setLeaderForHierarchy(groupDescriptor);
+		}
+		TupleMessage[] messages = getMessages(Scope.GROUP, groupDescriptor);
+		for (TupleMessage m: messages) {
+			manager.handleAndForwardTupleMessage(m, currentNode);
+		}
+		messages = getMessages(Scope.HIERARCHY,
+				groupDescriptor.getFriendlyName());
+		for (TupleMessage m: messages) {
+			manager.handleAndForwardTupleMessage(m, currentNode);
+		}
 	}
 		
 }

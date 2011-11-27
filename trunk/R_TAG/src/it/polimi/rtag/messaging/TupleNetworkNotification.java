@@ -18,10 +18,12 @@ public class TupleNetworkNotification extends TupleMessage {
 
 	public static final String SUBJECT = "TupleNetworkNotification";
 
+	public static final String ADD = "Add";
+	public static final String REMOVE = "Remove";
+	
 	public TupleNetworkNotification(
-			GroupDescriptor groupDescriptor) {
-		super(Scope.NETWORK, "*", groupDescriptor);
-		// TODO Auto-generated constructor stub
+			GroupDescriptor groupDescriptor, String command) {
+		super(Scope.NETWORK, groupDescriptor.getFriendlyName(), groupDescriptor, command);
 	}
 
 	/* (non-Javadoc)
@@ -30,6 +32,10 @@ public class TupleNetworkNotification extends TupleMessage {
 	@Override
 	public String getSubject() {
 		return SUBJECT;
+	}
+	
+	public GroupDescriptor getGroupDescriptor() {
+		return (GroupDescriptor) getContent();
 	}
 
 }

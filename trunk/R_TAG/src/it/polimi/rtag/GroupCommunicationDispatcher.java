@@ -16,8 +16,9 @@ import polimi.reds.broker.overlay.Overlay;
 import polimi.reds.broker.overlay.PacketListener;
 
 import it.polimi.rtag.messaging.TupleGroupCommand;
-import it.polimi.rtag.messaging.TupleGroupCommandAck;
+import it.polimi.rtag.messaging.TupleMessageAck;
 import it.polimi.rtag.messaging.TupleMessage;
+import it.polimi.rtag.messaging.TupleNodeNotification;
 
 
 /**
@@ -120,6 +121,7 @@ public class GroupCommunicationDispatcher {
 				notifyNewGroupManagerOfExistingManagers(manager);
 			}
 		}
+		tupleSpaceManager.handleNewLocalGroupCreated(manager);
 		
 	}
 	
@@ -258,14 +260,15 @@ public class GroupCommunicationDispatcher {
 		}
 	}
 	
-	GroupCommunicationManager getGroupManagerWithName(String friendlyName) {
+	GroupCommunicationManager getGroupManagerForHierarchy(
+			String hierarchyName) {
 		synchronized (lock) {
 			GroupCommunicationManager manager = null;
-			manager = getLeadedGroupByFriendlyName(friendlyName);
+			manager = getLeadedGroupByFriendlyName(hierarchyName);
 			if (manager != null) {
 				return manager;
 			}
-			manager = getFollowedGroupByFriendlyName(friendlyName);
+			manager = getFollowedGroupByFriendlyName(hierarchyName);
 			if (manager != null) {
 				return manager;
 			}
@@ -274,7 +277,7 @@ public class GroupCommunicationDispatcher {
 	}
 	
 	GroupDescriptor getGroupWithName(String friendlyName) {
-		GroupCommunicationManager manager = getGroupManagerWithName(friendlyName);
+		GroupCommunicationManager manager = getGroupManagerForHierarchy(friendlyName);
 		if (manager != null) {
 			return manager.getGroupDescriptor();
 		}
@@ -357,7 +360,7 @@ public class GroupCommunicationDispatcher {
 
 	void deleteGroup(String friendlyName) {
 		GroupCommunicationManager manager = 
-			getGroupManagerWithName(friendlyName);
+			getGroupManagerForHierarchy(friendlyName);
 		if (manager == null) {
 			throw new RuntimeException(
 					"Cannot delete a group of which the node is not member.");
@@ -381,8 +384,39 @@ public class GroupCommunicationDispatcher {
 
 	public GroupCommunicationManager getGroupManagerForDescriptor(
 			GroupDescriptor recipient) {
-		// TODO Auto-generated method stub
+		synchronized (lock) {
+			for (GroupCommunicationManager manager: leadedGroups) {
+				if (manager.getGroupDescriptor().equals(recipient)) {
+					return manager;
+				}
+			}
+			for (GroupCommunicationManager manager: followedGroups) {
+				if (manager.getGroupDescriptor().equals(recipient)) {
+					return manager;
+				}
+			}
+		}
 		return null;
+	}
+
+	public void handleNodeMessage(TupleNodeNotification message,
+			NodeDescriptor sender) {
+		String command = message.getCommand();
+		if (TupleNodeNotification.NOTIFY_GROUP_EXISTS.equals(command)) {
+			GroupDescriptor remoteGroup = (GroupDescriptor)message.getContent();
+			GroupCommunicationManager manager = 
+					getGroupManagerForHierarchy(remoteGroup.getFriendlyName());
+			if (manager != null) {
+				manager.handleRemoteGroupDiscovered(remoteGroup);
+			}
+		} else if (TupleNodeNotification.JOIN_GROUP.equals(command)) {
+			GroupDescriptor remoteGroup = (GroupDescriptor)message.getContent();
+			GroupCommunicationManager manager = 
+					getGroupManagerForHierarchy(remoteGroup.getFriendlyName());
+			if (manager != null) {
+				manager.handleInviteToJoin(message);
+			}
+		}
 	}
 
 }

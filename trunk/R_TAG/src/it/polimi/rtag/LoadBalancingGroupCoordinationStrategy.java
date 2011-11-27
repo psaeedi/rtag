@@ -29,6 +29,7 @@ public class LoadBalancingGroupCoordinationStrategy implements
 	/* (non-Javadoc)
 	 * @see it.polimi.rtag.GroupCoordinationStrategy#shouldInviteToJoin(it.polimi.rtag.GroupDescriptor)
 	 */
+	/*
 	@Override
 	public boolean shouldInviteToJoin(GroupDescriptor remoteGroup) {
 		NodeDescriptor localLeader = groupDescriptor.getLeader();
@@ -83,12 +84,15 @@ public class LoadBalancingGroupCoordinationStrategy implements
 			}
 		}
 	}
-
+*/
+	
 	/* (non-Javadoc)
 	 * @see it.polimi.rtag.GroupCoordinationStrategy#shouldInviteToMerge(it.polimi.rtag.GroupDescriptor)
 	 */
 	@Override
 	public boolean shouldInviteToMerge(GroupDescriptor remoteGroup) {
+		return true;
+		/*
 		NodeDescriptor localLeader = groupDescriptor.getLeader();
 		NodeDescriptor localParent = groupDescriptor.getParentLeader();
 		NodeDescriptor remoteParent = remoteGroup.getParentLeader();
@@ -128,28 +132,9 @@ public class LoadBalancingGroupCoordinationStrategy implements
 			}
 		} else { // localParent == null && remoteParent == null
 			// Neither the local or the remote group are part of a hierarchy
-			// Therefore we can select what to do depending on the number
-			// of followers
-			int localFollowersCount = groupDescriptor.getFollowers().size();
-			int remoteFollowersCount = remoteGroup.getFollowers().size();
-			if (localFollowersCount == 0 || remoteFollowersCount == 0) {
-				return false;
-			} else {
-			
-				//----------
-				if (localFollowersCount < remoteFollowersCount) {
-					return true;
-				} else if (localFollowersCount > remoteFollowersCount) {
-					// The current leader wait for the other one to invite it5
-					return false;
-				} else { 
-					// they have the same number of followers or no followers
-					// we need another logic to decide whom will invite the other
-					
-					return selectLowerId(localLeader, remoteLeader);
-				}	
-			}
+			return true;
 		}
+		*/
 	}
 
 	/**
@@ -170,12 +155,13 @@ public class LoadBalancingGroupCoordinationStrategy implements
 	/* (non-Javadoc)
 	 * @see it.polimi.rtag.GroupCoordinationStrategy#shouldAcceptToJoin(it.polimi.rtag.GroupDescriptor)
 	 */
+	/*
 	@Override
 	public boolean shouldAcceptToJoin(GroupDescriptor remoteGroup) {
 		// True if the group has no followers
 		return (groupDescriptor.getFollowers().size() == 0);
-	}
-
+	}*/
+	
 	/* (non-Javadoc)
 	 * @see it.polimi.rtag.GroupCoordinationStrategy#shouldAcceptToMerge(it.polimi.rtag.GroupDescriptor)
 	 */

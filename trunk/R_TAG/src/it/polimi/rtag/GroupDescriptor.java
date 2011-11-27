@@ -27,7 +27,7 @@ public class GroupDescriptor implements Serializable {
 	
 	private UUID uniqueId;
 	
-	private String friendlyName;
+	private String hierarchyName;
 	
 	//private Tuple description;
 	
@@ -62,7 +62,7 @@ public class GroupDescriptor implements Serializable {
 	public GroupDescriptor(UUID uniqueId, String friendlyName,
 			NodeDescriptor leader) {
 		this.uniqueId = uniqueId;
-		this.friendlyName = friendlyName;
+		this.hierarchyName = friendlyName;
 		this.leader = leader;
 	}
 	
@@ -75,7 +75,7 @@ public class GroupDescriptor implements Serializable {
 	public GroupDescriptor(UUID uniqueId, String friendlyName,
 			NodeDescriptor leader, NodeDescriptor parentLeader) {
 		this.uniqueId = uniqueId;
-		this.friendlyName = friendlyName;
+		this.hierarchyName = friendlyName;
 		this.leader = leader;
 		this.parentLeader = parentLeader;
 	}
@@ -93,7 +93,7 @@ public class GroupDescriptor implements Serializable {
 			NodeDescriptor parentLeader) {
 		super();
 		this.uniqueId = uuid;
-		this.friendlyName = friendlyName;
+		this.hierarchyName = friendlyName;
 		this.universe = universe;
 		this.leader = leader;
 		this.parentLeader = parentLeader;
@@ -102,7 +102,7 @@ public class GroupDescriptor implements Serializable {
 	public GroupDescriptor(GroupDescriptor oldDescriptor) {
 		super();
 		this.uniqueId = oldDescriptor.uniqueId;
-		this.friendlyName = oldDescriptor.friendlyName;
+		this.hierarchyName = oldDescriptor.hierarchyName;
 		this.universe = oldDescriptor.universe;
 		this.leader = oldDescriptor.leader;
 		this.parentLeader = oldDescriptor.parentLeader;
@@ -119,13 +119,13 @@ public class GroupDescriptor implements Serializable {
 	 * @return the friendlyName
 	 */
 	public String getFriendlyName() {
-		return friendlyName;
+		return hierarchyName;
 	}
 	/**
 	 * @param friendlyName the friendlyName to set
 	 */
 	public void setFriendlyName(String friendlyName) {
-		this.friendlyName = friendlyName;
+		this.hierarchyName = friendlyName;
 	}
 	/**
 	 * @return the leader
@@ -243,11 +243,11 @@ public class GroupDescriptor implements Serializable {
 		return new GroupDescriptor(UUID.randomUUID(), UNIVERSE, true, node.getNodeDescriptor(), null);
 	}
 
-	public boolean hasSameName(GroupDescriptor remoteGroupDescriptor) {
+	public boolean isSameHierarchy(GroupDescriptor remoteGroupDescriptor) {
 		if (remoteGroupDescriptor == null) {
 			throw new RuntimeException("Remote descriptor cannot be null.");
 		}
-		return friendlyName.equals(remoteGroupDescriptor.friendlyName);
+		return hierarchyName.equals(remoteGroupDescriptor.hierarchyName);
 	}
 
 	/**
@@ -266,6 +266,9 @@ public class GroupDescriptor implements Serializable {
 	 * @see java.util.HashSet#add(java.lang.Object)
 	 */
 	public boolean addFollower(NodeDescriptor descriptor) {
+		if (leader.equals(descriptor)) {
+			throw new RuntimeException("Cannot add leader as follower: " + descriptor);
+		}
 		if (followers.contains(descriptor)) {
 			throw new RuntimeException("Attempting to add the same follower twice. Node " + 
 					descriptor + " group: " + this);
