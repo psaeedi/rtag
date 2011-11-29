@@ -10,6 +10,8 @@ import it.polimi.rtag.messaging.TupleMessage.Scope;
 import it.polimi.rtag.messaging.TupleNodeNotification;
 
 import java.io.Serializable;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 import polimi.reds.NodeDescriptor;
@@ -1040,17 +1042,29 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 		if (message instanceof TupleGroupCommand) {
 			handleTupleGroupCommand((TupleGroupCommand) message, sender);
 		} else if (message instanceof TupleMessageAck) {
-			handleTupleGroupCommandAck((TupleMessageAck) message, sender);
+			handleTupleMessageAck((TupleMessageAck) message, sender);
 		}
 		forwardTupleMessage(message, sender);
 	}
 
 
-	private void handleTupleGroupCommandAck(TupleMessageAck message,
+	private void handleTupleMessageAck(TupleMessageAck message,
 			NodeDescriptor sender) {
 		System.out.println("Received: " + message.getCommand());
 		String command = message.getCommand();
-		// TODO 
+		TupleMessage originalMessage = message.getOriginalMessage();
+		if (originalMessage instanceof TupleNodeNotification) {
+			TupleNodeNotification notification = (TupleNodeNotification)originalMessage;
+			String notificationCommand = notification.getCommand();
+			if (TupleNodeNotification.JOIN_GROUP.equals(notificationCommand)) {
+				if (TupleMessageAck.OK.equals(command)) {
+					groupDescriptor.addFollower(sender);
+					sendUpdatedDescriptor();
+				}
+			} else if (TupleNodeNotification.NOTIFY_GROUP_EXISTS.equals(notificationCommand)) {
+				// Does nothing
+			}
+		}
 	}
 
 
@@ -1083,9 +1097,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 					oldParent, groupDescriptor);
 		}
 		if (isLeader()) {
-			TupleGroupCommand command =
-					TupleGroupCommand.createUpdateGroupCommand(groupDescriptor);
-			tupleSpaceManager.storeAndSend(command);
+			sendUpdatedDescriptor();
 		}
 	}
 	
@@ -1158,18 +1170,21 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 		}
 		
 		// We first attempt to merge then to join
-		if (coordinationStrategy.shouldInviteToMerge(remoteGroup)) {
+		if (coordinationStrategy.shouldInviteToJoin(remoteGroup)) {
 			TupleNodeNotification command = 
-					TupleNodeNotification.createJoinGroupExistsNotification(
+					TupleNodeNotification.createJoinGroupNotification(
 							remoteGroup.getLeader(), groupDescriptor);
 			tupleSpaceManager.storeAndSend(command);
+			
 		}
 	}
 	
 	public void handleInviteToJoin(TupleNodeNotification message) {
-		GroupDescriptor remoteGroup = (GroupDescriptor)message.getContent();
+		GroupDescriptor remoteGroup = (GroupDescriptor) message.getContent();
+		
 		if (isLeader() && followedParentManager == null && 
-			coordinationStrategy.shouldAcceptToMerge(remoteGroup)) {
+			coordinationStrategy.shouldAcceptToJoin(remoteGroup)) {
+			
 			// The current node has accepted the remote as a parent node
 			// From now on the current node will be both leader of his current
 			// group and follower of his parent group.
@@ -1181,16 +1196,34 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 							remoteGroup.getLeader(), message);
 			tupleSpaceManager.storeAndSend(commandAck);
 			
-			// Update the descriptor and send updates to all his followers
+			// If the current group is empty it will be dismantled otherwise
+			// the followers will be updated.
+			/*if (groupDescriptor.getFollowers().size() > 0) {
+				handleParentLeaderChange(remoteGroup.getLeader());
+			} else {
+				// TODO this is ugly
+				node.getGroupCommunicationDispatcher().removeGroup(this);
+			}*/
 			handleParentLeaderChange(remoteGroup.getLeader());
 			return;
 		} else {
-			TupleMessageAck commandAck = 
-					TupleMessageAck.createKoAck(Scope.NODE,
-							remoteGroup.getLeader(), message);
-			tupleSpaceManager.storeAndSend(commandAck);
+			sendKoAk(Scope.NODE,
+					remoteGroup.getLeader(),
+					message);
 			return;
 		}	
 	}
 	
+	private void sendKoAk(Scope scope, Serializable recipient, TupleMessage message) {
+		TupleMessageAck commandAck = 
+				TupleMessageAck.createKoAck(scope,
+						recipient, message);
+		tupleSpaceManager.storeAndSend(commandAck);	
+	}
+	
+	private void sendUpdatedDescriptor() {
+		TupleGroupCommand command =
+				TupleGroupCommand.createUpdateGroupCommand(groupDescriptor);
+		tupleSpaceManager.storeAndSend(command);
+	}
 }

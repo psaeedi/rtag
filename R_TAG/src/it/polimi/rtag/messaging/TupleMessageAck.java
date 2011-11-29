@@ -52,8 +52,8 @@ public class TupleMessageAck extends TupleMessage {
 		return SUBJECT;
 	}
 	
-	public TupleGroupCommand getOriginalMessage() {
-		return (TupleGroupCommand) getContent();
+	public TupleMessage getOriginalMessage() {
+		return (TupleMessage) getContent();
 	}
 	
 }

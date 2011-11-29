@@ -32,7 +32,7 @@ public class TupleNodeNotification extends TupleMessage {
 		return new TupleNodeNotification(recipient, groupDescriptor, NOTIFY_GROUP_EXISTS);
 	}
 
-	public static TupleNodeNotification createJoinGroupExistsNotification(
+	public static TupleNodeNotification createJoinGroupNotification(
 			NodeDescriptor recipient, GroupDescriptor groupDescriptor) {
 		return new TupleNodeNotification(recipient, groupDescriptor, JOIN_GROUP);
 	}

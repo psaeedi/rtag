@@ -3,8 +3,6 @@
  */
 package it.polimi.rtag;
 
-import static org.junit.Assert.*;
-
 import java.util.ArrayList;
 import java.util.UUID;
 
@@ -172,11 +170,11 @@ public class GroupDescriptorTest {
 	}
 	
 	/**
-	 * Test method for {@link it.polimi.rtag.GroupDescriptor#hasSameName(it.polimi.rtag.GroupDescriptor)}.
+	 * Test method for {@link it.polimi.rtag.GroupDescriptor#isSameHierarchy(it.polimi.rtag.GroupDescriptor)}.
 	 */
 	@Test
 	public void testHasSameName() {
-		Assert.assertTrue(localGroup.hasSameName(remoteGroup));
+		Assert.assertTrue(localGroup.isSameHierarchy(remoteGroup));
 	}
 
 	/**

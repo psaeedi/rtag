@@ -117,7 +117,7 @@ public class Node {
 	}
 
 	public GroupDescriptor getGroup(String friendlyName) {
-		return groupCommunicationDispatcher.getGroupWithName(friendlyName);
+		return groupCommunicationDispatcher.getGroupForHierarchy(friendlyName);
 	}
 
 	public List<GroupDescriptor> getAllGroups() {
