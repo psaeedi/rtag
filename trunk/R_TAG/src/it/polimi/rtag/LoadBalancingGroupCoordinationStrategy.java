@@ -3,6 +3,9 @@
  */
 package it.polimi.rtag;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import polimi.reds.NodeDescriptor;
 
 /**
@@ -90,9 +93,7 @@ public class LoadBalancingGroupCoordinationStrategy implements
 	 * @see it.polimi.rtag.GroupCoordinationStrategy#shouldInviteToMerge(it.polimi.rtag.GroupDescriptor)
 	 */
 	@Override
-	public boolean shouldInviteToMerge(GroupDescriptor remoteGroup) {
-		return true;
-		/*
+	public boolean shouldInviteToJoin(GroupDescriptor remoteGroup) {
 		NodeDescriptor localLeader = groupDescriptor.getLeader();
 		NodeDescriptor localParent = groupDescriptor.getParentLeader();
 		NodeDescriptor remoteParent = remoteGroup.getParentLeader();
@@ -132,9 +133,8 @@ public class LoadBalancingGroupCoordinationStrategy implements
 			}
 		} else { // localParent == null && remoteParent == null
 			// Neither the local or the remote group are part of a hierarchy
-			return true;
+			return localLeader.compareTo(remoteLeader) > 0;
 		}
-		*/
 	}
 
 	/**
@@ -166,7 +166,7 @@ public class LoadBalancingGroupCoordinationStrategy implements
 	 * @see it.polimi.rtag.GroupCoordinationStrategy#shouldAcceptToMerge(it.polimi.rtag.GroupDescriptor)
 	 */
 	@Override
-	public boolean shouldAcceptToMerge(GroupDescriptor remoteGroup) {
+	public boolean shouldAcceptToJoin(GroupDescriptor remoteGroup) {
 		if (groupDescriptor.isFollower(remoteGroup.getLeader())) {
 			// The remote group is a child group
 			return false;

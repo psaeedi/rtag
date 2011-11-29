@@ -7,9 +7,6 @@ package it.polimi.rtag;
 import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
-import java.util.Map;
-import java.util.Set;
-
 
 import junit.framework.Assert;
 
@@ -88,12 +85,12 @@ public class JoinAndMergeGroupsTest {
 					MalformedURLException, NotRunningException, 
 					InterruptedException {
 		nodes.get(0).connectTo(urls.get(1));
-		Thread.sleep(1000);
+		Thread.sleep(200);
 		
 		GroupDescriptor universe1 = nodes.get(0).getGroupCommunicationDispatcher().
-				getGroupWithName(GroupDescriptor.UNIVERSE);
+				getGroupForHierarchy(GroupDescriptor.UNIVERSE);
 		GroupDescriptor universe2 = nodes.get(1).getGroupCommunicationDispatcher().
-				getGroupWithName(GroupDescriptor.UNIVERSE);
+				getGroupForHierarchy(GroupDescriptor.UNIVERSE);
 		
 		Assert.assertEquals(universe1, universe2);
 		
@@ -185,7 +182,7 @@ public class JoinAndMergeGroupsTest {
 		Thread.sleep(500);
 		
 		GroupDescriptor universe1 = nodes.get(0).getGroupCommunicationDispatcher().
-				getGroupWithName(GroupDescriptor.UNIVERSE);
+				getGroupForHierarchy(GroupDescriptor.UNIVERSE);
 		
 		Node leader = universe1.getLeader() == nodes.get(0).getNodeDescriptor() ? nodes.get(0) : nodes.get(1);
 		
@@ -194,13 +191,13 @@ public class JoinAndMergeGroupsTest {
 			Thread.sleep(500);
 		}
 		universe1 = leader.getGroupCommunicationDispatcher().
-				getGroupWithName(GroupDescriptor.UNIVERSE);
+				getGroupForHierarchy(GroupDescriptor.UNIVERSE);
 		
 		Assert.assertEquals(NUMBER_OF_NODE, universe1.getMembers().size());
 		
 		for (int i = 1; i < NUMBER_OF_NODE; i++) {
 			GroupDescriptor universe2 = nodes.get(i).getGroupCommunicationDispatcher().
-					getGroupWithName(GroupDescriptor.UNIVERSE);
+					getGroupForHierarchy(GroupDescriptor.UNIVERSE);
 			if (universe2.getParentLeader() != null) {
 				Assert.assertEquals(universe1.getLeader(),
 						universe2.getParentLeader());

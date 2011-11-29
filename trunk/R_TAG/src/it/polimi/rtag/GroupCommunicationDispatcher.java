@@ -276,7 +276,7 @@ public class GroupCommunicationDispatcher {
 		return null;
 	}
 	
-	GroupDescriptor getGroupWithName(String friendlyName) {
+	GroupDescriptor getGroupForHierarchy(String friendlyName) {
 		GroupCommunicationManager manager = getGroupManagerForHierarchy(friendlyName);
 		if (manager != null) {
 			return manager.getGroupDescriptor();
@@ -320,7 +320,7 @@ public class GroupCommunicationDispatcher {
 	 * Create a new group and inform the network
 	 */
 	GroupDescriptor joinGroupAndNotifyNetwork(String friendlyName) {
-		GroupDescriptor descriptor = getGroupWithName(friendlyName);
+		GroupDescriptor descriptor = getGroupForHierarchy(friendlyName);
 		if (descriptor != null) {
 			// Already in that group
 			return descriptor;

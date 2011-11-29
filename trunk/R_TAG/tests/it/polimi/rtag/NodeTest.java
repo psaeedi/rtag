@@ -9,7 +9,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 import junit.framework.Assert;
 
@@ -64,6 +63,20 @@ public class NodeTest {
 		}
 	}
 
+	@Test
+	public void testNodesJoinUniversUponCreation() throws InterruptedException {
+		for (int i = 1; i < NUMBER_OF_NODES; i++) {
+			Node node = nodes.get(i);
+			GroupDescriptor groupDescriptor1 =
+					node.getGroup(GroupDescriptor.UNIVERSE);
+			Assert.assertNotNull(groupDescriptor1);
+			GroupDescriptor groupDescriptor2 =
+					node.getTupleSpaceManager().getLeaderForHierarchy(GroupDescriptor.UNIVERSE);
+			Assert.assertNotNull(groupDescriptor2);
+			Assert.assertEquals(groupDescriptor1, groupDescriptor2);
+		}
+	}
+	
 	@Test
 	public void testDeleteGroup() throws InterruptedException {
 		for (int i = 1; i < NUMBER_OF_NODES; i++) {
