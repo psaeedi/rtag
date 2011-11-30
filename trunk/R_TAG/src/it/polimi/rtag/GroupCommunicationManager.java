@@ -14,6 +14,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
+import lights.interfaces.ITuple;
+
 import polimi.reds.NodeDescriptor;
 import polimi.reds.broker.overlay.NeighborhoodChangeListener;
 import polimi.reds.broker.overlay.Overlay;
@@ -1041,14 +1043,14 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 	void handleAndForwardTupleMessage(TupleMessage message, NodeDescriptor sender) {
 		if (message instanceof TupleGroupCommand) {
 			handleTupleGroupCommand((TupleGroupCommand) message, sender);
-		} else if (message instanceof TupleMessageAck) {
-			handleTupleMessageAck((TupleMessageAck) message, sender);
+		} else {
+			// Nothing
 		}
 		forwardTupleMessage(message, sender);
 	}
 
 
-	private void handleTupleMessageAck(TupleMessageAck message,
+	public void handleTupleMessageAck(TupleMessageAck message,
 			NodeDescriptor sender) {
 		System.out.println("Received: " + message.getCommand());
 		String command = message.getCommand();
@@ -1061,6 +1063,8 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 					groupDescriptor.addFollower(sender);
 					sendUpdatedDescriptor();
 				}
+				tupleSpaceManager.removeMessage(message);
+				tupleSpaceManager.removeMessage(originalMessage);
 			} else if (TupleNodeNotification.NOTIFY_GROUP_EXISTS.equals(notificationCommand)) {
 				// Does nothing
 			}
@@ -1198,13 +1202,13 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 			
 			// If the current group is empty it will be dismantled otherwise
 			// the followers will be updated.
-			/*if (groupDescriptor.getFollowers().size() > 0) {
+			if (groupDescriptor.getFollowers().size() > 0) {
 				handleParentLeaderChange(remoteGroup.getLeader());
 			} else {
 				// TODO this is ugly
 				node.getGroupCommunicationDispatcher().removeGroup(this);
-			}*/
-			handleParentLeaderChange(remoteGroup.getLeader());
+			}
+			//handleParentLeaderChange(remoteGroup.getLeader());
 			return;
 		} else {
 			sendKoAk(Scope.NODE,
