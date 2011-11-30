@@ -154,6 +154,20 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 				groupDescriptor, TupleNetworkNotification.REMOVE));
 	}
 	
+	public ITuple[] queryTuplespace(Scope scope, Long expireTime,
+			Serializable recipient, String subject, String command,
+			Class clazz) {
+		ITuple template = createTemplate(scope, expireTime, 
+				recipient, subject, command, clazz);
+		try {
+			return tupleSpace.rdg(template);
+		} catch (TupleSpaceException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
 	private TupleMessage[] getMessages(Scope scope, Serializable recipient) {
 		ITuple template = createTemplate(scope, null, recipient,
 				null, null, TupleMessage.class);
@@ -191,7 +205,7 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 	}
 	
 	
-	private void removeMessage(TupleMessage message) {
+	public void removeMessage(TupleMessage message) {
 		ITuple template = new Tuple()
 				.add(new Field().setType(Scope.class))
 				.add(new Field().setType(long.class))
@@ -228,6 +242,11 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 					handleNodeMessage(
 							(NodeDescriptor)message.getRecipient(),
 							(TupleNodeNotification)message,
+							sender);
+				} else if (message instanceof TupleMessageAck) {
+					handleNodeMessageAck(
+							(NodeDescriptor)message.getRecipient(),
+							(TupleMessageAck)message,
 							sender);
 				} else {
 					// TODO handle acks
@@ -276,7 +295,11 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 		dispatcher.handleNodeMessage(message, sender);
 	}
 	
-
+	private void handleNodeMessageAck(NodeDescriptor recipient,
+			TupleMessageAck message, NodeDescriptor sender) {
+		dispatcher.handleNodeMessageAck(message, sender);
+	}
+	
 	public void storeAndSend(TupleMessage message) {
 		if (message.isExpired()) {
 			// the tuple is expired

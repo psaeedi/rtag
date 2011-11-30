@@ -418,5 +418,17 @@ public class GroupCommunicationDispatcher {
 			}
 		}
 	}
+	
+	public void handleNodeMessageAck(TupleMessageAck message,
+			NodeDescriptor sender) {
+		// TODO the control is done twice, here and in the manager...
+		TupleNodeNotification notification = (TupleNodeNotification)message.getOriginalMessage();
+		GroupDescriptor remoteGroup = (GroupDescriptor)notification.getContent();
+		GroupCommunicationManager manager = 
+				getGroupManagerForHierarchy(remoteGroup.getFriendlyName());
+		if (manager != null) {
+			manager.handleTupleMessageAck(message, sender);
+		}
+	}
 
 }

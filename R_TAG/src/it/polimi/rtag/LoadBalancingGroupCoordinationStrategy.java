@@ -134,6 +134,7 @@ public class LoadBalancingGroupCoordinationStrategy implements
 		} else { // localParent == null && remoteParent == null
 			// Neither the local or the remote group are part of a hierarchy
 			return localLeader.compareTo(remoteLeader) > 0;
+			//return true;
 		}
 	}
 
