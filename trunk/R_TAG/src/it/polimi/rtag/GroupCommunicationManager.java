@@ -279,7 +279,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 				// nodes to the other one.
 				if (leadedChildManager != null) {
 					leadedChildManager.migrateAllFollowersAndAskAdoption(groupDescriptor);
-					node.getGroupCommunicationDispatcher().removeGroup(this);
+					node.getGroupCommunicationDispatcher().removeGroupManager(this);
 				} else {
 					node.getGroupCommunicationDispatcher().reassignGroup(this);
 					// if the dead leader was part of a hierarchy
@@ -1001,6 +1001,9 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 	 * @param groupDescriptor the groupDescriptor to set
 	 */
 	private void setGroupDescriptor(GroupDescriptor groupDescriptor) {
+		if (groupDescriptor == null) {
+			throw new RuntimeException("Group descriptor cannot be null");
+		}
 		this.groupDescriptor = groupDescriptor;
 		// TODO WE should keep a statefull strategy!
 		coordinationStrategy = new LoadBalancingGroupCoordinationStrategy(groupDescriptor);
@@ -1084,7 +1087,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 		} else if (TupleGroupCommand.DELETE_GROUP.equals(command)) {
 			
 		} else if (TupleGroupCommand.UPDATE_DESCRIPTOR.equals(command)) {
-			
+			this.setGroupDescriptor((GroupDescriptor) message.getContent());
 		} else if (TupleGroupCommand.MIGRATE_TO_GROUP.equals(command)) {
 			
 		} else if (TupleGroupCommand.ADOPT_GROUP.equals(command)) {
@@ -1113,7 +1116,8 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 			GroupDescriptor recipient = (GroupDescriptor)message.getRecipient();
 			if (!groupDescriptor.equals(recipient)) {
 				// Not for this group
-				return;
+				throw new RuntimeException("Not for this group");
+				//return;
 			}
 		}
 		
@@ -1206,7 +1210,8 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 				handleParentLeaderChange(remoteGroup.getLeader());
 			} else {
 				// TODO this is ugly
-				node.getGroupCommunicationDispatcher().removeGroup(this);
+				System.out.println("Removing: " + groupDescriptor.getUniqueId() + " to join " + remoteGroup.getUniqueId());
+				node.getGroupCommunicationDispatcher().removeGroupManager(this);
 			}
 			//handleParentLeaderChange(remoteGroup.getLeader());
 			return;
