@@ -39,12 +39,12 @@ public class TupleGroupCommand extends TupleMessage {
 
 	
 	public static TupleGroupCommand createDeleteGroupCommand(GroupDescriptor groupDescriptor) {
-		return new TupleGroupCommand(Scope.GROUP, groupDescriptor, null, DELETE_GROUP);
+		return new TupleGroupCommand(Scope.GROUP, groupDescriptor, groupDescriptor, DELETE_GROUP);
 	}
 
 	public static TupleGroupCommand createUpdateGroupCommand(
 			GroupDescriptor groupDescriptor) {
-		return new TupleGroupCommand(Scope.GROUP, groupDescriptor, null, UPDATE_DESCRIPTOR);
+		return new TupleGroupCommand(Scope.GROUP, groupDescriptor, groupDescriptor, UPDATE_DESCRIPTOR);
 	}
 
 

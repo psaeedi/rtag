@@ -119,24 +119,24 @@ public class JoinAndMergeGroupsTest {
 		
 		// Node 1 and 3 should be leaders
 		// (1,2) (3,4) are in the same universes
-		GroupDescriptor universe1 = 
+		GroupDescriptor universe0 = 
 				nodes.get(0).getGroupCommunicationDispatcher().
 				getLocalUniverse();
-		GroupDescriptor universe2 = 
+		GroupDescriptor universe1 = 
 			    nodes.get(1).getGroupCommunicationDispatcher().
 				getLocalUniverse();
-		GroupDescriptor universe3 = 
+		GroupDescriptor universe2 = 
 			    nodes.get(2).getGroupCommunicationDispatcher().
 				getLocalUniverse();
-		GroupDescriptor universe4 = 
+		GroupDescriptor universe3 = 
 			    nodes.get(3).getGroupCommunicationDispatcher().
 				getLocalUniverse();
 		
-		Assert.assertEquals(universe1, universe2);
-		Assert.assertEquals(universe3, universe4);
+		Assert.assertEquals(universe0, universe1);
+		Assert.assertEquals(universe2, universe3);
 		
-		NodeDescriptor leaderA = universe1.getLeader();
-		NodeDescriptor leaderB = universe3.getLeader();
+		NodeDescriptor leaderA = universe0.getLeader();
+		NodeDescriptor leaderB = universe2.getLeader();
 		
 		Node nodeLeaderA = leaderA == nodes.get(0).getNodeDescriptor() ? nodes.get(0) : nodes.get(1);
 		String urlB = leaderB == nodes.get(2).getNodeDescriptor() ? urls.get(2) : urls.get(3);
@@ -145,31 +145,31 @@ public class JoinAndMergeGroupsTest {
 		nodeLeaderA.connectTo(urlB);
 		Thread.sleep(1000);
 		
-		universe1 = 
+		universe0 = 
 			nodes.get(0).getGroupCommunicationDispatcher().
 			getLocalUniverse();
-		universe2 = 
+		universe1 = 
 			nodes.get(1).getGroupCommunicationDispatcher().
 			getLocalUniverse();
-		universe3 = 
+		universe2 = 
 			nodes.get(2).getGroupCommunicationDispatcher().
 			getLocalUniverse();
-		universe4 = 
+		universe3 = 
 			nodes.get(3).getGroupCommunicationDispatcher().
 			getLocalUniverse();
 		
-		Assert.assertEquals(universe1, universe2);
-		Assert.assertEquals(universe3, universe4);
+		Assert.assertEquals(universe0, universe1);
+		Assert.assertEquals(universe2, universe3);
 		
-		if (universe1.getParentLeader() == null) {
-			Assert.assertEquals(universe3.getParentLeader(), leaderA);
-			Assert.assertTrue(universe1.isFollower(leaderB));
+		if (universe0.getParentLeader() == null) {
+			Assert.assertEquals(universe2.getParentLeader(), leaderA);
+			Assert.assertTrue(universe0.isFollower(leaderB));
 		} else {
-			Assert.assertEquals(universe1.getParentLeader(), leaderB);
-			Assert.assertTrue(universe3.isFollower(leaderA));
+			Assert.assertEquals(universe0.getParentLeader(), leaderB);
+			Assert.assertTrue(universe2.isFollower(leaderA));
 		}
 		
-		System.out.println(universe1.acceptVisitor(new GroupToStringVisitor()));
+		System.out.println(universe0.acceptVisitor(new GroupToStringVisitor()));
 	}
 	
 	@Test

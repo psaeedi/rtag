@@ -212,14 +212,14 @@ public class GroupCommunicationDispatcher {
 		}
 	}
 	
-	void removeGroup(GroupCommunicationManager manager) {
+	void removeGroupManager(GroupCommunicationManager manager) {
 		boolean wasRemoved = false;
 		synchronized (lock) {
 			if (followedGroups.contains(manager)) {
 				followedGroups.remove(manager);
 				wasRemoved = true;
 			}
-			if (leadedGroups.contains(manager)) {
+			if (!wasRemoved && leadedGroups.contains(manager)) {
 				leadedGroups.remove(manager);
 				wasRemoved = true;
 			}
@@ -288,11 +288,11 @@ public class GroupCommunicationDispatcher {
 		synchronized (lock) {
 			for (int i = leadedGroups.size() - 1; i > -1; i--) {
 				GroupCommunicationManager manager = leadedGroups.get(i);
-				removeGroup(manager);
+				removeGroupManager(manager);
 			}
 			for (int i = leadedGroups.size() - 1; i > -1; i--) {
 				GroupCommunicationManager manager = followedGroups.get(i);
-				removeGroup(manager);
+				removeGroupManager(manager);
 			}
 		}
 	}
@@ -307,11 +307,11 @@ public class GroupCommunicationDispatcher {
 			GroupCommunicationManager manager = null;
 			manager = getLeadedGroupByFriendlyName(friendlyName);
 			if (manager != null) {
-				removeGroup(manager);
+				removeGroupManager(manager);
 			}
 			manager = getFollowedGroupByFriendlyName(friendlyName);
 			if (manager != null) {
-				removeGroup(manager);
+				removeGroupManager(manager);
 			}
 		}
 	}
@@ -346,7 +346,6 @@ public class GroupCommunicationDispatcher {
 			GroupDescriptor parentGroup = 
 					tupleSpaceManager.getLeaderForHierarchy(friendlyName);
 			if (parentGroup != null) {
-				
 				manager.joinParent(parentGroup);
 			} else {
 				tupleSpaceManager.setLeaderForHierarchy(manager.getGroupDescriptor());
@@ -366,7 +365,7 @@ public class GroupCommunicationDispatcher {
 					"Cannot delete a group of which the node is not member.");
 		}
 		manager.deleteGroup();
-		removeGroup(manager);
+		removeGroupManager(manager);
 	}
 
 	List<GroupDescriptor> getAllGroups() {
@@ -408,6 +407,8 @@ public class GroupCommunicationDispatcher {
 					getGroupManagerForHierarchy(remoteGroup.getFriendlyName());
 			if (manager != null) {
 				manager.handleRemoteGroupDiscovered(remoteGroup);
+			} else {
+				System.out.println("handleNodeMessage"+node.getNodeDescriptor() + " Manager null for group: " + remoteGroup);
 			}
 		} else if (TupleNodeNotification.JOIN_GROUP.equals(command)) {
 			GroupDescriptor remoteGroup = (GroupDescriptor)message.getContent();
@@ -415,6 +416,8 @@ public class GroupCommunicationDispatcher {
 					getGroupManagerForHierarchy(remoteGroup.getFriendlyName());
 			if (manager != null) {
 				manager.handleInviteToJoin(message);
+			} else {
+				System.out.println("handleNodeMessage"+node.getNodeDescriptor() + " Manager null for group: " + remoteGroup);
 			}
 		}
 	}
@@ -428,6 +431,8 @@ public class GroupCommunicationDispatcher {
 				getGroupManagerForHierarchy(remoteGroup.getFriendlyName());
 		if (manager != null) {
 			manager.handleTupleMessageAck(message, sender);
+		} else {
+			System.out.println(node.getNodeDescriptor() +  " Manager null for group: " + remoteGroup);
 		}
 	}
 

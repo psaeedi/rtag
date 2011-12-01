@@ -287,7 +287,11 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 			TupleGroupCommand message, NodeDescriptor sender) {
 		GroupCommunicationManager manager = 
 				dispatcher.getGroupManagerForDescriptor(recipient);
-		manager.handleAndForwardTupleMessage(message, sender);
+		if (manager != null) {
+			manager.handleAndForwardTupleMessage(message, sender);
+		} else {
+			System.out.println(currentNode + "Manager null for " + recipient);
+		}
 	}
 
 	private void handleNodeMessage(NodeDescriptor recipient,
