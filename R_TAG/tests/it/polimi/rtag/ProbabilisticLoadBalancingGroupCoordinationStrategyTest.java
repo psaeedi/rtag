@@ -81,16 +81,13 @@ public class ProbabilisticLoadBalancingGroupCoordinationStrategyTest {
 	 */
 	@Test
 	public void testShouldInviteToMerge_atLeastOneEmpty() {
-		Assert.assertFalse(localStrategy.shouldInviteToJoin(remoteGroup));
-		Assert.assertFalse(remoteStrategy.shouldInviteToJoin(localGroup));
-		
-		remoteGroup.addFollower(otherNodes.get(0));
-		Assert.assertFalse(localStrategy.shouldInviteToJoin(remoteGroup));
-		Assert.assertFalse(remoteStrategy.shouldInviteToJoin(localGroup));
-		
-		localGroup.setParentLeader(otherNodes.get(1));
-		Assert.assertFalse(localStrategy.shouldInviteToJoin(remoteGroup));
-		Assert.assertFalse(remoteStrategy.shouldInviteToJoin(localGroup));
+		if (localLeader.getID().compareTo(remoteLeader.getID()) > 1) {
+			Assert.assertTrue(localStrategy.shouldInviteToJoin(remoteGroup));
+			Assert.assertFalse(remoteStrategy.shouldInviteToJoin(localGroup));
+		} else {
+			Assert.assertFalse(localStrategy.shouldInviteToJoin(remoteGroup));
+			Assert.assertTrue(remoteStrategy.shouldInviteToJoin(localGroup));
+		}
 	}
 	
 	/**

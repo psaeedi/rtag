@@ -266,7 +266,7 @@ public class GroupDescriptor implements Serializable {
 	 * @see java.util.HashSet#add(java.lang.Object)
 	 */
 	public boolean addFollower(NodeDescriptor descriptor) {
-		if (leader.equals(descriptor)) {
+		if (leader != null && leader.equals(descriptor)) {
 			throw new RuntimeException("Cannot add leader as follower: " + descriptor);
 		}
 		if (followers.contains(descriptor)) {
