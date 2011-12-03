@@ -50,8 +50,7 @@ public class TupleGroupCommand extends TupleMessage {
 
 	public static TupleGroupCommand createAdoptGroupCommand(
 			NodeDescriptor parent, GroupDescriptor groupDescriptor) {
-		// TODO Auto-generated method stub
-		return null;
+		return new TupleGroupCommand(Scope.GROUP, groupDescriptor, parent, ADOPT_GROUP);
 	}
 
 

@@ -94,6 +94,11 @@ public class LoadBalancingGroupCoordinationStrategy implements
 	 */
 	@Override
 	public boolean shouldInviteToJoin(GroupDescriptor remoteGroup) {
+		if (remoteGroup == null) {
+			throw new RuntimeException("Remote group cannot be null.");
+		}
+		
+		
 		NodeDescriptor localLeader = groupDescriptor.getLeader();
 		NodeDescriptor localParent = groupDescriptor.getParentLeader();
 		NodeDescriptor remoteParent = remoteGroup.getParentLeader();
@@ -133,7 +138,7 @@ public class LoadBalancingGroupCoordinationStrategy implements
 			}
 		} else { // localParent == null && remoteParent == null
 			// Neither the local or the remote group are part of a hierarchy
-			return localLeader.compareTo(remoteLeader) > 0;
+			return localLeader.getID().compareTo(remoteLeader.getID()) > 0;
 			//return true;
 		}
 	}

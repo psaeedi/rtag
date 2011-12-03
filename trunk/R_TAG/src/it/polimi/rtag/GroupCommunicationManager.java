@@ -183,8 +183,8 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 		}
 		if (!manager.groupDescriptor.getFriendlyName().
 				equals(groupDescriptor.getFriendlyName())) {
-			throw new RuntimeException(
-				"A manager should not receive notifications about groups of other hierarchies.");		
+			//"A manager should not receive notifications about groups of other hierarchies.
+			return;
 		}
 		
 		if (manager.equals(followedParentManager)) {
@@ -552,8 +552,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 		recipient = connectIfNotConnected(recipient);
 		try {
 			if (recipient == null) {
-				System.err.println("CANNOT CONNECT TO: " + recipient);
-				return;
+				throw new RuntimeException("Cannot connect to null recipient.");
 			}
 			System.out.println("GM " + groupDescriptor.getFriendlyName() + " " +
 					currentNodeDescriptor + " sending " + message + " to" +
@@ -1114,7 +1113,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 		Scope scope = message.getScope();
 		if (scope == Scope.GROUP) {
 			GroupDescriptor recipient = (GroupDescriptor)message.getRecipient();
-			if (!groupDescriptor.equals(recipient)) {
+			if (!groupDescriptor.getUniqueId().equals(recipient.getUniqueId())) {
 				// Not for this group
 				throw new RuntimeException("Not for this group");
 				//return;

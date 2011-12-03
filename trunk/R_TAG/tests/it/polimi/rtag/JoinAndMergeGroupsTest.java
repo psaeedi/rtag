@@ -193,6 +193,7 @@ public class JoinAndMergeGroupsTest {
 		universe1 = leader.getGroupCommunicationDispatcher().
 				getGroupForHierarchy(GroupDescriptor.UNIVERSE);
 		
+		// TODO here we should check if the whole hierarchy size is 5
 		Assert.assertEquals(NUMBER_OF_NODE, universe1.getMembers().size());
 		
 		for (int i = 1; i < NUMBER_OF_NODE; i++) {

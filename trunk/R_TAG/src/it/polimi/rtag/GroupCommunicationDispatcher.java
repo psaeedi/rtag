@@ -4,20 +4,11 @@
 package it.polimi.rtag;
 
 import java.util.*;
-import java.io.Serializable;
-
-import lights.Field;
-import lights.Tuple;
-import lights.TupleSpace;
-import lights.interfaces.TupleSpaceException;
 
 import polimi.reds.NodeDescriptor;
 import polimi.reds.broker.overlay.Overlay;
-import polimi.reds.broker.overlay.PacketListener;
 
-import it.polimi.rtag.messaging.TupleGroupCommand;
 import it.polimi.rtag.messaging.TupleMessageAck;
-import it.polimi.rtag.messaging.TupleMessage;
 import it.polimi.rtag.messaging.TupleNodeNotification;
 
 
@@ -385,12 +376,14 @@ public class GroupCommunicationDispatcher {
 			GroupDescriptor recipient) {
 		synchronized (lock) {
 			for (GroupCommunicationManager manager: leadedGroups) {
-				if (manager.getGroupDescriptor().equals(recipient)) {
+				if (manager.getGroupDescriptor()
+						.getUniqueId().equals(recipient.getUniqueId())) {
 					return manager;
 				}
 			}
 			for (GroupCommunicationManager manager: followedGroups) {
-				if (manager.getGroupDescriptor().equals(recipient)) {
+				if (manager.getGroupDescriptor()
+						.getUniqueId().equals(recipient.getUniqueId())) {
 					return manager;
 				}
 			}
