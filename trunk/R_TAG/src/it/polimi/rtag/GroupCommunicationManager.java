@@ -286,9 +286,10 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 					// the current node should join the parent group
 					NodeDescriptor parent = groupDescriptor.getParentLeader();
 					if (parent != null) {
-						TupleGroupCommand command = 
+						/*TupleGroupCommand command = 
 							TupleGroupCommand.createAdoptGroupCommand(parent, groupDescriptor);
-						tupleSpaceManager.storeAndSend(command);
+						tupleSpaceManager.storeAndSend(command);*/
+						sendRequestToJoin(remoteGroup);
 					}
 				}
 			} else {
@@ -311,11 +312,13 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 			return;
 		}
 		// Join the parent group
+		
 		NodeDescriptor parent = remoteGroup.getParentLeader();
 		if (parent != null) {
-			TupleGroupCommand AdoptionCommand = 
+			/*TupleGroupCommand adoptionCommand = 
 				TupleGroupCommand.createAdoptGroupCommand(parent, groupDescriptor);
-			tupleSpaceManager.storeAndSend(command);
+			tupleSpaceManager.storeAndSend(adoptionCommand);*/
+			sendRequestToJoin(remoteGroup);
 		}
 	}
 
@@ -1060,10 +1063,24 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 		if (originalMessage instanceof TupleNodeNotification) {
 			TupleNodeNotification notification = (TupleNodeNotification)originalMessage;
 			String notificationCommand = notification.getCommand();
-			if (TupleNodeNotification.JOIN_GROUP.equals(notificationCommand)) {
+			if (TupleNodeNotification.ALLOW_TO_JOIN_GROUP.equals(notificationCommand)) {
+				GroupDescriptor remoteGroup =
+						(GroupDescriptor)notification.getContent();
 				if (TupleMessageAck.OK.equals(command)) {
-					groupDescriptor.addFollower(sender);
-					sendUpdatedDescriptor();
+					//groupDescriptor.addFollower(sender);
+					//sendUpdatedDescriptor();
+					//-------------------------
+					node.getGroupCommunicationDispatcher().addGroupManager(
+							GroupCommunicationManager.createGroupCommunicationManager(node, remoteGroup));
+					// If the current group is empty it will be dismantled otherwise
+					// the followers will be updated.
+					if (groupDescriptor.getFollowers().size() > 0) {
+						handleParentLeaderChange(remoteGroup.getLeader());
+					} else {
+						// TODO this is ugly
+						System.out.println("Removing: " + groupDescriptor.getUniqueId() + " to join " + remoteGroup.getUniqueId());
+						node.getGroupCommunicationDispatcher().removeGroupManager(this);
+					}
 				}
 				tupleSpaceManager.removeMessage(message);
 				tupleSpaceManager.removeMessage(originalMessage);
@@ -1080,17 +1097,17 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 		String command = message.getCommand();
 		
 		if (TupleGroupCommand.LEAVING_NOTICE.equals(command)) {
-			
+			throw new RuntimeException("LEAVING_NOTICE not yet implemented");
 		} else if (TupleGroupCommand.CREATE_CHILD_GROUP.equals(command)) {
-			
+			throw new RuntimeException("CREATE_CHILD_GROUP not yet implemented");
 		} else if (TupleGroupCommand.DELETE_GROUP.equals(command)) {
-			
+			forwardTupleMessage(message, sender);
+			node.getGroupCommunicationDispatcher().removeGroupManager(this);
 		} else if (TupleGroupCommand.UPDATE_DESCRIPTOR.equals(command)) {
 			this.setGroupDescriptor((GroupDescriptor) message.getContent());
 		} else if (TupleGroupCommand.MIGRATE_TO_GROUP.equals(command)) {
-			
-		} else if (TupleGroupCommand.ADOPT_GROUP.equals(command)) {
-			
+			sendRequestToJoin((GroupDescriptor)message.getContent());
+			throw new RuntimeException("MIGRATE_TO_GROUP not yet implemented");
 		}
 	}
 
@@ -1116,7 +1133,6 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 			if (!groupDescriptor.getUniqueId().equals(recipient.getUniqueId())) {
 				// Not for this group
 				throw new RuntimeException("Not for this group");
-				//return;
 			}
 		}
 		
@@ -1153,12 +1169,6 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 	}
 
 
-	public void joinParent(GroupDescriptor parentGroup) {
-		// TODO Auto-generated method stub
-		
-	}
-
-
 	public void handleRemoteGroupDiscovered(GroupDescriptor remoteGroup) {
 		if (!groupDescriptor.isSameHierarchy(remoteGroup)) {
 			// The two group does not match
@@ -1177,32 +1187,45 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 		}
 		
 		// We first attempt to merge then to join
-		if (coordinationStrategy.shouldInviteToJoin(remoteGroup)) {
-			TupleNodeNotification command = 
-					TupleNodeNotification.createJoinGroupNotification(
-							remoteGroup.getLeader(), groupDescriptor);
-			tupleSpaceManager.storeAndSend(command);
-			
+		if (followedParentManager == null &&
+				coordinationStrategy.shouldRequestToJoin(remoteGroup)) {
+			sendRequestToJoin(remoteGroup);
 		}
 	}
 	
-	public void handleInviteToJoin(TupleNodeNotification message) {
-		GroupDescriptor remoteGroup = (GroupDescriptor) message.getContent();
-		
-		if (isLeader() && followedParentManager == null && 
-			coordinationStrategy.shouldAcceptToJoin(remoteGroup)) {
+	void sendRequestToJoin(GroupDescriptor remoteGroup) {
+		System.err.println(node.getNodeDescriptor() + " requesting to join " + remoteGroup);
+		if (groupDescriptor.getUniqueId().equals(remoteGroup.getUniqueId())) {
+			return;
+		}
+		if (node.getGroupCommunicationDispatcher().getGroupManagerForDescriptor(remoteGroup) != null) {
+			throw new RuntimeException("Already in: " + remoteGroup);
+		}
+		TupleNodeNotification command = 
+				TupleNodeNotification.createAllowToJoinGroupNotification(
+						remoteGroup.getLeader(), remoteGroup);
+		tupleSpaceManager.storeAndSend(command);
+	}
+	
+	public void handleRequestToJoin(TupleNodeNotification message, NodeDescriptor sender) {
+		if (isLeader() && 
+			coordinationStrategy.shouldAcceptJoinRequest(sender)) {
 			
 			// The current node has accepted the remote as a parent node
 			// From now on the current node will be both leader of his current
 			// group and follower of his parent group.
-			remoteGroup.addFollower(currentNodeDescriptor);
-			node.getGroupCommunicationDispatcher().addGroupManager(
-					GroupCommunicationManager.createGroupCommunicationManager(node, remoteGroup));
+			groupDescriptor.addFollower(sender);
+			//node.getGroupCommunicationDispatcher().addGroupManager(
+			//		GroupCommunicationManager.createGroupCommunicationManager(node, remoteGroup));
 			TupleMessageAck commandAck = 
 					TupleMessageAck.createOkAck(Scope.NODE,
-							remoteGroup.getLeader(), message);
+							sender, message);
 			tupleSpaceManager.storeAndSend(commandAck);
+			sendUpdatedDescriptor();
 			
+			/*
+			node.getGroupCommunicationDispatcher().addGroupManager(
+					GroupCommunicationManager.createGroupCommunicationManager(node, remoteGroup));
 			// If the current group is empty it will be dismantled otherwise
 			// the followers will be updated.
 			if (groupDescriptor.getFollowers().size() > 0) {
@@ -1212,17 +1235,17 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 				System.out.println("Removing: " + groupDescriptor.getUniqueId() + " to join " + remoteGroup.getUniqueId());
 				node.getGroupCommunicationDispatcher().removeGroupManager(this);
 			}
-			//handleParentLeaderChange(remoteGroup.getLeader());
+			*/
 			return;
 		} else {
-			sendKoAk(Scope.NODE,
-					remoteGroup.getLeader(),
+			sendKoAck(Scope.NODE,
+					sender,
 					message);
 			return;
 		}	
 	}
 	
-	private void sendKoAk(Scope scope, Serializable recipient, TupleMessage message) {
+	private void sendKoAck(Scope scope, Serializable recipient, TupleMessage message) {
 		TupleMessageAck commandAck = 
 				TupleMessageAck.createKoAck(scope,
 						recipient, message);

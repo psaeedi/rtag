@@ -15,11 +15,11 @@ public interface GroupCoordinationStrategy {
 
 	//public boolean shouldInviteToJoin(GroupDescriptor remoteGroup);
 	
-	public boolean shouldInviteToJoin(GroupDescriptor remoteGroup);
+	public boolean shouldRequestToJoin(GroupDescriptor remoteGroup);
 	
 	//public boolean shouldAcceptToJoin(GroupDescriptor remoteGroup);
 	
-	public boolean shouldAcceptToJoin(GroupDescriptor remoteGroup);
+	public boolean shouldAcceptJoinRequest(NodeDescriptor remoteNode);
 	
 	public NodeDescriptor shouldSplitToNode();
 	

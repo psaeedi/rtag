@@ -77,16 +77,16 @@ public class ProbabilisticLoadBalancingGroupCoordinationStrategyTest {
 	 * If one of the two groups is empty they should not merge.
 	 * Instead the empty one should join the other.
 	 * 
-	 * Test method for {@link it.polimi.rtag.ProbabilisticLoadBalancingGroupCoordinationStrategy#shouldInviteToJoin(it.polimi.rtag.GroupDescriptor)}.
+	 * Test method for {@link it.polimi.rtag.ProbabilisticLoadBalancingGroupCoordinationStrategy#shouldRequestToJoin(it.polimi.rtag.GroupDescriptor)}.
 	 */
 	@Test
 	public void testShouldInviteToMerge_atLeastOneEmpty() {
 		if (localLeader.getID().compareTo(remoteLeader.getID()) > 1) {
-			Assert.assertTrue(localStrategy.shouldInviteToJoin(remoteGroup));
-			Assert.assertFalse(remoteStrategy.shouldInviteToJoin(localGroup));
+			Assert.assertTrue(localStrategy.shouldRequestToJoin(remoteGroup));
+			Assert.assertFalse(remoteStrategy.shouldRequestToJoin(localGroup));
 		} else {
-			Assert.assertFalse(localStrategy.shouldInviteToJoin(remoteGroup));
-			Assert.assertTrue(remoteStrategy.shouldInviteToJoin(localGroup));
+			Assert.assertFalse(localStrategy.shouldRequestToJoin(remoteGroup));
+			Assert.assertTrue(remoteStrategy.shouldRequestToJoin(localGroup));
 		}
 	}
 	
@@ -94,43 +94,43 @@ public class ProbabilisticLoadBalancingGroupCoordinationStrategyTest {
 	 * Even if empty if they are part of a hierarchy they do not merge
 	 * unless they have the same parent.
 	 * 
-	 * Test method for {@link it.polimi.rtag.ProbabilisticLoadBalancingGroupCoordinationStrategy#shouldInviteToJoin(it.polimi.rtag.GroupDescriptor)}.
+	 * Test method for {@link it.polimi.rtag.ProbabilisticLoadBalancingGroupCoordinationStrategy#shouldRequestToJoin(it.polimi.rtag.GroupDescriptor)}.
 	 */
 	@Test
 	public void testShouldInviteToMerge_bothWithParent() {
 		remoteGroup.setParentLeader(otherNodes.get(0));
 		localGroup.setParentLeader(otherNodes.get(1));
 		
-		Assert.assertFalse(localStrategy.shouldInviteToJoin(remoteGroup));
-		Assert.assertFalse(remoteStrategy.shouldInviteToJoin(localGroup));
+		Assert.assertFalse(localStrategy.shouldRequestToJoin(remoteGroup));
+		Assert.assertFalse(remoteStrategy.shouldRequestToJoin(localGroup));
 		
 		localGroup.setParentLeader(otherNodes.get(0));
-		Assert.assertEquals(localStrategy.shouldInviteToJoin(remoteGroup),
-				!remoteStrategy.shouldInviteToJoin(localGroup));
+		Assert.assertEquals(localStrategy.shouldRequestToJoin(remoteGroup),
+				!remoteStrategy.shouldRequestToJoin(localGroup));
 	}
 	
 	/**
 	 * If only one has a parent the one which is not in a hierarchy
 	 * should join the other.
 	 * 
-	 * Test method for {@link it.polimi.rtag.ProbabilisticLoadBalancingGroupCoordinationStrategy#shouldInviteToJoin(it.polimi.rtag.GroupDescriptor)}.
+	 * Test method for {@link it.polimi.rtag.ProbabilisticLoadBalancingGroupCoordinationStrategy#shouldRequestToJoin(it.polimi.rtag.GroupDescriptor)}.
 	 */
 	@Test
 	public void testShouldInviteToMerge_oneWithParent() {
 		remoteGroup.setParentLeader(otherNodes.get(0));
 		
-		Assert.assertFalse(localStrategy.shouldInviteToJoin(remoteGroup));
-		Assert.assertTrue(remoteStrategy.shouldInviteToJoin(localGroup));
+		Assert.assertFalse(localStrategy.shouldRequestToJoin(remoteGroup));
+		Assert.assertTrue(remoteStrategy.shouldRequestToJoin(localGroup));
 	}
 	
 	/**
-	 * Test method for {@link it.polimi.rtag.ProbabilisticLoadBalancingGroupCoordinationStrategy#shouldAcceptToJoin(it.polimi.rtag.GroupDescriptor)}.
+	 * Test method for {@link it.polimi.rtag.ProbabilisticLoadBalancingGroupCoordinationStrategy#shouldAcceptJoinRequest(it.polimi.rtag.GroupDescriptor)}.
 	 */
 	@Test
 	public void testShouldAcceptToMerge() {
-		Assert.assertTrue(localStrategy.shouldAcceptToJoin(remoteGroup));
+		Assert.assertTrue(localStrategy.shouldAcceptJoinRequest(remoteGroup.getLeader()));
 		localGroup.setParentLeader(otherNodes.get(0));
-		Assert.assertFalse(localStrategy.shouldAcceptToJoin(remoteGroup));
+		Assert.assertFalse(localStrategy.shouldAcceptJoinRequest(remoteGroup.getLeader()));
 	}
 
 	/**

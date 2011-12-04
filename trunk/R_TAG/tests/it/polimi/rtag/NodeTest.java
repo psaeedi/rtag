@@ -111,8 +111,10 @@ public class NodeTest {
 				reds.add(n.getID());
 			}
 		}
+		
 		Assert.assertEquals(NUMBER_OF_NODES, reds.size());
 		
+		System.err.println("<<<<<<\n" + nodes.get(0).getGroupCommunicationDispatcher().getFollowedGroupByFriendlyName(friendlyName));
 		nodes.get(0).deleteGroup(friendlyName);
 		Thread.sleep(1000);
 		

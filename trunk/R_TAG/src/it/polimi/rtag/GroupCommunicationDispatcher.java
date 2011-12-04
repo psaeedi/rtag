@@ -104,7 +104,7 @@ public class GroupCommunicationDispatcher {
 				notifyNewGroupManagerOfExistingManagers(manager);
 			} else {
 				if (getFollowedGroupByFriendlyName(groupDescriptor.getFriendlyName()) != null) {
-					throw new RuntimeException("Already following a group matching: " + groupDescriptor);
+					throw new RuntimeException(node + " Already following a group matching: " + groupDescriptor);
 				}
 				followedGroups.add(manager);
 				overlay.addNeighborhoodChangeListener(manager);
@@ -214,13 +214,13 @@ public class GroupCommunicationDispatcher {
 				leadedGroups.remove(manager);
 				wasRemoved = true;
 			}
-			// Disconnect the manager
-			if (wasRemoved) {
-				overlay.removeNeighborhoodChangeListener(manager);
-				notifyGroupManagerWasRemoved(manager);
-				node.getTopologyManager().removeNodesForGroup(
-						manager.getGroupDescriptor());
-			}
+		}
+		// Disconnect the manager
+		if (wasRemoved) {
+			overlay.removeNeighborhoodChangeListener(manager);
+			notifyGroupManagerWasRemoved(manager);
+			node.getTopologyManager().removeNodesForGroup(
+					manager.getGroupDescriptor());
 		}
 	}
 	
@@ -315,20 +315,7 @@ public class GroupCommunicationDispatcher {
 		if (descriptor != null) {
 			// Already in that group
 			return descriptor;
-		}/*
-		try {
-			GroupCommunicationManager manager =
-					GroupCommunicationManager.createGroupCommunicationManager(
-							node, UUID.randomUUID(), friendlyName);
-			addGroupManager(manager);
-
-			getLocalUniverseManager().sendGroupcast(GROUP_DISCOVERED_NOTIFICATION, 
-					manager.getGroupDescriptor(), null);
-			return manager.getGroupDescriptor();
-		} catch (Exception ex) {
-			ex.printStackTrace();
-			return null;
-		}*/
+		}
 		try {
 			GroupCommunicationManager manager =
 					GroupCommunicationManager.createGroupCommunicationManager(
@@ -337,7 +324,7 @@ public class GroupCommunicationDispatcher {
 			GroupDescriptor parentGroup = 
 					tupleSpaceManager.getLeaderForHierarchy(friendlyName);
 			if (parentGroup != null) {
-				manager.joinParent(parentGroup);
+				manager.sendRequestToJoin(parentGroup);
 			} else {
 				tupleSpaceManager.setLeaderForHierarchy(manager.getGroupDescriptor());
 			}
@@ -403,12 +390,12 @@ public class GroupCommunicationDispatcher {
 			} else {
 				System.out.println("handleNodeMessage"+node.getNodeDescriptor() + " Manager null for group: " + remoteGroup);
 			}
-		} else if (TupleNodeNotification.JOIN_GROUP.equals(command)) {
+		} else if (TupleNodeNotification.ALLOW_TO_JOIN_GROUP.equals(command)) {
 			GroupDescriptor remoteGroup = (GroupDescriptor)message.getContent();
 			GroupCommunicationManager manager = 
 					getGroupManagerForHierarchy(remoteGroup.getFriendlyName());
 			if (manager != null) {
-				manager.handleInviteToJoin(message);
+				manager.handleRequestToJoin(message, sender);
 			} else {
 				System.out.println("handleNodeMessage"+node.getNodeDescriptor() + " Manager null for group: " + remoteGroup);
 			}
@@ -425,7 +412,8 @@ public class GroupCommunicationDispatcher {
 		if (manager != null) {
 			manager.handleTupleMessageAck(message, sender);
 		} else {
-			System.out.println(node.getNodeDescriptor() +  " Manager null for group: " + remoteGroup);
+			System.out.println(node.getNodeDescriptor() + 
+					" Manager null for group: " + remoteGroup);
 		}
 	}
 

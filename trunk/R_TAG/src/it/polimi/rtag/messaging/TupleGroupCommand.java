@@ -32,8 +32,6 @@ public class TupleGroupCommand extends TupleMessage {
 		
 	public static final String MIGRATE_TO_GROUP = "MIGRATE_TO_GROUP";
 	
-	public static final String ADOPT_GROUP = "ADOPT_GROUP";
-	
 	public static final String SUBJECT = "TupleGroupCommand";
 	
 
@@ -46,13 +44,6 @@ public class TupleGroupCommand extends TupleMessage {
 			GroupDescriptor groupDescriptor) {
 		return new TupleGroupCommand(Scope.GROUP, groupDescriptor, groupDescriptor, UPDATE_DESCRIPTOR);
 	}
-
-
-	public static TupleGroupCommand createAdoptGroupCommand(
-			NodeDescriptor parent, GroupDescriptor groupDescriptor) {
-		return new TupleGroupCommand(Scope.GROUP, groupDescriptor, parent, ADOPT_GROUP);
-	}
-
 
 	public static TupleGroupCommand createMigrateToGroupCommand(
 			GroupDescriptor remoteGroup, GroupDescriptor groupDescriptor) {
