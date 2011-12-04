@@ -24,7 +24,7 @@ public class TupleNodeNotification extends TupleMessage {
 
 	public static final String NOTIFY_GROUP_EXISTS = "NotifyGroupExists";
 	
-	public static final String JOIN_GROUP = "JoinGroup";
+	public static final String ALLOW_TO_JOIN_GROUP = "JoinGroup";
 
 	
 	public static TupleNodeNotification createNotifyGroupExistsNotification(
@@ -32,9 +32,9 @@ public class TupleNodeNotification extends TupleMessage {
 		return new TupleNodeNotification(recipient, groupDescriptor, NOTIFY_GROUP_EXISTS);
 	}
 
-	public static TupleNodeNotification createJoinGroupNotification(
+	public static TupleNodeNotification createAllowToJoinGroupNotification(
 			NodeDescriptor recipient, GroupDescriptor groupDescriptor) {
-		return new TupleNodeNotification(recipient, groupDescriptor, JOIN_GROUP);
+		return new TupleNodeNotification(recipient, groupDescriptor, ALLOW_TO_JOIN_GROUP);
 	}
 
 	

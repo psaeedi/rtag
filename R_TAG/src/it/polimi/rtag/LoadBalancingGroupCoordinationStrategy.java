@@ -3,9 +3,6 @@
  */
 package it.polimi.rtag;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import polimi.reds.NodeDescriptor;
 
 /**
@@ -93,7 +90,7 @@ public class LoadBalancingGroupCoordinationStrategy implements
 	 * @see it.polimi.rtag.GroupCoordinationStrategy#shouldInviteToMerge(it.polimi.rtag.GroupDescriptor)
 	 */
 	@Override
-	public boolean shouldInviteToJoin(GroupDescriptor remoteGroup) {
+	public boolean shouldRequestToJoin(GroupDescriptor remoteGroup) {
 		if (remoteGroup == null) {
 			throw new RuntimeException("Remote group cannot be null.");
 		}
@@ -172,15 +169,17 @@ public class LoadBalancingGroupCoordinationStrategy implements
 	 * @see it.polimi.rtag.GroupCoordinationStrategy#shouldAcceptToMerge(it.polimi.rtag.GroupDescriptor)
 	 */
 	@Override
-	public boolean shouldAcceptToJoin(GroupDescriptor remoteGroup) {
-		if (groupDescriptor.isFollower(remoteGroup.getLeader())) {
+	public boolean shouldAcceptJoinRequest(NodeDescriptor remoteNode) {
+		if (groupDescriptor.isFollower(remoteNode)) {
 			// The remote group is a child group
 			return false;
 		}
+		/*
 		if (remoteGroup.isFollower(groupDescriptor.getLeader())) {
 			// The current is a child group
 			return false;
 		}
+		*/
 		
 		// If the parent is null OK otherwise KO
 		return (groupDescriptor.getParentLeader() == null);
