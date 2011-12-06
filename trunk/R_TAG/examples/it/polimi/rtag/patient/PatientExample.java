@@ -66,8 +66,7 @@ public class PatientExample {
 		 if(parent != 0)
 		    {
 		     System.out.println(" ");
-		     System.out.println((new StringBuilder("***Adding neighbor ")).
-		    		append(parent).append(" to node ").append(port).toString());
+		     System.out.println("***Adding neighbor " + parent + " to node " + port);
 		     apps.connectNeighbor(urls);
  		     try {
 				  Thread.sleep(1000);
