@@ -84,7 +84,7 @@ public class JoinAndMergeGroupsTest {
 			throws AlreadyNeighborException, ConnectException, 
 					MalformedURLException, NotRunningException, 
 					InterruptedException {
-		nodes.get(0).connectTo(urls.get(1));
+		nodes.get(0).addNeighbor(urls.get(1));
 		Thread.sleep(200);
 		
 		GroupDescriptor universe1 = nodes.get(0).getGroupCommunicationDispatcher().
@@ -112,9 +112,9 @@ public class JoinAndMergeGroupsTest {
 			throws AlreadyNeighborException, ConnectException,
 					MalformedURLException, NotRunningException,
 					InterruptedException {
-		nodes.get(0).connectTo(urls.get(1));
+		nodes.get(0).addNeighbor(urls.get(1));
 		
-		nodes.get(2).connectTo(urls.get(3));
+		nodes.get(2).addNeighbor(urls.get(3));
 		Thread.sleep(1000);
 		
 		// Node 1 and 3 should be leaders
@@ -142,7 +142,7 @@ public class JoinAndMergeGroupsTest {
 		String urlB = leaderB == nodes.get(2).getNodeDescriptor() ? urls.get(2) : urls.get(3);
 		
 		// We add the two leaders together
-		nodeLeaderA.connectTo(urlB);
+		nodeLeaderA.addNeighbor(urlB);
 		Thread.sleep(1000);
 		
 		universe0 = 
@@ -178,7 +178,7 @@ public class JoinAndMergeGroupsTest {
 					MalformedURLException, NotRunningException, 
 					InterruptedException {
 		
-		nodes.get(0).connectTo(urls.get(1));	
+		nodes.get(0).addNeighbor(urls.get(1));	
 		Thread.sleep(500);
 		
 		GroupDescriptor universe1 = nodes.get(0).getGroupCommunicationDispatcher().
@@ -187,7 +187,7 @@ public class JoinAndMergeGroupsTest {
 		Node leader = universe1.getLeader() == nodes.get(0).getNodeDescriptor() ? nodes.get(0) : nodes.get(1);
 		
 		for (int i = 2; i < NUMBER_OF_NODE; i++) {
-			leader.connectTo(urls.get(i));
+			leader.addNeighbor(urls.get(i));
 			Thread.sleep(500);
 		}
 		universe1 = leader.getGroupCommunicationDispatcher().

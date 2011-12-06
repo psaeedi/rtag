@@ -128,15 +128,5 @@ public class Node {
 			ConnectException, MalformedURLException, NotRunningException {
 		return overlay.addNeighbor(url);
 	}
-
-	public NodeDescriptor connectTo(String url) {
-		NodeDescriptor descriptor = null;
-		try {
-			descriptor = overlay.addNeighbor(url);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return descriptor;
-	}
 	
 }

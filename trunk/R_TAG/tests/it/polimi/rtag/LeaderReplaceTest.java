@@ -70,25 +70,23 @@ public class LeaderReplaceTest {
 			throws AlreadyNeighborException, ConnectException, 
 			MalformedURLException, NotRunningException, 
 			InterruptedException {
-		nodes.get(0).connectTo(urls.get(1));
-		nodes.get(0).connectTo(urls.get(2));
-		nodes.get(3).connectTo(urls.get(4));
-		nodes.get(3).connectTo(urls.get(5));
+		nodes.get(0).addNeighbor(urls.get(1));
+		nodes.get(2).addNeighbor(urls.get(3));
 		
-		nodes.get(0).connectTo(urls.get(3));
+		nodes.get(0).addNeighbor(urls.get(2));
 		Thread.sleep(1000);
 		
 		GroupDescriptor universe0 = nodes.get(0).getGroupCommunicationDispatcher().getLocalUniverse();
-		GroupDescriptor universe1 = nodes.get(3).getGroupCommunicationDispatcher().getLocalUniverse();
+		GroupDescriptor universe2 = nodes.get(2).getGroupCommunicationDispatcher().getLocalUniverse();
 		
 		GroupDescriptor parentUniverse = null;
 		GroupDescriptor childUniverse = null;
 		if (universe0.getParentLeader() != null) {
-			parentUniverse = universe1;
+			parentUniverse = universe2;
 			childUniverse = universe0;
 		} else {
 			parentUniverse = universe0;
-			childUniverse = universe1;
+			childUniverse = universe2;
 		}
 		Assert.assertNotNull(childUniverse.getParentLeader());
 		Assert.assertEquals(parentUniverse.getLeader(), childUniverse.getParentLeader());
