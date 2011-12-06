@@ -78,9 +78,9 @@ public class NodeTest {
 	}
 	
 	@Test
-	public void testDeleteGroup() throws InterruptedException {
+	public void testDeleteGroup() throws Exception {
 		for (int i = 1; i < NUMBER_OF_NODES; i++) {
-			nodes.get(0).connectTo(urls.get(i));
+			nodes.get(0).addNeighbor(urls.get(i));
 			Thread.sleep(300);
 		}
 		

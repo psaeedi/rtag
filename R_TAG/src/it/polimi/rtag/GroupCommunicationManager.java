@@ -136,6 +136,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 		GroupDescriptor otherGroupDescriptor = manager.getGroupDescriptor();
 		if (!groupDescriptor.getFriendlyName().equals(
 				otherGroupDescriptor.getFriendlyName())) {
+			// Not this hierarchy
 		 return;
 		}
 		if (isLeader()) {
@@ -151,6 +152,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 			}
 			// We add the child manager
 			followedParentManager = manager;
+			handleParentLeaderChange(manager.groupDescriptor.getLeader());
 			return;
 		} else {
 			if (!manager.isLeader()) {
@@ -165,6 +167,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 			}
 			// We add the child manager
 			leadedChildManager = manager;
+			manager.handleParentLeaderChange(groupDescriptor.getLeader());
 			return;
 		}
 
@@ -289,7 +292,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 						/*TupleGroupCommand command = 
 							TupleGroupCommand.createAdoptGroupCommand(parent, groupDescriptor);
 						tupleSpaceManager.storeAndSend(command);*/
-						sendRequestToJoin(remoteGroup);
+						connectIfNotConnected(parent);
 					}
 				}
 			} else {
