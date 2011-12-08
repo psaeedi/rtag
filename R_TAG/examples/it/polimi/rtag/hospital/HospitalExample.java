@@ -3,60 +3,69 @@ package it.polimi.rtag.hospital;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
+import java.net.ConnectException;
+import java.net.MalformedURLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 
-import it.polimi.rtag.hospital.HospitalJunction.IntelligentJunction;
+import polimi.reds.broker.overlay.AlreadyNeighborException;
+import polimi.reds.broker.overlay.NotRunningException;
+
+import it.polimi.rtag.GroupCommunicationDispatcher;
+import it.polimi.rtag.GroupCommunicationManager;
+import it.polimi.rtag.GroupDescriptor;
+import it.polimi.rtag.MessageCountingGenericOverlay;
+import it.polimi.rtag.Node;
 
 public class HospitalExample {
+    
+    private PrintWriter pw;
+    
+    public enum IntelligentJunction {
+		ONE,TWO,THREE,FOUR,FIVE 
+    }
 	
-	private static int port;
-    private static int parent;
-    
-    private static String host;
-    
-    private static String urls;
-    HospitalJunction apps;
-    
-    static PrintWriter pw;
-    
+	private Node node;
+	
+	/* Junction one is the main entrance, however, there are
+	 * other auxiliary junctions
+	 */
+	private IntelligentJunction currentJunction = IntelligentJunction.ONE;
+	
+	
  
 
-	public static void main(String[] args) throws InterruptedException {
-		   
+	public static void main(String[] args) throws Exception {
+		int port = 0;
+	    String parent = null;
+	    String host = null;
 		
-		
-		 String args1[];
-		    int k = (args1 = args).length;
-		    
-		    for(int i = 0; i < k; i++)
-		    {
-		    String arg = args1[i];
-		    System.out.print(" ");
+	    for(String arg: args) {
+	    	System.out.print(" ");
 		    System.out.print(arg);
 		    System.out.print(" ");
+		
+		    String splitted[] = arg.split("=", 2);
+		    
+		    if(splitted[0].equalsIgnoreCase("port"))
+		    	port = Integer.parseInt(splitted[1]);
+		    else if(splitted[0].equalsIgnoreCase("parent"))
+		    	parent = splitted[1];
+		    else if(splitted[0].equalsIgnoreCase("host"))
+		    	host = splitted[1];
 		    }
+	    
 		    
-		    for(int j = 0; j < k; j++)
-		    {
-		    String arg = args1[j];
-		    String splited1[] = arg.split("=", 2);
-		    String splited2[] = arg.split(":", 2);
-		    String splited3[] = arg.split("-", 2);
-		    if(splited1[0].equalsIgnoreCase("port"))
-		    port = Integer.parseInt(splited1[1]);
-		    if(splited2[0].equalsIgnoreCase("parent"))
-		    parent = Integer.parseInt(splited2[1]);
-		    if(splited3[0].equalsIgnoreCase("host"))
-		    host = splited3[1];
-		    
-		    }
-		    
-		    HospitalExample exp = new HospitalExample();
-		    
-		    exp.colorUpAndConnect(); 
-		    System.out.print(" ");
+		    HospitalExample exp = new HospitalExample(
+		    		host,
+		    		port,
+		    		parent,
+		    		IntelligentJunction.ONE);
+		     
 		    System.out.println(" ");
 		    Thread.sleep(2000);
-		    writeToFile("setUp", pw);
+		    exp.writeToFile("setUp");
 		    exp.closeFile();
 		    exp.stop();
     }
@@ -65,58 +74,143 @@ public class HospitalExample {
 
 	 
 	    
-    public HospitalExample() throws InterruptedException {
+    public HospitalExample(
+    		String host,
+    		int port,
+    		String parent,
+    		IntelligentJunction currentJunction
+    		) throws InterruptedException, AlreadyNeighborException, ConnectException, MalformedURLException, NotRunningException {
     	try {
-			pw = new PrintWriter(new File("ColorExample" +port+".cvs"));
-			Thread.sleep(1000);
+			pw = new PrintWriter(new File("ColorExample" + port + ".cvs"));
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+    	node = new Node(host, port);
+		node.start();
+		setCurrentJunction(currentJunction);
+		if (parent != null) {
+			node.addNeighbor(parent);
+		}
     }
     
   
+    public void writeToFile(String label) {
+    	HashSet<String> sentSubjects = new HashSet<String>();
+    	HashSet<String> receivedSubjects = new HashSet<String>();
+    	
+    	HashMap<String, Integer> map = null;
+		MessageCountingGenericOverlay overlay = (MessageCountingGenericOverlay)node.getOverlay();
+		map = overlay.getSentMessages();
+		for (String subject: map.keySet()) {
+			sentSubjects.add(subject);
+		}
+		map = overlay.getReceivedMessages();
+		for (String subject: map.keySet()) {
+			receivedSubjects.add(subject);
+		}
+    	
+    		
+		pw.print("Key;");
+		pw.print("Node" + node + ";");
+		pw.println("");
+		
+		pw.println(label);
+		pw.println("---------sent messages----------");
+    	for (String key: sentSubjects) {
+    		pw.print(key + ";");
+			map = overlay.getSentMessages();
+    		if (!map.containsKey(key)) {
+    			pw.print("0;");
+    		} else {
+    			pw.print(map.get(key) + ";");
+    		}
+    	pw.println("");
+    	}
 
+    	pw.println("---------received messages----------");
+    	for (String key: receivedSubjects) {
+    		pw.print(key + ";");
+			map = overlay.getReceivedMessages();
+    		if (!map.containsKey(key)) {
+    			pw.print("0;");
+    		} else {
+    			pw.print(map.get(key) + ";");
+    		}
+    		pw.println("");
+    	}
+    	
+    	pw.println("---------Groups----------");
+		pw.print("leaded groups;");
+		GroupCommunicationDispatcher dispatcher = node.getGroupCommunicationDispatcher();
+		pw.print(dispatcher.getLeadedGroups().size() + ";");
+		pw.println("");
+		
+    	pw.print("followed groups;");
+		pw.print(dispatcher.getFollowedGroups().size() + ";");
+		pw.println("");
+
+    	pw.print("leaded universe size;");
+    	GroupCommunicationManager manager = dispatcher.getLeadedGroupByFriendlyName(GroupDescriptor.UNIVERSE);
+		if (manager != null) {
+			pw.print(manager.getGroupDescriptor().getMembers().size() + ";");
+		} else {
+			pw.print("0;");
+		}
+	
+		pw.println("");
+
+		pw.print("Total active connections;");
+		pw.print(node.getTopologyManager().getNumberOfNeighbors() + ";");
+    	pw.println("");
+		
+    	pw.print("Application active connections;");
+		pw.print(node.getTopologyManager().getApplicationConnectionCount() + ";");
+		pw.println("");
+		
+		pw.print("Middleware active connections;");
+		pw.print(node.getTopologyManager().getMiddlewareConnectionCount() + ";");
+    	pw.println("");
+		
+		pw.println("");
+    	pw.flush();
+    }
 
 	private void closeFile() {
     	pw.flush();
     	pw.close();
-    	//System.out.println("%%%%%%%%%%%%%%%%5 ");
-    	
     }
 
-	private void stop() {
-		apps.tearDown();
+	public IntelligentJunction getCurrentJunction() {
+		return currentJunction;
+	}
+
+	public void setCurrentJunction(IntelligentJunction currentJunction) {
+		
+		this.currentJunction = currentJunction;
+	}
+	
+	protected void joinGroup(IntelligentJunction currentJunction){
+		node.joinGroup(currentJunction.toString());			
+	}
+	
+	protected void leaveGroup(IntelligentJunction currentJunction){
+		node.leaveGroup(currentJunction.toString());	
+	}
+
+	public void connectNeighbor(String urls) {
 		try {
-			Thread.sleep(1000);
-			//System.out.println("%%%%%%%%%%%%%%%%6 ");
-		} catch (InterruptedException e) {
+			node.addNeighbor(urls);
+		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
 	}
-
-	private void colorUpAndConnect() {
-		
-		//current node
-		 apps = new HospitalJunction(host, port, IntelligentJunction.ONE);
-		//the parent of the current node
-		 urls = ("reds-tcp:"+ host + ":" + parent);
+    		
 	
-		 if(parent != 0)
-		    {
-		     System.out.println(" ");
-		     System.out.println("***Adding neighbor " + parent + " to node " + port);
-		     //connect the current node to its parent
-		     apps.connectNeighbor(urls);
-		     try {
-				  Thread.sleep(500);
-			   }   catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			   }
-		     }
-	}
+	public void stop() {
+		node.stop();
 		
 	}
+		
+}
