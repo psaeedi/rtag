@@ -45,7 +45,7 @@ public class PatientExample {
 		    exp.colorUpAndConnect(); 
 		    System.out.print(" ");
 		    System.out.println(" ");
-		    Thread.sleep(1000);
+		    Thread.sleep(2000);
 		    exp.stop();
 	}
 
@@ -69,7 +69,7 @@ public class PatientExample {
 		     System.out.println("***Adding neighbor " + parent + " to node " + port);
 		     apps.connectNeighbor(urls);
  		     try {
-				  Thread.sleep(1000);
+				  Thread.sleep(500);
 			   }   catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

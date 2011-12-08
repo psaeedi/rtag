@@ -1,5 +1,9 @@
 package it.polimi.rtag.hospital;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+
 import it.polimi.rtag.hospital.HospitalJunction.IntelligentJunction;
 
 public class HospitalExample {
@@ -11,10 +15,14 @@ public class HospitalExample {
     
     private static String urls;
     HospitalJunction apps;
+    
+    static PrintWriter pw;
+    
+ 
 
 	public static void main(String[] args) throws InterruptedException {
 		   
-		HospitalExample exp = new HospitalExample();
+		
 		
 		 String args1[];
 		    int k = (args1 = args).length;
@@ -42,17 +50,46 @@ public class HospitalExample {
 		    
 		    }
 		    
+		    HospitalExample exp = new HospitalExample();
+		    
 		    exp.colorUpAndConnect(); 
 		    System.out.print(" ");
 		    System.out.println(" ");
-		    Thread.sleep(1000);
+		    Thread.sleep(2000);
+		    writeToFile("setUp", pw);
+		    exp.closeFile();
 		    exp.stop();
-}
+    }
+	
+	
+
+	 
+	    
+    public HospitalExample() throws InterruptedException {
+    	try {
+			pw = new PrintWriter(new File("ColorExample" +port+".cvs"));
+			Thread.sleep(1000);
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    }
+    
+  
+
+
+	private void closeFile() {
+    	pw.flush();
+    	pw.close();
+    	//System.out.println("%%%%%%%%%%%%%%%%5 ");
+    	
+    }
 
 	private void stop() {
 		apps.tearDown();
 		try {
 			Thread.sleep(1000);
+			//System.out.println("%%%%%%%%%%%%%%%%6 ");
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -70,12 +107,11 @@ public class HospitalExample {
 		 if(parent != 0)
 		    {
 		     System.out.println(" ");
-		     System.out.println((new StringBuilder("***Adding neighbor ")).
-		    		append(parent).append(" to node ").append(port).toString());
+		     System.out.println("***Adding neighbor " + parent + " to node " + port);
 		     //connect the current node to its parent
 		     apps.connectNeighbor(urls);
 		     try {
-				  Thread.sleep(1000);
+				  Thread.sleep(500);
 			   }   catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
