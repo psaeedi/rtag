@@ -140,7 +140,7 @@ public class GroupCommunicationDispatcher {
 		}
 	}
 
-	GroupCommunicationManager getLeadedGroupByFriendlyName(String query) {
+	public GroupCommunicationManager getLeadedGroupByFriendlyName(String query) {
 		synchronized (lock) {
 			for (GroupCommunicationManager manager: leadedGroups) {
 				GroupDescriptor localGroup = manager.getGroupDescriptor();
@@ -167,7 +167,7 @@ public class GroupCommunicationDispatcher {
 	/**
 	 * @return the leadedGroups
 	 */
-	ArrayList<GroupCommunicationManager> getLeadedGroups() {
+	public ArrayList<GroupCommunicationManager> getLeadedGroups() {
 		synchronized (lock) {
 			return new ArrayList<GroupCommunicationManager>(leadedGroups);	
 		}
@@ -176,7 +176,7 @@ public class GroupCommunicationDispatcher {
 	/**
 	 * @return the followedGroups
 	 */
-	ArrayList<GroupCommunicationManager> getFollowedGroups() {
+	public ArrayList<GroupCommunicationManager> getFollowedGroups() {
 		synchronized (lock) {
 			return new ArrayList<GroupCommunicationManager>(followedGroups);			
 		}

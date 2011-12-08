@@ -563,9 +563,9 @@ public class ColorApplication {
 
     	Tuple content = null;
     	// TODO instantiate this tuple
-    	GroupcastTupleMessage message = new GroupcastTupleMessage(colorGroup, content);
+    	//GroupcastTupleMessage message = new GroupcastTupleMessage(colorGroup, content);
     	
-    	node.sendGroupcast(message);
+    	//node.sendGroupcast(message);
 	}
 
 

@@ -55,7 +55,7 @@ public class Node {
 		return tupleSpaceManager;
 	}
 	
-	Overlay getOverlay() {
+	public Overlay getOverlay() {
 		return overlay;
 	}
 	
@@ -84,14 +84,14 @@ public class Node {
 	/**
 	 * @return the groupCommunicationDispatcher
 	 */
-	GroupCommunicationDispatcher getGroupCommunicationDispatcher() {
+	public GroupCommunicationDispatcher getGroupCommunicationDispatcher() {
 		return groupCommunicationDispatcher;
 	}
 
 	/**
 	 * @return the topologyManager
 	 */
-	GroupAwareTopologyManager getTopologyManager() {
+	public GroupAwareTopologyManager getTopologyManager() {
 		return topologyManager;
 	}
 
