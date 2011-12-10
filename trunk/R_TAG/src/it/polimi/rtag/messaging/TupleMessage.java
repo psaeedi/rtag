@@ -36,6 +36,8 @@ public abstract class TupleMessage extends polimi.reds.Message {
 	 */
 	private final static long EXPIRATION_TIME = 60 * 5 * 1000;
 	
+	public static final String CUSTOM_MESSAGE = "CustomMessage";
+	
 	/**
 	 * 
 	 */

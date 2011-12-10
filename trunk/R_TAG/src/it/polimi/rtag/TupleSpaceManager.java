@@ -31,7 +31,8 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 		TupleGroupCommand.SUBJECT,
 		TupleMessageAck.SUBJECT,
 		TupleNodeNotification.SUBJECT,
-		TupleNetworkNotification.SUBJECT
+		TupleNetworkNotification.SUBJECT,
+		TupleMessage.CUSTOM_MESSAGE
 	};
 
 	
@@ -265,22 +266,33 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 				break;
 			}
 			case NETWORK: {
-				handleNetworkMessage((String)message.getRecipient(), message, sender);
+				handleNetworkMessage(message, sender);
 				break;
 			}
 		}
 	}
 	
-	private void handleNetworkMessage(String recipient, TupleMessage message,
+	private void handleNetworkMessage(TupleMessage message,
 			NodeDescriptor sender) {
-		// TODO Auto-generated method stub
-		
+		GroupCommunicationManager manager = 
+				dispatcher.getGroupManagerForHierarchy(GroupDescriptor.UNIVERSE);
+		if (manager != null) {
+			manager.handleAndForwardTupleMessage(message, sender);
+		} else {
+			System.out.println(currentNode + "Manager null for " +
+					GroupDescriptor.UNIVERSE);
+		}
 	}
 
 	private void handleHierarchyMessage(String recipient, TupleMessage message,
 			NodeDescriptor sender) {
-		// TODO Auto-generated method stub
-		
+		GroupCommunicationManager manager = 
+				dispatcher.getGroupManagerForHierarchy(recipient);
+		if (manager != null) {
+			manager.handleAndForwardTupleMessage(message, sender);
+		} else {
+			System.out.println(currentNode + "Manager null for " + recipient);
+		}
 	}
 
 	private void handleGroupMessage(GroupDescriptor recipient,
@@ -382,13 +394,16 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 
 	private void sendToHierarchy(String recipient, TupleMessage message) {
 		GroupCommunicationManager manager = 
-			dispatcher.getFollowedGroupByFriendlyName(recipient);
+			dispatcher.getGroupManagerForHierarchy(recipient);
 		if (manager != null) {
 			manager.forwardTupleMessage(message, currentNode);
+		} else {
+			System.err.println("Manager is null for hierarchy: " +
+					recipient);
 		}
 	}
 
-	void sendToGroup(GroupDescriptor recipient, TupleMessage message) {
+	private void sendToGroup(GroupDescriptor recipient, TupleMessage message) {
 		GroupCommunicationManager manager = 
 				dispatcher.getGroupManagerForDescriptor(recipient);
 		if (manager != null) {

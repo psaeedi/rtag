@@ -1149,6 +1149,8 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 		if (scope == Scope.HIERARCHY || scope == Scope.NETWORK) {
 			if (followedParentManager != null) {
 				followedParentManager.forwardTupleMessage(message, sender);
+			} else if (leadedChildManager != null){
+				leadedChildManager.forwardTupleMessage(message, sender);
 			}
 		} 
 	}
