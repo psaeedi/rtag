@@ -30,7 +30,7 @@ public class TupleMessageAck extends TupleMessage {
 	 */
 	public static final String KO = "KO";
 	
-	public static final String SUBJECT = "TupleGroupCommandAck";
+	public static final String SUBJECT = "TupleCommandAck";
 	
 	
 	public static TupleMessageAck createOkAck(Scope scope, Serializable recipient,

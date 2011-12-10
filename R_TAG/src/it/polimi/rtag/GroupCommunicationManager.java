@@ -1089,6 +1089,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 				tupleSpaceManager.removeMessage(originalMessage);
 			} else if (TupleNodeNotification.NOTIFY_GROUP_EXISTS.equals(notificationCommand)) {
 				// Does nothing
+				// TODO remove tuple
 			}
 		}
 	}
@@ -1189,6 +1190,19 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 			return;
 		}
 		
+		if (!isLeader()) {
+			if (leadedChildManager != null) {
+				leadedChildManager.handleRemoteGroupDiscovered(remoteGroup);
+			} else {
+				TupleNodeNotification message =
+						TupleNodeNotification.createNotifyGroupExistsNotification(
+								groupDescriptor.getLeader(), groupDescriptor);
+				sendTupleToLeader(message, node.getNodeDescriptor());
+			}
+			// Should we propagate this to our parent?
+			return;
+		}
+		
 		// We first attempt to merge then to join
 		if (followedParentManager == null &&
 				coordinationStrategy.shouldRequestToJoin(remoteGroup)) {
@@ -1201,8 +1215,13 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 		if (groupDescriptor.getUniqueId().equals(remoteGroup.getUniqueId())) {
 			return;
 		}
-		if (node.getGroupCommunicationDispatcher().getGroupManagerForDescriptor(remoteGroup) != null) {
-			throw new RuntimeException("Already in: " + remoteGroup);
+		if (node.getGroupCommunicationDispatcher()
+				.getFollowedGroupByFriendlyName(
+						remoteGroup.getFriendlyName()) != null) {
+			throw new RuntimeException(node.getNodeDescriptor() + 
+					" is already in: " + remoteGroup + 
+					" leaded " + this.groupDescriptor +
+					" and followed " + followedParentManager);
 		}
 		TupleNodeNotification command = 
 				TupleNodeNotification.createAllowToJoinGroupNotification(

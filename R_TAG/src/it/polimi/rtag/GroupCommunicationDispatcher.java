@@ -92,6 +92,9 @@ public class GroupCommunicationDispatcher {
 	}
 	
 	void addGroupManager(GroupCommunicationManager manager) {
+		System.err.println("AAAA addGroupManager node " + node.getNodeDescriptor() + " greoup " + manager.getGroupDescriptor().getFriendlyName());
+		
+		
 		GroupDescriptor groupDescriptor = manager.getGroupDescriptor();	
 		synchronized (lock) {
 			if (groupDescriptor.isLeader(node.getNodeDescriptor())) {
@@ -103,8 +106,12 @@ public class GroupCommunicationDispatcher {
 				notifyGroupManagerWasAdded(manager);
 				notifyNewGroupManagerOfExistingManagers(manager);
 			} else {
-				if (getFollowedGroupByFriendlyName(groupDescriptor.getFriendlyName()) != null) {
-					throw new RuntimeException(node + " Already following a group matching: " + groupDescriptor);
+				GroupCommunicationManager alreadyFollowed = getFollowedGroupByFriendlyName(groupDescriptor.getFriendlyName());
+				if (alreadyFollowed != null) {
+					throw new RuntimeException(node + " cannot follow " +
+							groupDescriptor +
+							" because it is already following a group matching: " +
+							alreadyFollowed.getGroupDescriptor());
 				}
 				followedGroups.add(manager);
 				overlay.addNeighborhoodChangeListener(manager);
@@ -388,7 +395,8 @@ public class GroupCommunicationDispatcher {
 			if (manager != null) {
 				manager.handleRemoteGroupDiscovered(remoteGroup);
 			} else {
-				System.out.println("handleNodeMessage"+node.getNodeDescriptor() + " Manager null for group: " + remoteGroup);
+				System.out.println("handleNodeMessage"+node.getNodeDescriptor() +
+						" Manager null for group: " + remoteGroup);
 			}
 		} else if (TupleNodeNotification.ALLOW_TO_JOIN_GROUP.equals(command)) {
 			GroupDescriptor remoteGroup = (GroupDescriptor)message.getContent();
@@ -397,7 +405,8 @@ public class GroupCommunicationDispatcher {
 			if (manager != null) {
 				manager.handleRequestToJoin(message, sender);
 			} else {
-				System.out.println("handleNodeMessage"+node.getNodeDescriptor() + " Manager null for group: " + remoteGroup);
+				System.out.println("handleNodeMessage"+node.getNodeDescriptor() + 
+						" Manager null for group: " + remoteGroup);
 			}
 		}
 	}
