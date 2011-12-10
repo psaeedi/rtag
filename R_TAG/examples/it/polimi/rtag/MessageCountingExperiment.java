@@ -3,6 +3,8 @@
  */
 package it.polimi.rtag;
 
+import it.polimi.rtag.messaging.TupleMessage;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
@@ -16,14 +18,21 @@ import java.util.HashSet;
  *
  */
 public class MessageCountingExperiment {
+	
+	
+	public static String RED = "Red";
+	public static String GREEN = "Green";
+	public static String YELLOW = "Yellow";
+	public static String BLUE = "Blue";
 
     private static final int NUMBER_OF_NODES = 20;
+	private static final TupleMessage message = null;
 
 	int localPort=10001;
     
     String host = "localhost";
     
-    ArrayList<Node> nodes = new ArrayList<Node>();
+    static ArrayList<Node> nodes = new ArrayList<Node>();
     ArrayList<String> urls = new ArrayList<String>();
     
     
@@ -40,15 +49,27 @@ public class MessageCountingExperiment {
     }
     
     private void setUp() {
-    	for (int i = 0; i < NUMBER_OF_NODES; i++) {
+    	for (int i = 0; i < NUMBER_OF_NODES/2; i++) {
 			int port = localPort ++;
 			Node node = new Node(host, port);
 			node.start();
+			node.joinGroup(RED);
 			nodes.add(node);
 			urls.add("reds-tcp:"+ host + ":" + port);
 		}
     	
-    	createNetworkByAddingToARandomNode();
+    	for (int i = 0; i < NUMBER_OF_NODES/2; i++) {
+			int port = localPort ++;
+			Node node = new Node(host, port);
+			node.start();
+			node.joinGroup(BLUE);
+			nodes.add(node);
+			urls.add("reds-tcp:"+ host + ":" + port);
+		}
+    	
+    	createNetworkByAddingToTheLastAdded();
+    	
+    	
     }
     
     
@@ -57,7 +78,7 @@ public class MessageCountingExperiment {
     		System.out.println("************Adding neighbor " + i + " to node 0");
     		try {
 				nodes.get(0).getOverlay().addNeighbor(urls.get(i));
-				Thread.sleep(1000);
+				Thread.sleep(2000);
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -65,19 +86,6 @@ public class MessageCountingExperiment {
     	}
     }
     
-    private void createNetworkByAddingToARandomNode() {
-    	for (int i = 1; i < NUMBER_OF_NODES; i++) {
-    		int randomNode = (int)Math.floor(Math.random() * i);
-    		System.out.println("************Adding neighbor " + i + " to node " + randomNode);
-    		try {
-				nodes.get(randomNode).getOverlay().addNeighbor(urls.get(i));
-				Thread.sleep(1000);
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-    	}
-    }
     
     private void createNetworkByAddingToTheLastAdded() {
     	for (int i = 1; i < NUMBER_OF_NODES; i++) {
@@ -181,6 +189,33 @@ public class MessageCountingExperiment {
     		}
     	}
 		pw.println("");
+		
+		pw.print("leaded app group1 size;");
+		for (Node node: nodes) {
+    		GroupCommunicationDispatcher dispatcher = node.getGroupCommunicationDispatcher();
+    		GroupCommunicationManager manager = dispatcher.getLeadedGroupByFriendlyName(BLUE);
+    		if (manager != null) {
+    			pw.print(manager.getGroupDescriptor().getMembers().size() + ";");
+    		} else {
+    			pw.print("0;");
+    		}
+    	}
+		pw.println("");
+		
+
+		
+		pw.print("leaded app group2 size;");
+		for (Node node: nodes) {
+    		GroupCommunicationDispatcher dispatcher = node.getGroupCommunicationDispatcher();
+    		GroupCommunicationManager manager = dispatcher.getLeadedGroupByFriendlyName(RED);
+    		if (manager != null) {
+    			pw.print(manager.getGroupDescriptor().getMembers().size() + ";");
+    		} else {
+    			pw.print("0;");
+    		}
+    	}
+		pw.println("");
+		
 
 		pw.print("Total active connections;");
 		for (Node node: nodes) {
@@ -224,14 +259,32 @@ public class MessageCountingExperiment {
     
 	/**
 	 * @param args
+	 * @throws InterruptedException 
 	 */
-	public static void main(String[] args) {
+	public static void main(String[] args) throws InterruptedException {
 		// TODO Auto-generated method stub
 		MessageCountingExperiment exp = new MessageCountingExperiment();
 		exp.setUp();
+		// 1 minute waiting
+		Thread.sleep(60000);
+		sendGroupcast(nodes.get(8), RED, "Hello" );
+		// 1 minute waiting
+		Thread.sleep(60000);
 		exp.writeToFile("setUp");
 		exp.closeFile();
 		exp.tearDown();
+	}
+
+	private static void sendGroupcast(Node node, String color, String content) {
+		GroupDescriptor colorGroup = node.getGroup(color);
+    	if (colorGroup == null) {
+    		return;
+    	}
+    	
+        content = (String) message.getContent();
+		node.getTupleSpaceManager().sendToGroup(colorGroup, message);
+
+		
 	}
 
 }
