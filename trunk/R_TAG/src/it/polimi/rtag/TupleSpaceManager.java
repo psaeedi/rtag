@@ -297,6 +297,26 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 	private void handleNodeMessage(NodeDescriptor recipient,
 			TupleNodeNotification message, NodeDescriptor sender) {
 		dispatcher.handleNodeMessage(message, sender);
+		
+		// If the message is a NOTIFY_GROUP_EXISTS all the tuples
+		// of that group should be forwarded
+		if (TupleNodeNotification.NOTIFY_GROUP_EXISTS.equals(message.getCommand())) {
+			GroupDescriptor groupDescriptor = (GroupDescriptor) message.getContent();
+			ITuple template = createTemplate(Scope.GROUP, null,
+					groupDescriptor.getFriendlyName(), null, null, TupleGroupCommand.class);
+			try {
+				ITuple[] results = tupleSpace.rdg(template);
+				if (results != null) {
+					for (ITuple tuple: results) {
+						TupleGroupCommand gmessage = (TupleGroupCommand)
+								((Field)tuple.getFields()[5]).getValue();
+						sendWithoutStoring(gmessage);
+					}
+				}
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+		}
 	}
 	
 	private void handleNodeMessageAck(NodeDescriptor recipient,
@@ -396,7 +416,9 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 	}
 
 	
-	private void removeExpiredMessages() {}
+	private void removeExpiredMessages() {
+		//TODO
+	}
 	
 
 	@Override
@@ -406,7 +428,7 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 	}
 
 	/**
-	 * Send network tuples to new neigbors
+	 * Send network tuples to new neighbors
 	 */
 	@Override
 	public void notifyNeighborAdded(NodeDescriptor nodeDescriptor,
