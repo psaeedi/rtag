@@ -388,7 +388,7 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 		}
 	}
 
-	private void sendToGroup(GroupDescriptor recipient, TupleMessage message) {
+	void sendToGroup(GroupDescriptor recipient, TupleMessage message) {
 		GroupCommunicationManager manager = 
 				dispatcher.getGroupManagerForDescriptor(recipient);
 		if (manager != null) {

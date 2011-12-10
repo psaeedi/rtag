@@ -64,7 +64,7 @@ public class HospitalExample {
 		    		IntelligentJunction.ONE);
 		     
 		    System.out.println(" ");
-		    Thread.sleep(2000);
+		    Thread.sleep(5000);
 		    exp.writeToFile("setUp");
 		    exp.closeFile();
 		    exp.stop();
