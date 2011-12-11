@@ -411,7 +411,8 @@ public class GroupCommunicationDispatcher {
 			if (manager != null) {
 				manager.handleRequestToJoin(message, sender);
 			} else {
-				System.out.println("handleNodeMessage"+node.getNodeDescriptor() + 
+				// the source group has been dismantled
+				System.err.println("handleNodeMessage"+node.getNodeDescriptor() + 
 						" Manager null for group: " + remoteGroup);
 			}
 		}
@@ -427,7 +428,7 @@ public class GroupCommunicationDispatcher {
 		if (manager != null) {
 			manager.handleTupleMessageAck(message, sender);
 		} else {
-			System.out.println(node.getNodeDescriptor() + 
+			System.err.println(node.getNodeDescriptor() + 
 					" Manager null for group: " + remoteGroup);
 		}
 	}
