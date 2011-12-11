@@ -26,7 +26,7 @@ public class MessageCountingExperiment {
 	public static String YELLOW = "Yellow";
 	public static String BLUE = "Blue";
 
-    private static final int NUMBER_OF_NODES = 20;
+    private static final int NUMBER_OF_NODES = 10;
 	
 	int localPort=10001;
     
@@ -88,7 +88,7 @@ public class MessageCountingExperiment {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-    	sendGroupcast(nodes.get(8), RED, "Hello" );
+    	sendGroupcast(nodes.get(3), RED, "Hello" );
     }
     
     
@@ -97,7 +97,7 @@ public class MessageCountingExperiment {
     		System.out.println("************Adding neighbor " + i + " to node 0");
     		try {
 				nodes.get(0).getOverlay().addNeighbor(urls.get(i));
-				Thread.sleep(2000);
+				Thread.sleep(2500);
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -111,7 +111,7 @@ public class MessageCountingExperiment {
     		System.out.println("************Adding neighbor " + i + " to node " + nodes.get(i-1));
     		try {
 				nodes.get(i-1).getOverlay().addNeighbor(urls.get(i));
-				Thread.sleep(1000);
+				Thread.sleep(2500);
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -261,7 +261,7 @@ public class MessageCountingExperiment {
 		for (Node node: nodes) {
 			node.stop();
 			try {
-				Thread.sleep(1000);
+				Thread.sleep(2000);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -284,7 +284,7 @@ public class MessageCountingExperiment {
 		MessageCountingExperiment exp = new MessageCountingExperiment();
 		exp.setUp();
 		// 1 minute waiting
-		Thread.sleep(10000);
+		Thread.sleep(2000);
 		exp.writeToFile("setUp");
 		exp.closeFile();
 		exp.tearDown();
