@@ -10,11 +10,7 @@ import it.polimi.rtag.messaging.TupleMessage.Scope;
 import it.polimi.rtag.messaging.TupleNodeNotification;
 
 import java.io.Serializable;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.UUID;
-
-import lights.interfaces.ITuple;
 
 import polimi.reds.NodeDescriptor;
 import polimi.reds.broker.overlay.NeighborhoodChangeListener;
@@ -201,7 +197,6 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 	}
 
 	
-
 	@Override
 	public void notifyNeighborAdded(NodeDescriptor addedNode,
 			Serializable reconfigurationInfo) {
@@ -721,7 +716,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 	}
 	*/
 	
-	private NodeDescriptor connectIfNotConnected(NodeDescriptor descriptor) {
+	public NodeDescriptor connectIfNotConnected(NodeDescriptor descriptor) {
 		if (currentNodeDescriptor.equals(descriptor)) {
 			throw new RuntimeException("Trying to talk to itself. " +
 					"This should definitely NOT happen.");
@@ -1148,9 +1143,9 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 		// TODO if Scope == NETWORK this must be a universe group.
 		if (scope == Scope.HIERARCHY || scope == Scope.NETWORK) {
 			if (followedParentManager != null) {
-				followedParentManager.forwardTupleMessage(message, sender);
+				followedParentManager.sendTupleToLeader(message, sender);
 			} else if (leadedChildManager != null){
-				leadedChildManager.forwardTupleMessage(message, sender);
+				leadedChildManager.sendTupleToFollowers(message, sender);
 			}
 		} 
 	}
@@ -1175,10 +1170,10 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 	}
 
 
-	public void handleRemoteGroupDiscovered(GroupDescriptor remoteGroup) {
+	void handleRemoteGroupDiscovered(GroupDescriptor remoteGroup) {
 		if (!groupDescriptor.isSameHierarchy(remoteGroup)) {
 			// The two group does not match
-			return;
+			throw new RuntimeException("handleRemoteGroupDiscovered: wrong hierarchy");
 		}
 		
 		if (groupDescriptor.getUniqueId().equals(remoteGroup.getUniqueId())) {
@@ -1186,29 +1181,26 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 			return;
 		}
 		
-		NodeDescriptor remoteLeader = remoteGroup.getLeader();	
-		if (currentNodeDescriptor.equals(remoteLeader)) {
-			// we have discovered our child
-			return;
-		}
-		
 		if (!isLeader()) {
-			if (leadedChildManager != null) {
-				leadedChildManager.handleRemoteGroupDiscovered(remoteGroup);
-			} else {
-				TupleNodeNotification message =
-						TupleNodeNotification.createNotifyGroupExistsNotification(
-								groupDescriptor.getLeader(), groupDescriptor);
-				sendTupleToLeader(message, node.getNodeDescriptor());
-			}
-			// Should we propagate this to our parent?
+			/*
+			// Forward the tuple to the leader
+			System.out.println("Sending group exist notification to leader");
+			TupleNodeNotification message =
+					TupleNodeNotification.createNotifyGroupExistsNotification(
+							groupDescriptor.getLeader(), groupDescriptor);
+			sendTupleToLeader(message, node.getNodeDescriptor());
+			*/
 			return;
-		}
-		
-		// We first attempt to merge then to join
-		if (followedParentManager == null &&
-				coordinationStrategy.shouldRequestToJoin(remoteGroup)) {
-			sendRequestToJoin(remoteGroup);
+		} else {
+			if (followedParentManager == null) { /*&&
+					coordinationStrategy.shouldRequestToJoin(remoteGroup)*/
+				if(groupDescriptor.getLeader().getID().compareTo(
+							remoteGroup.getLeader().getID()) > 0) {
+					sendRequestToJoin(remoteGroup);
+				}
+			} else {
+				followedParentManager.handleRemoteGroupDiscovered(remoteGroup);
+			}
 		}
 	}
 	
@@ -1232,8 +1224,8 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 	}
 	
 	public void handleRequestToJoin(TupleNodeNotification message, NodeDescriptor sender) {
-		if (isLeader() && 
-			coordinationStrategy.shouldAcceptJoinRequest(sender)) {
+		if (isLeader() /*&& 
+			coordinationStrategy.shouldAcceptJoinRequest(sender)*/) {
 			
 			// The current node has accepted the remote as a parent node
 			// From now on the current node will be both leader of his current
@@ -1265,7 +1257,9 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 			sendKoAck(Scope.NODE,
 					sender,
 					message);
-			return;
+			
+			throw new RuntimeException("handleRequestToJoin KO");
+			//return;
 		}	
 	}
 	

@@ -48,7 +48,8 @@ public class Node {
 		tupleSpaceManager = new TupleSpaceManager(overlay, this);
 		groupCommunicationDispatcher.setTupleSpaceManager(tupleSpaceManager);
 		
-		groupCommunicationDispatcher.addGroupManager(GroupCommunicationManager.createUniverseCommunicationManager(this));
+		//groupCommunicationDispatcher.join(GroupCommunicationManager.createUniverseCommunicationManager(this));
+		groupCommunicationDispatcher.joinGroupAndNotifyNetwork(GroupDescriptor.UNIVERSE);
 	}
 
 	TupleSpaceManager getTupleSpaceManager() {

@@ -120,7 +120,6 @@ public class GroupCommunicationDispatcher {
 			}
 		}
 		tupleSpaceManager.handleNewLocalGroupCreated(manager);
-		
 	}
 	
 	GroupCommunicationManager getLeadedGroupByUUID(UUID query) {
@@ -328,13 +327,13 @@ public class GroupCommunicationDispatcher {
 					GroupCommunicationManager.createGroupCommunicationManager(
 							node, UUID.randomUUID(), friendlyName);
 			addGroupManager(manager);
+			
 			GroupDescriptor parentGroup = 
 					tupleSpaceManager.getLeaderForHierarchy(friendlyName);
 			if (parentGroup != null) {
-				manager.sendRequestToJoin(parentGroup);
-			} else {
-				tupleSpaceManager.setLeaderForHierarchy(manager.getGroupDescriptor());
+				manager.connectIfNotConnected(parentGroup.getLeader());
 			}
+			tupleSpaceManager.setLeaderForHierarchy(manager.getGroupDescriptor());
 			return manager.getGroupDescriptor();
 		} catch (Exception ex) {
 			ex.printStackTrace();
@@ -389,19 +388,26 @@ public class GroupCommunicationDispatcher {
 			NodeDescriptor sender) {
 		String command = message.getCommand();
 		if (TupleNodeNotification.NOTIFY_GROUP_EXISTS.equals(command)) {
+			// Do nothing
+			/*
 			GroupDescriptor remoteGroup = (GroupDescriptor)message.getContent();
 			GroupCommunicationManager manager = 
 					getGroupManagerForHierarchy(remoteGroup.getFriendlyName());
 			if (manager != null) {
+				if (node.getNodeDescriptor().getID().compareTo(sender.getID()) > 0) {
+					return;
+					//Only one should take the initiative
+				}
 				manager.handleRemoteGroupDiscovered(remoteGroup);
 			} else {
 				System.out.println("handleNodeMessage"+node.getNodeDescriptor() +
 						" Manager null for group: " + remoteGroup);
-			}
+			}*/
+			// TODO ssend group and hierarchy tuples
+			
 		} else if (TupleNodeNotification.ALLOW_TO_JOIN_GROUP.equals(command)) {
 			GroupDescriptor remoteGroup = (GroupDescriptor)message.getContent();
-			GroupCommunicationManager manager = 
-					getGroupManagerForHierarchy(remoteGroup.getFriendlyName());
+			GroupCommunicationManager manager = getGroupManagerForDescriptor(remoteGroup);
 			if (manager != null) {
 				manager.handleRequestToJoin(message, sender);
 			} else {
@@ -417,7 +423,7 @@ public class GroupCommunicationDispatcher {
 		TupleNodeNotification notification = (TupleNodeNotification)message.getOriginalMessage();
 		GroupDescriptor remoteGroup = (GroupDescriptor)notification.getContent();
 		GroupCommunicationManager manager = 
-				getGroupManagerForHierarchy(remoteGroup.getFriendlyName());
+				getLeadedGroupByFriendlyName(remoteGroup.getFriendlyName());
 		if (manager != null) {
 			manager.handleTupleMessageAck(message, sender);
 		} else {

@@ -75,6 +75,8 @@ public class JoinAndMergeGroupsTest {
 		Assert.assertEquals(1, managers.size());
 		universeManager = managers.get(0);
 		groupDescriptor = universeManager.getGroupDescriptor();
+		System.out.println(groupDescriptor);
+		System.out.println(groupDescriptor.isUniverse());
 		Assert.assertTrue(groupDescriptor.isUniverse());
 		Assert.assertEquals(GroupDescriptor.UNIVERSE, groupDescriptor.getFriendlyName());
 	}

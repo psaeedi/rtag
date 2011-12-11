@@ -3,6 +3,8 @@
  */
 package it.polimi.rtag;
 
+import it.polimi.rtag.messaging.TupleMessage;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.HashMap;
@@ -64,7 +66,12 @@ public class MessageCountingGenericOverlay extends GenericOverlay {
 	 */
 	@Override
 	public void notifyDataArrived(String subject, Link source, Serializable data) {
-		incrementMessage(receivedMessages, subject);
+		String messageSubject = subject;
+		if (data instanceof TupleMessage) {
+			TupleMessage t = (TupleMessage)data;
+			messageSubject = t.getSubject() + "." + t.getCommand();
+		}
+		incrementMessage(receivedMessages, messageSubject);
 		super.notifyDataArrived(subject, source, data);
 	}
 
@@ -75,7 +82,12 @@ public class MessageCountingGenericOverlay extends GenericOverlay {
 	public void send(String subject, Serializable packet,
 			NodeDescriptor recipient) throws IOException,
 			NotConnectedException, NotRunningException {
-		incrementMessage(sentMessages, subject);
+		String messageSubject = subject;
+		if (packet instanceof TupleMessage) {
+			TupleMessage t = (TupleMessage)packet;
+			messageSubject = t.getSubject() + "." + t.getCommand();
+		}
+		incrementMessage(sentMessages, messageSubject);
 		super.send(subject, packet, recipient);
 	}
 	
