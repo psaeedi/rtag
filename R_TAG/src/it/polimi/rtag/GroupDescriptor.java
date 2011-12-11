@@ -64,20 +64,7 @@ public class GroupDescriptor implements Serializable {
 		this.uniqueId = uniqueId;
 		this.hierarchyName = friendlyName;
 		this.leader = leader;
-	}
-	
-	/**
-	 * @param uniqueId
-	 * @param friendlyName
-	 * @param leader
-	 * @param parentGroup
-	 */
-	public GroupDescriptor(UUID uniqueId, String friendlyName,
-			NodeDescriptor leader, NodeDescriptor parentLeader) {
-		this.uniqueId = uniqueId;
-		this.hierarchyName = friendlyName;
-		this.leader = leader;
-		this.parentLeader = parentLeader;
+		this.universe = UNIVERSE.equals(friendlyName);
 	}
 	
 	/**
@@ -88,13 +75,13 @@ public class GroupDescriptor implements Serializable {
 	 * @param leader
 	 * @param parentLeader
 	 */
-	private GroupDescriptor(UUID uuid, String friendlyName, 
-			boolean universe, NodeDescriptor leader,
+	public GroupDescriptor(UUID uuid, String friendlyName, 
+			NodeDescriptor leader,
 			NodeDescriptor parentLeader) {
 		super();
 		this.uniqueId = uuid;
 		this.hierarchyName = friendlyName;
-		this.universe = universe;
+		this.universe = UNIVERSE.equals(friendlyName);
 		this.leader = leader;
 		this.parentLeader = parentLeader;
 	}
@@ -103,7 +90,7 @@ public class GroupDescriptor implements Serializable {
 		super();
 		this.uniqueId = oldDescriptor.uniqueId;
 		this.hierarchyName = oldDescriptor.hierarchyName;
-		this.universe = oldDescriptor.universe;
+		this.universe = UNIVERSE.equals(oldDescriptor.hierarchyName);
 		this.leader = oldDescriptor.leader;
 		this.parentLeader = oldDescriptor.parentLeader;
 		this.followers = new ArrayList<NodeDescriptor>(oldDescriptor.followers);
@@ -240,7 +227,7 @@ public class GroupDescriptor implements Serializable {
 	}
 
 	public static GroupDescriptor createUniverse(Node node) {
-		return new GroupDescriptor(UUID.randomUUID(), UNIVERSE, true, node.getNodeDescriptor(), null);
+		return new GroupDescriptor(UUID.randomUUID(), UNIVERSE, node.getNodeDescriptor(), null);
 	}
 
 	public boolean isSameHierarchy(GroupDescriptor remoteGroupDescriptor) {

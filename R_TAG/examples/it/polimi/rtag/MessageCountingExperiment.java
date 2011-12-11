@@ -8,6 +8,7 @@ import it.polimi.rtag.messaging.TupleMessage;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,13 +27,12 @@ public class MessageCountingExperiment {
 	public static String BLUE = "Blue";
 
     private static final int NUMBER_OF_NODES = 20;
-	private static final TupleMessage message = null;
-
+	
 	int localPort=10001;
     
     String host = "localhost";
     
-    static ArrayList<Node> nodes = new ArrayList<Node>();
+    ArrayList<Node> nodes = new ArrayList<Node>();
     ArrayList<String> urls = new ArrayList<String>();
     
     
@@ -69,7 +69,26 @@ public class MessageCountingExperiment {
     	
     	createNetworkByAddingToTheLastAdded();
     	
+    	for (int i = 0; i < NUMBER_OF_NODES; i++) {
+			Node n = nodes.get(i);
+			System.out.println("-----------------------------node: " + n.getNodeDescriptor());
+			GroupCommunicationDispatcher disp = n.getGroupCommunicationDispatcher();
+			for (GroupCommunicationManager manager: disp.getFollowedGroups()) {
+				System.out.println(manager.getGroupDescriptor());
+			}
+			for (GroupCommunicationManager manager: disp.getLeadedGroups()) {
+				System.out.println(manager.getGroupDescriptor());
+			}
+		}
     	
+    	// 1 minute waiting
+    	try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    	sendGroupcast(nodes.get(8), RED, "Hello" );
     }
     
     
@@ -124,7 +143,6 @@ public class MessageCountingExperiment {
     			receivedSubjects.add(subject);
     		}
     	}
-    	
     		
 		pw.print("Key;");
 		for (int i = 0; i < nodes.size(); i++) {
@@ -266,25 +284,36 @@ public class MessageCountingExperiment {
 		MessageCountingExperiment exp = new MessageCountingExperiment();
 		exp.setUp();
 		// 1 minute waiting
-		Thread.sleep(60000);
-		sendGroupcast(nodes.get(8), RED, "Hello" );
-		// 1 minute waiting
-		Thread.sleep(60000);
+		Thread.sleep(10000);
 		exp.writeToFile("setUp");
 		exp.closeFile();
 		exp.tearDown();
 	}
 
 	private static void sendGroupcast(Node node, String color, String content) {
-		GroupDescriptor colorGroup = node.getGroup(color);
-    	if (colorGroup == null) {
+		GroupDescriptor group = node.getGroup(color);
+    	if (group == null) {
     		return;
     	}
+    	System.out.println(group);
     	
-        content = (String) message.getContent();
-		node.getTupleSpaceManager().sendToGroup(colorGroup, message);
-
-		
+    	TupleMessage message = new ExampleMessage(group.getFriendlyName(), content, "HELLO");
+        node.getTupleSpaceManager().storeAndSend(message);
 	}
 
+}
+
+class ExampleMessage extends TupleMessage {
+	private static final long serialVersionUID = -5146903837877861792L;
+	
+	public ExampleMessage(String recipient,
+			Serializable content, String command) {
+		super(Scope.HIERARCHY, recipient, content, command);
+	}
+	
+	@Override
+	public String getSubject() {
+		return CUSTOM_MESSAGE;
+	}
+	
 }

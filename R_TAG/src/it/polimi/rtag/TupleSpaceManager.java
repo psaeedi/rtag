@@ -85,6 +85,17 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 		return template;
 	}
 	
+	private ITuple createTemplateForNetworkNotification() {
+		ITuple template = new Tuple()
+			.add(new Field().setValue(Scope.NETWORK)) //scope
+			.add(new Field().setType(Long.class)) // expire
+			.add(new Field().setType(String.class)) //recipient
+			.add(new Field().setValue(TupleNetworkNotification.SUBJECT)) // subject
+			.add(new Field().setType(String.class)) // command
+			.add(new Field().setType(TupleNetworkNotification.class)); //original message
+		return template;
+	}
+	
 	private ITuple createTuple(Scope scope, Long expireTime,
 			Serializable recipient, String subject, String command,
 			TupleMessage message) {
@@ -132,6 +143,7 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 	 * Sets a leader for the given hierarchy 
 	 */
 	public void setLeaderForHierarchy(GroupDescriptor groupDescriptor) {
+		System.out.println("Adding leader for hierachy: " + groupDescriptor);
 		TupleMessage message = new TupleNetworkNotification(
 				groupDescriptor, TupleNetworkNotification.ADD);
 		storeAndSend(message);
@@ -250,7 +262,7 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 							(TupleMessageAck)message,
 							sender);
 				} else {
-					// TODO handle acks
+					// TODO handle other
 				}
 				break;
 			}
@@ -274,14 +286,30 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 	
 	private void handleNetworkMessage(TupleMessage message,
 			NodeDescriptor sender) {
-		GroupCommunicationManager manager = 
+		GroupCommunicationManager universeManager = 
 				dispatcher.getGroupManagerForHierarchy(GroupDescriptor.UNIVERSE);
-		if (manager != null) {
-			manager.handleAndForwardTupleMessage(message, sender);
+		if (universeManager != null) {
+			universeManager.handleAndForwardTupleMessage(message, sender);
 		} else {
 			System.out.println(currentNode + "Manager null for " +
 					GroupDescriptor.UNIVERSE);
 		}
+		
+		if (message instanceof TupleNetworkNotification) {
+			TupleNetworkNotification notification =
+					(TupleNetworkNotification) message;
+			String command = notification.getCommand();
+			if (TupleNetworkNotification.ADD.equals(command)) {
+				GroupDescriptor remoteGroup = (GroupDescriptor)message.getContent();
+				GroupCommunicationManager manager = 
+						dispatcher.getGroupManagerForHierarchy(remoteGroup.getFriendlyName());
+				if (manager != null) {
+					manager.handleRemoteGroupDiscovered(remoteGroup);
+				} 
+			} else if (TupleNetworkNotification.REMOVE.equals(command)){
+				// TODO remove tuple from tuplespace
+			}
+		} 
 	}
 
 	private void handleHierarchyMessage(String recipient, TupleMessage message,
@@ -322,7 +350,7 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 					for (ITuple tuple: results) {
 						TupleGroupCommand gmessage = (TupleGroupCommand)
 								((Field)tuple.getFields()[5]).getValue();
-						sendWithoutStoring(gmessage);
+						sendToNode(recipient, gmessage);
 					}
 				}
 			} catch (Exception ex) {
@@ -334,6 +362,7 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 	private void handleNodeMessageAck(NodeDescriptor recipient,
 			TupleMessageAck message, NodeDescriptor sender) {
 		dispatcher.handleNodeMessageAck(message, sender);
+		// TODO remove this and the embedded message
 	}
 	
 	public void storeAndSend(TupleMessage message) {
@@ -363,6 +392,7 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 	}
 	
 	private void send(TupleMessage message) {
+		System.out.println("XX Sending: " + message);
 		switch (message.getScope()) {
 			case NODE: {
 				sendToNode((NodeDescriptor)message.getRecipient(), message);
@@ -377,19 +407,21 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 				break;
 			}
 			case NETWORK: {
-				sendToNetwork((String)message.getRecipient(), message);
+				sendToNetwork(message);
 				break;
 			}
 		}
 	}
 	
 
-	private void sendToNetwork(String recipient, TupleMessage message) {
+	private void sendToNetwork(TupleMessage message) {
 		GroupCommunicationManager manager = 
 				dispatcher.getLocalUniverseManager();
 		if (manager != null) {
 			manager.forwardTupleMessage(message, currentNode);
-		}
+		} /*else {
+			throw new RuntimeException("Null universe");
+		}*/
 	}
 
 	private void sendToHierarchy(String recipient, TupleMessage message) {
@@ -448,21 +480,19 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 	@Override
 	public void notifyNeighborAdded(NodeDescriptor nodeDescriptor,
 			Serializable reconfigurationInfo) {
-		ITuple template = createTemplate(Scope.NETWORK, null,
-				null, null, null, TupleNetworkNotification.class);
+		ITuple template = createTemplateForNetworkNotification();
 		try {
 			ITuple[] results = tupleSpace.rdg(template);
 			if (results != null) {
 				for (ITuple tuple: results) {
 					TupleNetworkNotification message = (TupleNetworkNotification)
 							((Field)tuple.getFields()[5]).getValue();
-					sendWithoutStoring(message);
+					sendToNode(nodeDescriptor, message);
 				}
 			}
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
-		
 
 		template = createTemplate(Scope.NODE, null,
 				null, null, null, TupleNodeNotification.class);
@@ -472,7 +502,7 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 				for (ITuple tuple: results) {
 					TupleNodeNotification message = (TupleNodeNotification)
 							((Field)tuple.getFields()[5]).getValue();
-					sendWithoutStoring(message);
+					sendToNode(nodeDescriptor, message);
 				}
 			}
 		} catch (Exception ex) {
@@ -495,10 +525,7 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 	 */
 	void handleNewLocalGroupCreated(GroupCommunicationManager manager) {
 		GroupDescriptor groupDescriptor = manager.getGroupDescriptor();
-		// If the current node is the leader notify the network
-		if (groupDescriptor.isLeader(currentNode)) {
-			setLeaderForHierarchy(groupDescriptor);
-		}
+		
 		TupleMessage[] messages = getMessages(Scope.GROUP, groupDescriptor);
 		for (TupleMessage m: messages) {
 			manager.handleAndForwardTupleMessage(m, currentNode);

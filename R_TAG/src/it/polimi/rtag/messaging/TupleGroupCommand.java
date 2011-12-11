@@ -34,7 +34,6 @@ public class TupleGroupCommand extends TupleMessage {
 	
 	public static final String SUBJECT = "TupleGroupCommand";
 	
-
 	
 	public static TupleGroupCommand createDeleteGroupCommand(GroupDescriptor groupDescriptor) {
 		return new TupleGroupCommand(Scope.GROUP, groupDescriptor, groupDescriptor, DELETE_GROUP);
