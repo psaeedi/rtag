@@ -291,7 +291,7 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 		if (universeManager != null) {
 			universeManager.handleAndForwardTupleMessage(message, sender);
 		} else {
-			System.out.println(currentNode + "Manager null for " +
+			System.err.println(currentNode + " handleNetworkMessage Manager null for " +
 					GroupDescriptor.UNIVERSE);
 		}
 		
@@ -319,7 +319,7 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 		if (manager != null) {
 			manager.handleAndForwardTupleMessage(message, sender);
 		} else {
-			System.out.println(currentNode + "Manager null for " + recipient);
+			System.err.println(currentNode + "Manager null for " + recipient);
 		}
 	}
 

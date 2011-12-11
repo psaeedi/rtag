@@ -1076,16 +1076,17 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 						handleParentLeaderChange(remoteGroup.getLeader());
 					} else {
 						// TODO this is ugly
+						/*
 						System.out.println("Removing: " + groupDescriptor.getUniqueId() + " to join " + remoteGroup.getUniqueId());
 						node.getGroupCommunicationDispatcher().removeGroupManager(this);
+						*/
 					}
 				}
-				tupleSpaceManager.removeMessage(message);
-				tupleSpaceManager.removeMessage(originalMessage);
 			} else if (TupleNodeNotification.NOTIFY_GROUP_EXISTS.equals(notificationCommand)) {
 				// Does nothing
-				// TODO remove tuple
 			}
+			tupleSpaceManager.removeMessage(message);
+			tupleSpaceManager.removeMessage(originalMessage);
 		}
 	}
 
@@ -1198,9 +1199,9 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 							remoteGroup.getLeader().getID()) > 0) {
 					sendRequestToJoin(remoteGroup);
 				}
-			} else {
+			} /*else {
 				followedParentManager.handleRemoteGroupDiscovered(remoteGroup);
-			}
+			}*/
 		}
 	}
 	
@@ -1258,6 +1259,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 					sender,
 					message);
 			
+			// this should not happen
 			throw new RuntimeException("handleRequestToJoin KO");
 			//return;
 		}	
