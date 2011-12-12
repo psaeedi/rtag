@@ -21,12 +21,11 @@ public interface GroupCoordinationStrategy {
 	
 	public boolean shouldAcceptJoinRequest(NodeDescriptor remoteNode);
 	
-	public NodeDescriptor shouldSplitToNode();
+	public boolean shouldSplitTo(GroupDescriptor remoteGroup);
 	
 	public boolean shouldAcceptToCreateAChild();
 	
-	public boolean shouldSuggestToMigrate(GroupDescriptor remoteGroup,
-			NodeDescriptor remoteFollower);
+	public NodeDescriptor[] followerToSplit(GroupDescriptor remoteGroup);
 	
 	public boolean shouldAcceptToMigrate(GroupDescriptor remoteGroup);
 	

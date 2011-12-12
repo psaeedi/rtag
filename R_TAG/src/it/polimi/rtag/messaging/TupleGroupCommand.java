@@ -45,7 +45,7 @@ public class TupleGroupCommand extends TupleMessage {
 	}
 
 	public static TupleGroupCommand createMigrateToGroupCommand(
-			GroupDescriptor remoteGroup, GroupDescriptor groupDescriptor) {
+			GroupDescriptor groupDescriptor, GroupDescriptor remoteGroup) {
 		return new TupleGroupCommand(Scope.GROUP, groupDescriptor, remoteGroup, MIGRATE_TO_GROUP);
 	}
 
