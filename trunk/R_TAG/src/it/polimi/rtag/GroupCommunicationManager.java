@@ -307,7 +307,8 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 	 */
 	private void migrateAllFollowersAndAskAdoption(GroupDescriptor remoteGroup) {
 		TupleGroupCommand command = 
-				TupleGroupCommand.createMigrateToGroupCommand(remoteGroup, groupDescriptor);
+				TupleGroupCommand.createMigrateToGroupCommand(
+						groupDescriptor, remoteGroup);
 		tupleSpaceManager.storeAndSend(command);
 		
 		if (groupDescriptor.getParentLeader() != null) {
@@ -1011,6 +1012,21 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 		this.groupDescriptor = groupDescriptor;
 		// TODO WE should keep a statefull strategy!
 		coordinationStrategy = new LoadBalancingGroupCoordinationStrategy(groupDescriptor);
+		if (isLeader()) {
+			if (followedParentManager != null) {
+				GroupDescriptor parentGroup = followedParentManager.getGroupDescriptor();
+				if (coordinationStrategy.shouldSplitTo(parentGroup)) {
+					splitTo(parentGroup);
+				}
+			}
+		} else {
+			if (leadedChildManager != null) {
+				//GroupDescriptor childGroup = leadedChildManager.getGroupDescriptor();
+				if (leadedChildManager.coordinationStrategy.shouldSplitTo(groupDescriptor)) {
+					leadedChildManager.splitTo(groupDescriptor);
+				}
+			}
+		}
 	}
 
 	public void deleteGroup() {
@@ -1018,34 +1034,6 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 				TupleGroupCommand.createDeleteGroupCommand(groupDescriptor);
 		tupleSpaceManager.storeAndSend(command);
 	}
-
-	/*
-	interface LeadedChildCommandDelegate {
-		public void invokeCommand(GroupCommunicationManager manager, Serializable message);
-	}
-	*/
-	
-	/*
-	class DeleteGroupCommandDelegate implements LeadedChildCommandDelegate {
-
-		@Override
-		public void invokeCommand(GroupCommunicationManager manager, Serializable message) {
-			node.getGroupCommunicationDispatcher().removeGroup(manager);
-		}
-	}
-	
-	class GroupDiscoveredCommandDelegate implements LeadedChildCommandDelegate {
-
-		@Override
-		public void invokeCommand(GroupCommunicationManager manager, Serializable message) {
-			GroupDescriptor discoveredGroup = (GroupDescriptor)message;
-			GroupCommunicationManager matchingManager = node.getGroupCommunicationDispatcher().getGroupManagerWithName(
-					discoveredGroup.getFriendlyName());
-			if (matchingManager != null) {
-				matchingManager.handleMatchingGroupDiscovered(discoveredGroup);
-			}
-		}
-	}*/
 
 	void handleAndForwardTupleMessage(TupleMessage message, NodeDescriptor sender) {
 		if (message instanceof TupleGroupCommand) {
@@ -1113,19 +1101,24 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 		
 		if (TupleGroupCommand.LEAVING_NOTICE.equals(command)) {
 			throw new RuntimeException("LEAVING_NOTICE not yet implemented");
-		} else if (TupleGroupCommand.CREATE_CHILD_GROUP.equals(command)) {
-			throw new RuntimeException("CREATE_CHILD_GROUP not yet implemented");
 		} else if (TupleGroupCommand.DELETE_GROUP.equals(command)) {
 			forwardTupleMessage(message, sender);
 			node.getGroupCommunicationDispatcher().removeGroupManager(this);
 		} else if (TupleGroupCommand.UPDATE_DESCRIPTOR.equals(command)) {
-			this.setGroupDescriptor((GroupDescriptor) message.getContent());
+			setGroupDescriptor((GroupDescriptor) message.getContent());
 		} else if (TupleGroupCommand.MIGRATE_TO_GROUP.equals(command)) {
-			sendRequestToJoin((GroupDescriptor)message.getContent());
-			throw new RuntimeException("MIGRATE_TO_GROUP not yet implemented");
+			if (isLeader()) {
+				return;
+			}
+			migrateTo((GroupDescriptor)message.getContent());
 		}
 	}
 
+	private void migrateTo(GroupDescriptor remoteGroup) {
+		sendRequestToJoin(remoteGroup);
+		node.getGroupCommunicationDispatcher().removeGroupManager(this);
+	}
+	
 	private void handleParentLeaderChange(NodeDescriptor descriptor) {
 		NodeDescriptor oldParent = groupDescriptor.getParentLeader();
 		groupDescriptor.setParentLeader(descriptor);
@@ -1138,7 +1131,6 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 			sendUpdatedDescriptor();
 		}
 	}
-	
 	
 
 	void forwardTupleMessage(TupleMessage message, NodeDescriptor sender) {
@@ -1239,14 +1231,14 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 		if (groupDescriptor.getUniqueId().equals(remoteGroup.getUniqueId())) {
 			return;
 		}
-		if (node.getGroupCommunicationDispatcher()
+		/*if (node.getGroupCommunicationDispatcher()
 				.getFollowedGroupByFriendlyName(
 						remoteGroup.getFriendlyName()) != null) {
 			throw new RuntimeException(node.getNodeDescriptor() + 
 					" is already in: " + remoteGroup + 
 					" leaded " + this.groupDescriptor +
 					" and followed " + followedParentManager);
-		}
+		}*/
 		TupleNodeNotification command = 
 				TupleNodeNotification.createAllowToJoinGroupNotification(
 						remoteGroup.getLeader(), remoteGroup);
@@ -1268,6 +1260,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 							sender, message);
 			tupleSpaceManager.storeAndSend(commandAck);
 			sendUpdatedDescriptor();
+			
 			
 			/*
 			node.getGroupCommunicationDispatcher().addGroupManager(
@@ -1295,6 +1288,18 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 		// TODO remove the 2 message
 	}
 	
+	private void splitTo(GroupDescriptor remoteGroup) {
+		NodeDescriptor[] followersToMigrate = coordinationStrategy.followerToSplit(remoteGroup);
+		for (NodeDescriptor follower: followersToMigrate) {
+			TupleGroupCommand migrateCommand = 
+					TupleGroupCommand.createMigrateToGroupCommand(
+							groupDescriptor, remoteGroup);
+			sendMessage(migrateCommand.getSubject(), migrateCommand, follower);
+			groupDescriptor.removeFollower(follower);
+		}
+		sendUpdatedDescriptor();
+	}
+
 	private void sendKoAck(Scope scope, Serializable recipient, TupleMessage message) {
 		TupleMessageAck commandAck = 
 				TupleMessageAck.createKoAck(scope,

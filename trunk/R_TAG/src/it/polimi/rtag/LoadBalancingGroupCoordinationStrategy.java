@@ -3,6 +3,8 @@
  */
 package it.polimi.rtag;
 
+import java.util.List;
+
 import polimi.reds.NodeDescriptor;
 
 /**
@@ -198,13 +200,17 @@ public class LoadBalancingGroupCoordinationStrategy implements
 	 * @see it.polimi.rtag.GroupCoordinationStrategy#shouldSuggestToMigrate(it.polimi.rtag.GroupDescriptor)
 	 */
 	@Override
-	public boolean shouldSuggestToMigrate(GroupDescriptor remoteGroup, NodeDescriptor nodeDescriptor) {		
-		if (groupDescriptor.getFollowers().size() > 
-				remoteGroup.getFollowers().size()) {
-			return false;
-		} else {
-			return true;
+	public NodeDescriptor[] followerToSplit(GroupDescriptor remoteGroup) {
+		int count = (groupDescriptor.getFollowers().size() - remoteGroup.getFollowers().size()) /2;
+		if (count < 0) {
+			return new NodeDescriptor[0];
 		}
+		List<NodeDescriptor> followers = groupDescriptor.getFollowers();
+		NodeDescriptor[] nodesToMigrate = new NodeDescriptor[count];
+		for (int i = 0; i < count; i++) {
+			nodesToMigrate[i] = followers.get(i);
+		}
+		return nodesToMigrate;
 	}
 
 	/* (non-Javadoc)
@@ -217,14 +223,12 @@ public class LoadBalancingGroupCoordinationStrategy implements
 	}
 
 	@Override
-	public NodeDescriptor shouldSplitToNode() {
-		if (groupDescriptor.getFollowers().size() < CONGESTION_THRESHOLD) {
-			return null;
-		} else {
-			// we select a random child
-			int index = (int)Math.round(Math.random() * (groupDescriptor.getFollowers().size() - 1));
-			return groupDescriptor.getFollowers().get(index);
+	public boolean shouldSplitTo(GroupDescriptor remoteGroup) {
+		if (groupDescriptor.getFollowers().size() > CONGESTION_THRESHOLD &&
+				remoteGroup.getFollowers().size() < groupDescriptor.getFollowers().size()) {
+			return true;
 		}
+		return false;
 	}
 
 	@Override
