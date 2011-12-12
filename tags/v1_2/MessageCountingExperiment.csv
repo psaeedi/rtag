@@ -1,0 +1,26 @@
+Key;Node0;Node1;Node2;Node3;Node4;Node5;Node6;Node7;Node8;Node9;Node10;Node11;Node12;Node13;Node14;Node15;Node16;Node17;Node18;Node19;
+setUp
+---------sent messages----------
+CustomMessage.HELLO;1;11;21;1;21;1;21;1;11;1;1;11;11;41;11;11;1;1;1;1;
+TupleGroupCommand.UPDATE_DESCRIPTOR;0;8;18;0;21;0;6;0;4;3;0;4;4;28;2;2;0;0;0;1;
+TupleNetworkNotification.Add;2;42;81;12;171;16;86;20;87;82;26;33;39;179;42;42;38;49;53;65;
+TupleNodeNotification.JoinGroup;2;2;2;2;0;2;2;2;2;2;2;2;2;2;2;2;2;2;2;1;
+TupleNodeNotification.NotifyGroupExists;2;4;6;4;12;4;8;4;8;6;4;6;6;12;4;4;4;6;6;6;
+TupleCommandAck.OK;0;2;4;0;8;0;4;0;3;2;0;1;1;7;2;2;0;0;0;1;
+---------received messages----------
+CustomMessage.HELLO;9;9;9;9;9;9;9;9;9;9;9;9;9;9;9;9;9;9;9;9;
+TupleGroupCommand.UPDATE_DESCRIPTOR;8;10;8;8;0;6;4;4;2;3;6;5;8;3;9;2;2;7;5;1;
+TupleNetworkNotification.Add;38;38;48;38;102;38;56;38;63;45;38;63;62;118;38;38;38;72;76;118;
+TupleNodeNotification.JoinGroup;0;2;4;0;8;0;4;0;3;2;0;1;1;7;2;2;0;0;0;1;
+TupleNodeNotification.NotifyGroupExists;2;4;6;4;12;4;8;4;8;6;4;6;6;12;4;4;4;6;6;6;
+TupleCommandAck.OK;2;2;2;2;0;2;2;2;2;2;2;2;2;2;2;2;2;2;2;1;
+---------Groups----------
+leaded groups;2;2;2;2;2;2;2;2;2;2;2;2;2;2;2;2;2;2;2;2;
+followed groups;2;2;2;2;0;2;2;2;2;2;2;2;2;2;2;2;2;2;2;1;
+leaded universe size;1;2;3;1;6;1;3;1;3;3;1;1;1;4;2;2;1;1;1;1;
+leaded app group1 size;0;0;0;0;0;0;0;0;0;0;1;2;2;5;2;2;1;1;1;2;
+leaded app group2 size;1;2;3;1;4;1;3;1;2;1;0;0;0;0;0;0;0;0;0;0;
+Total active connections;1;2;3;2;6;2;4;2;4;3;2;3;3;6;2;2;2;3;3;3;
+Application active connections;1;1;2;1;1;1;2;1;2;1;1;2;2;3;1;1;1;2;2;1;
+Middleware active connections;1;2;3;1;5;1;3;1;3;3;2;3;3;6;2;2;1;1;1;1;
+
