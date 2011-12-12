@@ -10,6 +10,7 @@ import it.polimi.rtag.messaging.TupleMessage.Scope;
 import it.polimi.rtag.messaging.TupleNodeNotification;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.UUID;
 
 import polimi.reds.NodeDescriptor;
@@ -44,6 +45,9 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 	private GroupCoordinationStrategy coordinationStrategy;
 	private Overlay overlay;
 	private TupleSpaceManager tupleSpaceManager;
+	
+	private ArrayList<GroupDescriptor> discoveredGroup = new ArrayList<GroupDescriptor>();
+	private Object lock = new Object();
 	
 	/**
 	 * Create a new group and the current node becomes a leader.
@@ -1081,6 +1085,17 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 						node.getGroupCommunicationDispatcher().removeGroupManager(this);
 						*/
 					}
+					synchronized (lock) {
+						discoveredGroup.remove(remoteGroup);
+					}
+				} else if (TupleMessageAck.KO.equals(command)) {
+					synchronized (lock) {
+						discoveredGroup.remove(remoteGroup);
+						if (discoveredGroup.size() > 0 && 
+								followedParentManager == null) {
+							sendRequestToJoin(discoveredGroup.get(0));
+						}
+					}
 				}
 			} else if (TupleNodeNotification.NOTIFY_GROUP_EXISTS.equals(notificationCommand)) {
 				// Does nothing
@@ -1193,17 +1208,31 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 			*/
 			return;
 		} else {
-			if (followedParentManager == null) { /*&&
-					coordinationStrategy.shouldRequestToJoin(remoteGroup)*/
-				if(groupDescriptor.getLeader().getID().compareTo(
-							remoteGroup.getLeader().getID()) > 0) {
-					sendRequestToJoin(remoteGroup);
-				}
-			} /*else {
-				followedParentManager.handleRemoteGroupDiscovered(remoteGroup);
-			}*/
+			if(groupDescriptor.getLeader().getID().compareTo(
+					remoteGroup.getLeader().getID()) > 0) {
+				addDiscoveredGroup(remoteGroup);
+				/*
+				if (followedParentManager == null &&
+						coordinationStrategy.shouldRequestToJoin(remoteGroup)
+					if (joining) {
+						sendRequestToJoin(remoteGroup);
+					}
+				} else {
+					followedParentManager.handleRemoteGroupDiscovered(remoteGroup);
+				}*/
+			}
 		}
 	}
+	
+	private void addDiscoveredGroup(GroupDescriptor remoteGroup) {
+		synchronized (lock) {
+			if (followedParentManager == null && discoveredGroup.size() == 0) {
+				sendRequestToJoin(remoteGroup);
+			}
+			discoveredGroup.add(remoteGroup);
+		}
+	}
+	
 	
 	void sendRequestToJoin(GroupDescriptor remoteGroup) {
 		System.err.println(node.getNodeDescriptor() + " requesting to join " + remoteGroup);
@@ -1260,9 +1289,10 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 					message);
 			
 			// this should not happen
-			throw new RuntimeException("handleRequestToJoin KO");
-			//return;
-		}	
+			//throw new RuntimeException("handleRequestToJoin KO");
+			return;
+		}
+		// TODO remove the 2 message
 	}
 	
 	private void sendKoAck(Scope scope, Serializable recipient, TupleMessage message) {
@@ -1276,5 +1306,6 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 		TupleGroupCommand command =
 				TupleGroupCommand.createUpdateGroupCommand(groupDescriptor);
 		tupleSpaceManager.storeAndSend(command);
+		// TODO remove existing descriptors
 	}
 }
