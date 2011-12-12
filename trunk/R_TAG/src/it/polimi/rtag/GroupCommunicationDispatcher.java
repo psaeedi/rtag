@@ -108,7 +108,7 @@ public class GroupCommunicationDispatcher {
 			} else {
 				GroupCommunicationManager alreadyFollowed = getFollowedGroupByFriendlyName(groupDescriptor.getFriendlyName());
 				if (alreadyFollowed != null) {
-					throw new RuntimeException(node + " cannot follow " +
+					throw new RuntimeException(node.getNodeDescriptor() + " cannot follow " +
 							groupDescriptor +
 							" because it is already following a group matching: " +
 							alreadyFollowed.getGroupDescriptor());

@@ -6,6 +6,7 @@ package it.polimi.rtag;
 import java.io.Serializable;
 
 import polimi.reds.NodeDescriptor;
+import polimi.reds.broker.overlay.AlreadyNeighborException;
 import polimi.reds.broker.overlay.NeighborhoodChangeListener;
 import polimi.reds.broker.overlay.Overlay;
 import polimi.reds.broker.overlay.PacketListener;
@@ -237,14 +238,21 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 	public void storeHandleAndForward(TupleMessage message, NodeDescriptor sender) {
 		if (message.isExpired()) {
 			// the tuple is expired
+			System.out.println(message + "is expired. skipping");
 			return;
 		}
-		System.out.println("storeHandleAndForward " + message.getSubject() + " " + message.getCommand());
+		System.out.println("storeHandleAndForward " + message.getSubject() + " " + 
+				message.getCommand());
 		ITuple tuple = createTuple(message.getScope(),
 				new Long(message.getExpireTime()), message.getRecipient(),
 				message.getSubject(), message.getCommand(), message);		
 		try {
+			if (tupleSpace.rdp(tuple) != null) {
+				// Already in tuple space
+				return;
+			}
 			tupleSpace.out(tuple);
+			
 		} catch (TupleSpaceException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -452,14 +460,26 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 	 * @param content
 	 */
 	private void sendToNode(NodeDescriptor recipient, TupleMessage message) {
-		if (overlay.isNeighborOf(recipient)) {
-			try {
-				overlay.send(message.getSubject(), message, recipient);
-				removeMessage(message);
-			} catch (Exception e) {
-				e.printStackTrace();
-			} 
+		if (!overlay.isNeighborOf(recipient)) {
+			for (String url: recipient.getUrls()) {
+				try {
+					// TODO this may create a deadlock
+					recipient = overlay.addNeighbor(url);
+					break;
+				} catch (AlreadyNeighborException ex) {
+					break;
+				} catch (Exception ex) {
+					continue;
+				}
+				
+			}
 		}
+		try {
+			overlay.send(message.getSubject(), message, recipient);
+			removeMessage(message);
+		} catch (Exception e) {
+			e.printStackTrace();
+		} 
 	}
 
 	
