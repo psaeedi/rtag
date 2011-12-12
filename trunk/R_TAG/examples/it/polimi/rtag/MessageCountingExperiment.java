@@ -26,9 +26,9 @@ public class MessageCountingExperiment {
 	public static String YELLOW = "Yellow";
 	public static String BLUE = "Blue";
 
-    private static final int NUMBER_OF_NODES = 10;
+    private static final int NUMBER_OF_NODES = 20;
 	
-	int localPort=10001;
+	int localPort = 10001;
     
     String host = "localhost";
     
@@ -111,7 +111,7 @@ public class MessageCountingExperiment {
     		System.out.println("************Adding neighbor " + i + " to node " + nodes.get(i-1));
     		try {
 				nodes.get(i-1).getOverlay().addNeighbor(urls.get(i));
-				Thread.sleep(2500);
+				Thread.sleep(1500);
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
