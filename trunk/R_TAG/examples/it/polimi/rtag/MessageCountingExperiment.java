@@ -25,6 +25,7 @@ public class MessageCountingExperiment {
 	public static String GREEN = "Green";
 	public static String YELLOW = "Yellow";
 	public static String BLUE = "Blue";
+	public static final int NUM_GRUPCASTS = 1;
 
     private static final int NUMBER_OF_NODES = 20;
 	
@@ -88,7 +89,16 @@ public class MessageCountingExperiment {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-    	sendGroupcast(nodes.get(3), RED, "Hello" );
+    	for (int i = 0; i < NUM_GRUPCASTS; i++) {
+    		for (int j = 0; j < NUMBER_OF_NODES/2; j++) {
+    			sendGroupcast(nodes.get(j), RED, "Hi" + i + " from node " + j);
+    		}
+    	}
+    	for (int i = 0; i < NUM_GRUPCASTS; i++) {
+    		for (int j = 0; j < NUMBER_OF_NODES/2; j++) {
+    			sendGroupcast(nodes.get(NUMBER_OF_NODES/2 + j), BLUE, "Hi" + i + " from node " + j);
+    		}
+    	}
     }
     
     
