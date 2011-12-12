@@ -19,6 +19,7 @@ import it.polimi.rtag.messaging.TupleMessage.Scope;
 import lights.Field;
 import lights.Tuple;
 import lights.TupleSpace;
+import lights.interfaces.IField;
 import lights.interfaces.ITuple;
 import lights.interfaces.TupleSpaceException;
 
@@ -222,7 +223,7 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 	public void removeMessage(TupleMessage message) {
 		ITuple template = new Tuple()
 				.add(new Field().setType(Scope.class))
-				.add(new Field().setType(long.class))
+				.add(new Field().setType(Long.class))
 				.add(new Field().setType(Serializable.class))
 				.add(new Field().setType(String.class))
 				.add(new Field().setType(String.class))
@@ -234,6 +235,28 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 			e.printStackTrace();
 		}
 	}
+	
+	public boolean containsMessage(ITuple tuple) {
+		ITuple t = (ITuple)tuple.clone();
+		t.set(new Field().setType(Scope.class), 1);
+		t.set(new Field().setType(Long.class), 1);
+		t.set(new Field().setValue(((Field)tuple.getFields()[5]).getValue()), 5);
+		
+		
+		for (int i = 0; i < t.getFields().length; i++) {
+			if (!t.getFields()[i].matches(tuple.getFields()[i])) {
+				throw new RuntimeException("Does not match");
+			}
+		}
+		
+		try {
+			return tupleSpace.rdp(t) != null;
+		} catch (TupleSpaceException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return false;
+	}
 		
 	public void storeHandleAndForward(TupleMessage message, NodeDescriptor sender) {
 		if (message.isExpired()) {
@@ -241,18 +264,22 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 			System.out.println(message + "is expired. skipping");
 			return;
 		}
-		System.out.println("storeHandleAndForward " + message.getSubject() + " " + 
-				message.getCommand());
+		
 		ITuple tuple = createTuple(message.getScope(),
 				new Long(message.getExpireTime()), message.getRecipient(),
-				message.getSubject(), message.getCommand(), message);		
-		try {
-			if (tupleSpace.rdp(tuple) != null) {
-				// Already in tuple space
-				return;
-			}
-			tupleSpace.out(tuple);
+				message.getSubject(), message.getCommand(), message);	
+		
+		if (containsMessage(tuple)) {
+			System.err.println("Already in tuple space");
+			// Already in tuple space
+			return;
+		}
+		
+		System.out.println("storeHandleAndForward " + message.getSubject() + " " + 
+				message.getCommand());
 			
+		try {
+			tupleSpace.out(tuple);
 		} catch (TupleSpaceException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

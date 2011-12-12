@@ -85,5 +85,16 @@ public abstract class TupleMessage extends polimi.reds.Message {
 	}
 	
 	public abstract String getSubject();
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof TupleMessage) {
+			TupleMessage message = (TupleMessage)obj;
+			return getSubject().equals(message.getSubject()) &&
+					command.equals(message.command) &&
+					content.equals(message.content);
+		}
+		return super.equals(obj);
+	}
 	
 }
