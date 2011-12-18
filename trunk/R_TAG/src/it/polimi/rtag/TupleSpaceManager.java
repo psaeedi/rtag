@@ -534,7 +534,10 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 				for (ITuple tuple: results) {
 					TupleNetworkNotification message = (TupleNetworkNotification)
 							((Field)tuple.getFields()[5]).getValue();
-					sendToNode(nodeDescriptor, message);
+					GroupDescriptor remoteGroup = message.getGroupDescriptor();
+					if (!remoteGroup.isMember(nodeDescriptor)) {
+						sendToNode(nodeDescriptor, message);
+					}
 				}
 			}
 		} catch (Exception ex) {
