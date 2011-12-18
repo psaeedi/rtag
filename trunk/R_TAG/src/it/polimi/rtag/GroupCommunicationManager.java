@@ -318,9 +318,6 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 		
 		NodeDescriptor parent = remoteGroup.getParentLeader();
 		if (parent != null) {
-			/*TupleGroupCommand adoptionCommand = 
-				TupleGroupCommand.createAdoptGroupCommand(parent, groupDescriptor);
-			tupleSpaceManager.storeAndSend(adoptionCommand);*/
 			sendRequestToJoin(remoteGroup);
 		}
 	}
