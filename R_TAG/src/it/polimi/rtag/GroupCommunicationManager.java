@@ -334,46 +334,6 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 		notifyNeighborDead(removedNode, null);
 	}
 
-	/*
-	private void sendMessageToLeader(String subject, Serializable message, NodeDescriptor sender) {
-		if (isLeader()) {
-			throw new RuntimeException("The leader should not talk to itself.");
-		}
-		NodeDescriptor leader = groupDescriptor.getLeader();
-		if (leader.equals(sender)) {
-			return;
-		}
-		sendMessage(subject, message, leader);
-	}
-
-
-	private void sendMessageToFollowers(String subject, Serializable message, NodeDescriptor sender) {
-		if (!isLeader()) {
-			throw new RuntimeException("Only a leader should broadcast to followers");
-		}
-		for (NodeDescriptor follower: groupDescriptor.getFollowers()) {
-			if (sender.equals(follower)) {
-				continue;
-			}
-			sendMessage(subject, message, follower);
-		}
-	}
-
-
-	private void sendMessageToParent(String subject, Serializable message, NodeDescriptor sender) {
-		if (!isLeader()) {
-			throw new RuntimeException("Only a leader should talk to the parent");
-		}
-		NodeDescriptor parent = groupDescriptor.getParentLeader();
-		if (parent == null) {
-			// The parent is null
-			return;
-		}
-		if (parent.equals(sender)) {
-			return;
-		}
-		sendMessage(subject, message, parent);
-	}*/
 
 /*
 	public void sendMessageGroupCreatedNotification(NodeDescriptor sender,

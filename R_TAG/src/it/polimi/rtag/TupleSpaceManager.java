@@ -19,7 +19,6 @@ import it.polimi.rtag.messaging.TupleMessage.Scope;
 import lights.Field;
 import lights.Tuple;
 import lights.TupleSpace;
-import lights.interfaces.IField;
 import lights.interfaces.ITuple;
 import lights.interfaces.TupleSpaceException;
 
@@ -87,13 +86,15 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 		return template;
 	}
 	
-	private ITuple createTemplateForNetworkNotification() {
+	private ITuple createTemplateForNetworkNotification(String recipient, String command) {
 		ITuple template = new Tuple()
 			.add(new Field().setValue(Scope.NETWORK)) //scope
 			.add(new Field().setType(Long.class)) // expire
-			.add(new Field().setType(String.class)) //recipient
+			.add(recipient == null ? new Field().setType(String.class):
+				new Field().setValue(recipient)) //recipient
 			.add(new Field().setValue(TupleNetworkNotification.SUBJECT)) // subject
-			.add(new Field().setType(String.class)) // command
+			.add(command == null ? new Field().setType(String.class):
+				new Field().setValue(command)) // command
 			.add(new Field().setType(TupleNetworkNotification.class)); //original message
 		return template;
 	}
@@ -343,6 +344,10 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 				} 
 			} else if (TupleNetworkNotification.REMOVE.equals(command)){
 				// TODO remove tuple from tuplespace
+				GroupDescriptor remoteGroup = (GroupDescriptor)message.getContent();
+				ITuple template = createTemplateForNetworkNotification(
+						remoteGroup.getFriendlyName(), TupleNetworkNotification.ADD);
+				
 			}
 		} 
 	}
@@ -527,7 +532,7 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 	@Override
 	public void notifyNeighborAdded(NodeDescriptor nodeDescriptor,
 			Serializable reconfigurationInfo) {
-		ITuple template = createTemplateForNetworkNotification();
+		ITuple template = createTemplateForNetworkNotification(null, null);
 		try {
 			ITuple[] results = tupleSpace.rdg(template);
 			if (results != null) {
