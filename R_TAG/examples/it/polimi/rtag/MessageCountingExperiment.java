@@ -9,9 +9,14 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.Serializable;
+import java.net.ConnectException;
+import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+
+import polimi.reds.broker.overlay.AlreadyNeighborException;
+import polimi.reds.broker.overlay.NotRunningException;
 
 
 /**
@@ -25,9 +30,14 @@ public class MessageCountingExperiment {
 	public static String GREEN = "Green";
 	public static String YELLOW = "Yellow";
 	public static String BLUE = "Blue";
-	public static final int NUM_GRUPCASTS = 1;
+	public static String ORANGE = "Orange";
+	public static String PURPLE = "Purple";
+	public static String PINK = "Pink";
+	public static String WHITE = "White";
 
-    private static final int NUMBER_OF_NODES = 20;
+	public static final int NUM_GROUPCASTS = 1;
+
+    private static final int NUMBER_OF_NODES = 60;
 	
 	int localPort = 10001;
     
@@ -66,7 +76,63 @@ public class MessageCountingExperiment {
 			node.joinGroup(BLUE);
 			nodes.add(node);
 			urls.add("reds-tcp:"+ host + ":" + port);
-		}
+    	}
+    	
+    	/*for (int i = 0; i < NUMBER_OF_NODES/8; i++) {
+			int port = localPort ++;
+			Node node = new Node(host, port);
+			node.start();
+			node.joinGroup(YELLOW);
+			nodes.add(node);
+			urls.add("reds-tcp:"+ host + ":" + port);
+    	}
+    	
+    	for (int i = 0; i < NUMBER_OF_NODES/8; i++) {
+			int port = localPort ++;
+			Node node = new Node(host, port);
+			node.start();
+			node.joinGroup(GREEN);
+			nodes.add(node);
+			urls.add("reds-tcp:"+ host + ":" + port);
+    	}
+    	
+    	for (int i = 0; i < NUMBER_OF_NODES/8; i++) {
+			int port = localPort ++;
+			Node node = new Node(host, port);
+			node.start();
+			node.joinGroup(ORANGE);
+			nodes.add(node);
+			urls.add("reds-tcp:"+ host + ":" + port);
+			
+    	}
+    	
+    	for (int i = 0; i < NUMBER_OF_NODES/8; i++) {
+			int port = localPort ++;
+			Node node = new Node(host, port);
+			node.start();
+			node.joinGroup(PURPLE);
+			nodes.add(node);
+			urls.add("reds-tcp:"+ host + ":" + port);
+			
+    	}
+    	for (int i = 0; i < NUMBER_OF_NODES/8; i++) {
+			int port = localPort ++;
+			Node node = new Node(host, port);
+			node.start();
+			node.joinGroup(PINK);
+			nodes.add(node);
+			urls.add("reds-tcp:"+ host + ":" + port);
+			
+    	}
+    	for (int i = 0; i < NUMBER_OF_NODES/8; i++) {
+			int port = localPort ++;
+			Node node = new Node(host, port);
+			node.start();
+			node.joinGroup(WHITE);
+			nodes.add(node);
+			urls.add("reds-tcp:"+ host + ":" + port);
+			
+    	}*/
     	
     	createNetworkByAddingToTheLastAdded();
     	
@@ -82,19 +148,28 @@ public class MessageCountingExperiment {
 			}
 		}
     	
-    	// 1 minute waiting
     	try {
 			Thread.sleep(1000);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-    	for (int i = 0; i < NUM_GRUPCASTS; i++) {
+
+    
+    	 
+    	//sendGroupcast(nodes.get(3), RED, "Hello" );
+    	
+    	
+    	//sendGroupcast(nodes.get(19), BLUE, "Hello" );
+    	//Thread.sleep(2500);
+    	//sendGroupcast(nodes.get(18), GREEN, "Hello" );
+    	//Thread.sleep(2500);
+    	for (int i = 0; i < NUM_GROUPCASTS; i++) {
     		for (int j = 0; j < NUMBER_OF_NODES/2; j++) {
     			sendGroupcast(nodes.get(j), RED, "Hi" + i + " from node " + j);
     		}
     	}
-    	for (int i = 0; i < NUM_GRUPCASTS; i++) {
+    	for (int i = 0; i < NUM_GROUPCASTS; i++) {
     		for (int j = 0; j < NUMBER_OF_NODES/2; j++) {
     			sendGroupcast(nodes.get(NUMBER_OF_NODES/2 + j), BLUE, "Hi" + i + " from node " + j);
     		}
@@ -244,6 +319,18 @@ public class MessageCountingExperiment {
     	}
 		pw.println("");
 		
+		pw.print("leaded app group4 size;");
+		for (Node node: nodes) {
+    		GroupCommunicationDispatcher dispatcher = node.getGroupCommunicationDispatcher();
+    		GroupCommunicationManager manager = dispatcher.getLeadedGroupByFriendlyName(GREEN);
+    		if (manager != null) {
+    			pw.print(manager.getGroupDescriptor().getMembers().size() + ";");
+    		} else {
+    			pw.print("0;");
+    		}
+    	}
+		pw.println("");
+		
 
 		pw.print("Total active connections;");
 		for (Node node: nodes) {
@@ -296,10 +383,38 @@ public class MessageCountingExperiment {
 		// 1 minute waiting
 		Thread.sleep(2000);
 		exp.writeToFile("setUp");
+		exp.resetCounters();
+		exp.addNode();
+		exp.writeToFile("addNode");
 		exp.closeFile();
 		exp.tearDown();
 	}
 
+	public void addNode() throws InterruptedException{
+		int port = localPort++;
+		Node node = new Node(host, port);
+		node.start();
+		node.joinGroup(RED);
+		nodes.add(node);
+		String url="reds-tcp:"+ host + ":" + port;
+		try {
+			nodes.get(0).addNeighbor(url);
+		} catch (AlreadyNeighborException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ConnectException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (MalformedURLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (NotRunningException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		Thread.sleep(2000);
+	}
+	
 	private static void sendGroupcast(Node node, String color, String content) {
 		GroupDescriptor group = node.getGroup(color);
     	if (group == null) {
