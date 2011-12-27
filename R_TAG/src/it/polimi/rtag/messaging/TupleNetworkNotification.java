@@ -38,4 +38,10 @@ public class TupleNetworkNotification extends TupleMessage {
 		return (GroupDescriptor) getContent();
 	}
 
+	@Override
+	public String toString() {
+		return getSubject() + " " + getCommand() + " " + 
+				getGroupDescriptor().getFriendlyName() + ":" + 
+				getGroupDescriptor().getUniqueId();
+	}
 }

@@ -4,7 +4,10 @@
 package it.polimi.rtag;
 
 
+import it.polimi.rtag.messaging.TupleMessage;
+
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -70,8 +73,10 @@ public class NodeTest {
 			GroupDescriptor groupDescriptor1 =
 					node.getGroup(GroupDescriptor.UNIVERSE);
 			Assert.assertNotNull(groupDescriptor1);
-			GroupDescriptor groupDescriptor2 =
-					node.getTupleSpaceManager().getLeaderForHierarchy(GroupDescriptor.UNIVERSE);
+			ArrayList<TupleMessage> messages=
+					new ArrayList<TupleMessage>(node.getTupleSpaceManager().getGroupsForHierarchy(GroupDescriptor.UNIVERSE));
+			GroupDescriptor groupDescriptor2 = (GroupDescriptor)messages.get(0).getContent();
+			
 			Assert.assertNotNull(groupDescriptor2);
 			Assert.assertEquals(groupDescriptor1, groupDescriptor2);
 		}
