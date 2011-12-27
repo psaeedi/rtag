@@ -34,12 +34,6 @@ public class GroupDescriptor implements Serializable {
 	private boolean universe = false;
 	
 	/**
-	 * The top leader of this group hierarchy. This is need to 
-	 * avoid creating loops. 
-	 */
-	private NodeDescriptor progenitor;
-	
-	/**
 	 * The group leader.
 	 */
 	private NodeDescriptor leader;
@@ -187,33 +181,7 @@ public class GroupDescriptor implements Serializable {
 	public boolean equals(Object obj) {
 		if (obj instanceof GroupDescriptor) {
 			GroupDescriptor remoteGroup = (GroupDescriptor)obj;
-			if (!uniqueId.equals(remoteGroup.uniqueId)) {
-				return false;
-			} 
-			
-			if ((leader != null && !leader.equals(remoteGroup.leader)) ||
-					(remoteGroup.leader != null && !remoteGroup.leader.equals(leader))) {
-				return false;
-			}
-			
-			if ((parentLeader != null && !parentLeader.equals(remoteGroup.parentLeader)) ||
-					remoteGroup.parentLeader != null && !remoteGroup.parentLeader.equals(parentLeader)) {
-				return false;
-			}
-			
-			if (followers.size() != remoteGroup.followers.size()) {
-				return false;
-			}
-			
-			for (int i = 0; i < followers.size(); i++) {
-				NodeDescriptor l = followers.get(i);
-				NodeDescriptor r = remoteGroup.followers.get(i);
-				if (!l.equals(r)) {
-					return false;
-				}
-			}
-			
-			return true;
+			return getUniqueId().equals(remoteGroup.getUniqueId());
 		} else {
 			return super.equals(obj);
 		}
@@ -285,17 +253,4 @@ public class GroupDescriptor implements Serializable {
 		return acceptVisitor(new GroupToStringVisitor()).toString();
 	}
 
-	/**
-	 * @return the progenitor
-	 */
-	public NodeDescriptor getProgenitor() {
-		return progenitor;
-	}
-
-	/**
-	 * @param progenitor the progenitor to set
-	 */
-	public void setProgenitor(NodeDescriptor progenitor) {
-		this.progenitor = progenitor;
-	}
 }

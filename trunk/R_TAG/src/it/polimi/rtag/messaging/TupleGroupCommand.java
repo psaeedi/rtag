@@ -7,8 +7,6 @@ import it.polimi.rtag.GroupDescriptor;
 
 import java.io.Serializable;
 
-import polimi.reds.NodeDescriptor;
-
 /**
  * @author Panteha Saeedi (saeedi@elet.polimi.it)
  *

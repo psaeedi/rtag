@@ -7,6 +7,8 @@ package it.polimi.rtag;
 import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.UUID;
 
 import junit.framework.Assert;
 
@@ -180,35 +182,28 @@ public class JoinAndMergeGroupsTest {
 					MalformedURLException, NotRunningException, 
 					InterruptedException {
 		
-		nodes.get(0).addNeighbor(urls.get(1));	
-		Thread.sleep(500);
-		
-		GroupDescriptor universe1 = nodes.get(0).getGroupCommunicationDispatcher().
-				getGroupForHierarchy(GroupDescriptor.UNIVERSE);
-		
-		Node leader = universe1.getLeader() == nodes.get(0).getNodeDescriptor() ? nodes.get(0) : nodes.get(1);
-		
-		for (int i = 2; i < NUMBER_OF_NODE; i++) {
-			leader.addNeighbor(urls.get(i));
+		for (int i = 1; i < NUMBER_OF_NODE; i++) {
+			nodes.get(0).addNeighbor(urls.get(i));
 			Thread.sleep(500);
 		}
-		universe1 = leader.getGroupCommunicationDispatcher().
-				getGroupForHierarchy(GroupDescriptor.UNIVERSE);
+		
+		HashSet<UUID> groups = new HashSet<UUID>();
+		int rootGroups = 0;
+		for (int i = 0; i < NUMBER_OF_NODE; i++) {
+			GroupDescriptor universe = nodes.get(i)
+					.getGroupCommunicationDispatcher().getLocalUniverse();
+			if (!groups.contains(universe.getUniqueId())) {
+				groups.add(universe.getUniqueId());
+				if (universe.getParentLeader() == null) {
+					rootGroups += 1;
+				}
+			}
+			System.out.println("Node: " + i + "\n" + universe);
+		}
 		
 		// TODO here we should check if the whole hierarchy size is 5
-		Assert.assertEquals(NUMBER_OF_NODE, universe1.getMembers().size());
+		Assert.assertEquals(1, rootGroups);
 		
-		for (int i = 1; i < NUMBER_OF_NODE; i++) {
-			GroupDescriptor universe2 = nodes.get(i).getGroupCommunicationDispatcher().
-					getGroupForHierarchy(GroupDescriptor.UNIVERSE);
-			if (universe2.getParentLeader() != null) {
-				Assert.assertEquals(universe1.getLeader(),
-						universe2.getParentLeader());
-				// this only works if they do not create nephews
-			} else {
-				Assert.assertEquals(universe1, universe2);
-			}
-		}
 	}
 	
 }

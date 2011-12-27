@@ -5,6 +5,8 @@ package it.polimi.rtag.messaging;
 
 import java.io.Serializable;
 
+import lights.interfaces.ITuple;
+
 /**
  * @author Panteha Saeedi (saeedi@elet.polimi.it)</p>.
  * 
@@ -94,5 +96,4 @@ public abstract class TupleMessage extends polimi.reds.Message {
 		}
 		return super.equals(obj);
 	}
-	
 }
