@@ -37,7 +37,7 @@ public class MessageCountingExperiment {
 
 	public static final int NUM_GROUPCASTS = 1;
 
-    private static final int NUMBER_OF_NODES = 60;
+    private static final int NUMBER_OF_NODES = 100;
 	
 	int localPort = 10001;
     
