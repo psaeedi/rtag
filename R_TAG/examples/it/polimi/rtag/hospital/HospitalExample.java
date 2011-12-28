@@ -3,6 +3,7 @@ package it.polimi.rtag.hospital;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
@@ -17,6 +18,7 @@ import it.polimi.rtag.GroupCommunicationManager;
 import it.polimi.rtag.GroupDescriptor;
 import it.polimi.rtag.MessageCountingGenericOverlay;
 import it.polimi.rtag.Node;
+import it.polimi.rtag.messaging.TupleMessage;
 
 public class HospitalExample {
     
@@ -32,9 +34,6 @@ public class HospitalExample {
 	 * other auxiliary junctions
 	 */
 	private IntelligentJunction currentJunction = IntelligentJunction.ONE;
-	
-	
- 
 
 	public static void main(String[] args) throws Exception {
 		int port = 0;
@@ -64,7 +63,9 @@ public class HospitalExample {
 		    		IntelligentJunction.ONE);
 		     
 		    System.out.println(" ");
-		    Thread.sleep(5000);
+		    Thread.sleep(10000);
+		    exp.sendGroupcast();
+		    Thread.sleep(100000);
 		    exp.writeToFile("setUp");
 		    exp.closeFile();
 		    exp.stop();
@@ -174,7 +175,7 @@ public class HospitalExample {
 		
 		pw.println("");
     	pw.flush();
-    }
+   }
 
 	private void closeFile() {
     	pw.flush();
@@ -188,6 +189,7 @@ public class HospitalExample {
 	public void setCurrentJunction(IntelligentJunction currentJunction) {
 		
 		this.currentJunction = currentJunction;
+		joinGroup(this.currentJunction);
 	}
 	
 	protected void joinGroup(IntelligentJunction currentJunction){
@@ -212,5 +214,30 @@ public class HospitalExample {
 		node.stop();
 		
 	}
-		
+	
+	private void sendGroupcast() {
+		GroupDescriptor group = node.getGroup(currentJunction.toString());
+    	if (group == null) {
+    		return;
+    	}
+    	System.out.println(group);
+    	
+    	TupleMessage message = new ExampleMessage(group.getFriendlyName(), "asd", "HELLO");
+        node.getTupleSpaceManager().storeAndSend(message);
+	}
+}
+
+class ExampleMessage extends TupleMessage {
+	private static final long serialVersionUID = -5146903837877861792L;
+	
+	public ExampleMessage(String recipient,
+			Serializable content, String command) {
+		super(Scope.HIERARCHY, recipient, content, command);
+	}
+	
+	@Override
+	public String getSubject() {
+		return CUSTOM_MESSAGE;
+	}
+	
 }

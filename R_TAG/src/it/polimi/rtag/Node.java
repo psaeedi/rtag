@@ -52,7 +52,7 @@ public class Node {
 		groupCommunicationDispatcher.joinGroupAndNotifyNetwork(GroupDescriptor.UNIVERSE);
 	}
 
-	TupleSpaceManager getTupleSpaceManager() {
+	public TupleSpaceManager getTupleSpaceManager() {
 		return tupleSpaceManager;
 	}
 	
