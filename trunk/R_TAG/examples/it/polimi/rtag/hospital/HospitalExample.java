@@ -41,45 +41,38 @@ public class HospitalExample {
 	    String host = null;
 		
 	    for(String arg: args) {
-	    	System.out.print(" ");
-		    System.out.print(arg);
-		    System.out.print(" ");
-		
+	    	System.out.println(arg);
+		    
 		    String splitted[] = arg.split("=", 2);
 		    
-		    if(splitted[0].equalsIgnoreCase("port"))
+		    if(splitted[0].equalsIgnoreCase("port")) {
 		    	port = Integer.parseInt(splitted[1]);
-		    else if(splitted[0].equalsIgnoreCase("parent"))
+		    } else if(splitted[0].equalsIgnoreCase("parent")){
 		    	parent = splitted[1];
-		    else if(splitted[0].equalsIgnoreCase("host"))
+		    	System.out.println("***************" + parent);
+		    } else if(splitted[0].equalsIgnoreCase("host"))
 		    	host = splitted[1];
 		    }
 	    
-		    
 		    HospitalExample exp = new HospitalExample(
-		    		host,
-		    		port,
-		    		parent,
-		    		IntelligentJunction.ONE);
-		     
-		    System.out.println(" ");
-		    Thread.sleep(10000);
+		    		host, port);
+		    exp.setCurrentJunction(IntelligentJunction.ONE);
+		    exp.connectTo(parent);
+		    Thread.sleep(400000);
+		    exp.writeToFile("Creation");
+		    exp.clearCounting();
+		    Thread.sleep(20000);
 		    exp.sendGroupcast();
 		    Thread.sleep(100000);
-		    exp.writeToFile("setUp");
+		    exp.writeToFile("Groupcast");
 		    exp.closeFile();
 		    exp.stop();
     }
-	
-	
-
 	 
 	    
     public HospitalExample(
     		String host,
-    		int port,
-    		String parent,
-    		IntelligentJunction currentJunction
+    		int port
     		) throws InterruptedException, AlreadyNeighborException, ConnectException, MalformedURLException, NotRunningException {
     	try {
 			pw = new PrintWriter(new File("ColorExample" + port + ".cvs"));
@@ -89,13 +82,33 @@ public class HospitalExample {
 		}
     	node = new Node(host, port);
 		node.start();
-		setCurrentJunction(currentJunction);
-		if (parent != null) {
-			node.addNeighbor(parent);
-		}
+		
     }
     
+    public void connectTo(String parent) {
+    	if (parent != null) {
+			try {
+				node.addNeighbor(parent);
+			} catch (AlreadyNeighborException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (ConnectException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (MalformedURLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (NotRunningException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+    }
   
+    public void clearCounting() {
+    	((MessageCountingGenericOverlay)node.getOverlay()).clearCounting();
+    }
+    
     public void writeToFile(String label) {
     	HashSet<String> sentSubjects = new HashSet<String>();
     	HashSet<String> receivedSubjects = new HashSet<String>();
@@ -111,7 +124,6 @@ public class HospitalExample {
 			receivedSubjects.add(subject);
 		}
     	
-    		
 		pw.print("Key;");
 		pw.print("Node" + node + ";");
 		pw.println("");
@@ -187,7 +199,9 @@ public class HospitalExample {
 	}
 
 	public void setCurrentJunction(IntelligentJunction currentJunction) {
-		
+		if (this.currentJunction != null && this.currentJunction != currentJunction) {
+			leaveGroup(currentJunction);
+		}
 		this.currentJunction = currentJunction;
 		joinGroup(this.currentJunction);
 	}
