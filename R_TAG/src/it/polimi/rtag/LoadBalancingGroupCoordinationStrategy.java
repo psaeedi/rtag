@@ -16,7 +16,7 @@ import polimi.reds.NodeDescriptor;
 public class LoadBalancingGroupCoordinationStrategy implements
 		GroupCoordinationStrategy {
 
-	private static final int CONGESTION_THRESHOLD = 10;
+	private static final int CONGESTION_THRESHOLD = 500;
 	
 	protected GroupDescriptor groupDescriptor;
 	

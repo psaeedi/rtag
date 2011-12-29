@@ -8,8 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import lights.Tuple;
-
 import polimi.reds.NodeDescriptor;
 
 /**

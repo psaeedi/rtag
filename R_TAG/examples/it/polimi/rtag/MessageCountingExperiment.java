@@ -37,9 +37,9 @@ public class MessageCountingExperiment {
 
 	public static final int NUM_GROUPCASTS = 1;
 
-    private static final int NUMBER_OF_NODES = 100;
+    private static final int NUMBER_OF_NODES = 10;
 	
-	int localPort = 10001;
+	int localPort = 20001;
     
     String host = "localhost";
     

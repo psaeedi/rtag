@@ -271,7 +271,7 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 				message.getSubject(), message.getCommand(), message);	
 		
 		if (containsMessage(tuple)) {
-			System.err.println("Already in tuple space");
+			//System.err.println("Already in tuple space");
 			// Already in tuple space
 			return;
 		}
@@ -410,10 +410,18 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 			// the tuple is expired
 			return;
 		}
+		
 		System.out.println("storeAndSend " + message.getSubject() + " " + message.getCommand());
 		ITuple tuple = createTuple(message.getScope(),
 				new Long(message.getExpireTime()), message.getRecipient(),
 				message.getSubject(), message.getCommand(), message);
+		
+		if (containsMessage(tuple)) {
+			//System.err.println("Already in tuple space");
+			// Already in tuple space
+			return;
+		}
+		
 		try {
 			tupleSpace.out(tuple);
 		} catch (TupleSpaceException e) {
