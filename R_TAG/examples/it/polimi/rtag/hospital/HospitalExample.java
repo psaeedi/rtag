@@ -58,12 +58,12 @@ public class HospitalExample {
 		    		host, port);
 		    exp.setCurrentJunction(IntelligentJunction.ONE);
 		    exp.connectTo(parent);
-		    Thread.sleep(400000);
+		    Thread.sleep(1000 * 60 * 4);
 		    exp.writeToFile("Creation");
 		    exp.clearCounting();
-		    Thread.sleep(20000);
+		    Thread.sleep(1000 * 60 * 1);
 		    exp.sendGroupcast();
-		    Thread.sleep(100000);
+		    Thread.sleep(1000 * 60 * 1);
 		    exp.writeToFile("Groupcast");
 		    exp.closeFile();
 		    exp.stop();
