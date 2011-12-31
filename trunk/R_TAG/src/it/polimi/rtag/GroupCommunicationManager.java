@@ -1239,8 +1239,8 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 					message);
 			
 			// this should not happen
-			//throw new RuntimeException("handleRequestToJoin KO");
-			return;
+			throw new RuntimeException("handleRequestToJoin KO");
+			//return;
 		}
 		// TODO remove the 2 message
 	}
