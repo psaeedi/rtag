@@ -43,6 +43,8 @@ public class MessageCountingExperiment {
     
     String host = "localhost";
     
+    static String parent;
+    
     ArrayList<Node> nodes = new ArrayList<Node>();
     ArrayList<String> urls = new ArrayList<String>();
     
@@ -382,12 +384,50 @@ public class MessageCountingExperiment {
 		exp.setUp();
 		// 1 minute waiting
 		Thread.sleep(2000);
+		
+		/*
 		exp.writeToFile("setUp");
 		exp.resetCounters();
 		exp.addNode();
 		exp.writeToFile("addNode");
+		*/
+		
+		if (args.length > 0) {
+			exp.connectToRemoteNode(args[0]);
+		}
+		
+		/*
 		exp.closeFile();
 		exp.tearDown();
+		*/
+		
+		readCommand(exp);
+	}
+	
+	
+	static void readCommand(MessageCountingExperiment exp)
+	{
+		try {
+			java.io.BufferedReader stdin = new java.io.BufferedReader(new java.io.InputStreamReader(System.in));
+			while (true) {
+				String line = stdin.readLine();
+		        if ("quit".equals(line)) {
+		        	exp.writeToFile("quit");
+		        	exp.closeFile();
+		    		exp.tearDown();
+		        }
+			}
+		}
+		catch (java.io.IOException e) { System.out.println(e); }
+		catch (NumberFormatException e) { System.out.println(e); }
+	}
+
+	public void connectToRemoteNode(String url) {
+		try {
+			nodes.get(0).addNeighbor(url);
+		} catch(Exception ex) {
+			ex.printStackTrace();
+		}
 	}
 
 	public void addNode() throws InterruptedException{
