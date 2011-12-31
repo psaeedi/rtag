@@ -503,22 +503,22 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 		if (!overlay.isNeighborOf(recipient)) {
 			for (String url: recipient.getUrls()) {
 				try {
-					// TODO this may create a deadlock
 					recipient = overlay.addNeighbor(url);
 					break;
 				} catch (AlreadyNeighborException ex) {
-					ex.printStackTrace();
 					break;
 				} catch (Exception ex) {
+					System.err.println("Error while connecting: " + url);
 					ex.printStackTrace();
 					continue;
 				}
-				
 			}
 		}
 		try {
 			overlay.send(message.getSubject(), message, recipient);
-			removeMessage(message);
+			if(message.getScope() == Scope.NODE) {
+				removeMessage(message);
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		} 
