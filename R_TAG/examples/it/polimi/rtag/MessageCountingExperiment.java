@@ -41,13 +41,14 @@ public class MessageCountingExperiment {
 	
 	int localPort = 20001;
     
-    String host = "localhost";
+    String host = "192.168.0.4";
     
     static String parent;
     
     ArrayList<Node> nodes = new ArrayList<Node>();
     ArrayList<String> urls = new ArrayList<String>();
     
+    String parentUrl;
     
     PrintWriter pw = null;
     
@@ -135,6 +136,9 @@ public class MessageCountingExperiment {
 			urls.add("reds-tcp:"+ host + ":" + port);
 			
     	}*/
+    	if (parentUrl != null) {
+    		connectToRemoteNode(parentUrl);
+    	}
     	
     	createNetworkByAddingToTheLastAdded();
     	
@@ -383,6 +387,9 @@ public class MessageCountingExperiment {
 	public static void main(String[] args) throws InterruptedException {
 		// TODO Auto-generated method stub
 		MessageCountingExperiment exp = new MessageCountingExperiment();
+		if (args.length > 0) {
+			exp.setParent(args[0]);
+		}
 		exp.setUp();
 		// 1 minute waiting
 		Thread.sleep(2000);
@@ -394,9 +401,7 @@ public class MessageCountingExperiment {
 		exp.writeToFile("addNode");
 		*/
 		
-		if (args.length > 0) {
-			exp.connectToRemoteNode(args[0]);
-		}
+		
 		
 		/*
 		exp.closeFile();
@@ -432,6 +437,10 @@ public class MessageCountingExperiment {
 		} catch(Exception ex) {
 			ex.printStackTrace();
 		}
+	}
+	
+	public void setParent(String url) {
+		this.parentUrl = url;
 	}
 
 	public void addNode() throws InterruptedException{
