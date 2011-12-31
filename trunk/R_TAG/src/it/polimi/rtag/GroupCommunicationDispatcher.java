@@ -122,6 +122,7 @@ public class GroupCommunicationDispatcher {
 		tupleSpaceManager.handleNewLocalGroupCreated(manager);
 	}
 	
+	/*
 	GroupCommunicationManager getLeadedGroupByUUID(UUID query) {
 		synchronized (lock) {
 			for (GroupCommunicationManager manager: leadedGroups) {
@@ -132,7 +133,7 @@ public class GroupCommunicationDispatcher {
 			}
 			return null;
 		}
-	}
+	}*/
 	
 	GroupCommunicationManager getFollowedGroupByUUID(UUID query) {
 		synchronized (lock) {
@@ -412,7 +413,7 @@ public class GroupCommunicationDispatcher {
 				manager.handleRequestToJoin(message, sender);
 			} else {
 				// the source group has been dismantled
-				System.err.println("handleNodeMessage"+node.getNodeDescriptor() + 
+				System.err.println("handleNodeMessage " + node.getNodeDescriptor() + 
 						" Manager null for group: " + remoteGroup);
 			}
 		}
