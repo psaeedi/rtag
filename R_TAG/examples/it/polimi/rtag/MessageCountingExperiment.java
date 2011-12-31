@@ -166,6 +166,9 @@ public class MessageCountingExperiment {
     	//Thread.sleep(2500);
     	//sendGroupcast(nodes.get(18), GREEN, "Hello" );
     	//Thread.sleep(2500);
+    }
+    
+    public void sendGroupcast() {
     	for (int i = 0; i < NUM_GROUPCASTS; i++) {
     		for (int j = 0; j < NUMBER_OF_NODES/2; j++) {
     			sendGroupcast(nodes.get(j), RED, "Hi" + i + " from node " + j);
@@ -177,7 +180,6 @@ public class MessageCountingExperiment {
     		}
     	}
     }
-    
     
     private void createNetworkByAddingToNode0() {
     	for (int i = 1; i < NUMBER_OF_NODES; i++) {
@@ -415,6 +417,8 @@ public class MessageCountingExperiment {
 		        	exp.writeToFile("quit");
 		        	exp.closeFile();
 		    		exp.tearDown();
+		        } else if ("groupcast".equals(line)) {
+		        	exp.sendGroupcast();
 		        }
 			}
 		}
