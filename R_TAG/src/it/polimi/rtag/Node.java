@@ -8,7 +8,7 @@ import polimi.reds.NodeDescriptor;
 import polimi.reds.broker.overlay.AlreadyNeighborException;
 import polimi.reds.broker.overlay.NotRunningException;
 import polimi.reds.broker.overlay.Overlay;
-import polimi.reds.broker.overlay.TCPTransport;
+import polimi.reds.broker.overlay.TCPWorkingTransport;
 import polimi.reds.broker.overlay.Transport;
 
 
@@ -18,9 +18,6 @@ import polimi.reds.broker.overlay.Transport;
  * TODO this should handle a collection of {@link GroupDiscoveredNotificationListener}
  */
 public class Node {
-
-	
-    private NodeDescriptor currentDescriptor;
     
     private GroupAwareTopologyManager topologyManager;
     private Overlay overlay;
@@ -40,7 +37,7 @@ public class Node {
 		 */
 		
 		topologyManager = new GroupAwareTopologyManager();
-		Transport transport = new TCPTransport(port);
+		Transport transport = new TCPWorkingTransport(port);
 			
 		setOverlay(new MessageCountingGenericOverlay(topologyManager, transport));
 		
@@ -65,12 +62,10 @@ public class Node {
 			throw new AssertionError("Overlay already configured");
 		}
 		this.overlay = overlay;
-		// TODO we want the ExtendedNodeDescriptor not the NodeDescriptor
-		currentDescriptor = overlay.getNodeDescriptor();
 	}	
 	
 	public NodeDescriptor getNodeDescriptor() {
-		return currentDescriptor;
+		return overlay.getNodeDescriptor();
 	}
 
 	public void start() {
