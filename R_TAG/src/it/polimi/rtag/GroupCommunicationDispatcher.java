@@ -412,6 +412,11 @@ public class GroupCommunicationDispatcher {
 			if (manager != null) {
 				manager.handleRequestToJoin(message, sender);
 			} else {
+				if (!remoteGroup.getLeader().equals(node.getNodeDescriptor())) {
+					throw new RuntimeException("handleNodeMessage node " + 
+						   node.getNodeDescriptor() + "not leader of " + remoteGroup);
+				}
+				
 				// the source group has been dismantled
 				System.err.println("handleNodeMessage " + node.getNodeDescriptor() + 
 						" Manager null for group: " + remoteGroup);
