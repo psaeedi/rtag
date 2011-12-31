@@ -36,7 +36,7 @@ public abstract class TupleMessage extends polimi.reds.Message {
 	 * Messages are valid for 5 minutes.
 	 * After that they should not be broadcasted any more. 
 	 */
-	private final static long EXPIRATION_TIME = 60 * 5 * 1000;
+	private final static long EXPIRATION_TIME = 60 * 60 * 1000;
 	
 	public static final String CUSTOM_MESSAGE = "CustomMessage";
 	
