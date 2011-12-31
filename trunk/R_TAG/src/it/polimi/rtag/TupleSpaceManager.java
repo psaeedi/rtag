@@ -507,8 +507,10 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 					recipient = overlay.addNeighbor(url);
 					break;
 				} catch (AlreadyNeighborException ex) {
+					ex.printStackTrace();
 					break;
 				} catch (Exception ex) {
+					ex.printStackTrace();
 					continue;
 				}
 				
