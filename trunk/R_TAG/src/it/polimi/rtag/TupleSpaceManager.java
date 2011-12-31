@@ -503,9 +503,11 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 		if (!overlay.isNeighborOf(recipient)) {
 			for (String url: recipient.getUrls()) {
 				try {
+					System.out.println("Connecting to: " + url);
 					recipient = overlay.addNeighbor(url);
 					break;
 				} catch (AlreadyNeighborException ex) {
+					recipient = ex.getRemoteNodeDescriptor();
 					break;
 				} catch (Exception ex) {
 					System.err.println("Error while connecting: " + url);
