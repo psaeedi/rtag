@@ -10,8 +10,13 @@ import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.net.ConnectException;
+import java.net.InetAddress;
 import java.net.MalformedURLException;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -67,6 +72,9 @@ public class MessageCountingExperiment {
 			int port = localPort ++;
 			Node node = new Node(host, port);
 			node.start();
+			for (String url: node.getNodeDescriptor().getUrls()) {
+				System.out.println(url);
+			}
 			if (i%2 == 0) {
 				node.joinGroup(RED);
 			} else {
@@ -379,6 +387,36 @@ public class MessageCountingExperiment {
 	 * @throws InterruptedException 
 	 */
 	public static void main(String[] args) throws InterruptedException {
+		try {
+			  InetAddress localhost = InetAddress.getLocalHost();
+			  System.out.println(" IP Addr: " + localhost.getHostAddress());
+			  // Just in case this host has multiple IP addresses....
+			  InetAddress[] allMyIps = InetAddress.getAllByName(localhost.getCanonicalHostName());
+			  if (allMyIps != null && allMyIps.length > 1) {
+				  System.out.println(" Full list of IP addresses:");
+			    for (int i = 0; i < allMyIps.length; i++) {
+			    	System.out.println("    " + allMyIps[i]);
+			    }
+			  }
+			} catch (UnknownHostException e) {
+				System.out.println(" (error retrieving server host name)");
+			}
+
+			try {
+				System.out.println("Full list of Network Interfaces:");
+			  for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
+			    NetworkInterface intf = en.nextElement();
+			    System.out.println("    " + intf.getName() + " " + intf.getDisplayName());
+			    for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements(); ) {
+			    	System.out.println("        " + enumIpAddr.nextElement().toString());
+			    }
+			  }
+			} catch (SocketException e) {
+				System.out.println(" (error retrieving network interface list)");
+			}
+
+		
+		
 		// TODO Auto-generated method stub
 		MessageCountingExperiment exp = new MessageCountingExperiment();
 		if (args.length > 0) {

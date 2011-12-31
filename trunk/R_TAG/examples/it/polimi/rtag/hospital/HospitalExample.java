@@ -66,6 +66,7 @@ public class HospitalExample {
 		    Thread.sleep(1000 * 60 * 1);
 		    exp.writeToFile("Groupcast");
 		    exp.closeFile();
+		    Thread.sleep(1000 * 60 * 3);
 		    exp.stop();
     }
 	 
