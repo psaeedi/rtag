@@ -37,7 +37,7 @@ public class MessageCountingExperiment {
 
 	public static final int NUM_GROUPCASTS = 1;
 
-    private static final int NUMBER_OF_NODES = 2;
+    private static final int NUMBER_OF_NODES = 10;
 	
 	int localPort = 20001;
     
@@ -63,23 +63,18 @@ public class MessageCountingExperiment {
     }
     
     private void setUp() {
-    	for (int i = 0; i < NUMBER_OF_NODES/2; i++) {
+    	for (int i = 0; i < NUMBER_OF_NODES; i++) {
 			int port = localPort ++;
 			Node node = new Node(host, port);
 			node.start();
-			node.joinGroup(RED);
+			if (i%2 == 0) {
+				node.joinGroup(RED);
+			} else {
+				node.joinGroup(BLUE);
+			}
 			nodes.add(node);
 			urls.add("reds-tcp:"+ host + ":" + port);
 		}
-    	
-    	for (int i = 0; i < NUMBER_OF_NODES/2; i++) {
-			int port = localPort ++;
-			Node node = new Node(host, port);
-			node.start();
-			node.joinGroup(BLUE);
-			nodes.add(node);
-			urls.add("reds-tcp:"+ host + ":" + port);
-    	}
     	
     	/*for (int i = 0; i < NUMBER_OF_NODES/8; i++) {
 			int port = localPort ++;
@@ -174,13 +169,12 @@ public class MessageCountingExperiment {
     
     public void sendGroupcast() {
     	for (int i = 0; i < NUM_GROUPCASTS; i++) {
-    		for (int j = 0; j < NUMBER_OF_NODES/2; j++) {
-    			sendGroupcast(nodes.get(j), RED, "Hi" + i + " from node " + j);
-    		}
-    	}
-    	for (int i = 0; i < NUM_GROUPCASTS; i++) {
-    		for (int j = 0; j < NUMBER_OF_NODES/2; j++) {
-    			sendGroupcast(nodes.get(NUMBER_OF_NODES/2 + j), BLUE, "Hi" + i + " from node " + j);
+    		for (int j = 0; j < NUMBER_OF_NODES; j++) {
+    			if (j%2 == 0) {
+    				sendGroupcast(nodes.get(j), RED, "Hi" + i + " from node " + j);
+    			} else {
+    				sendGroupcast(nodes.get(j), BLUE, "Hi" + i + " from node " + j);
+    			}
     		}
     	}
     }
