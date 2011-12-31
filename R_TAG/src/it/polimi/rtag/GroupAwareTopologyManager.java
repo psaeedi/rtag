@@ -85,7 +85,7 @@ public class GroupAwareTopologyManager extends SimpleTopologyManager {
 					// TODO this may create a deadlock
 					node = super.addNeighbor(url);
 				} catch (AlreadyNeighborException ex) {
-					node = descriptor;
+					node = ex.getRemoteNodeDescriptor();
 				} catch (Exception ex) {
 					continue;
 				}
