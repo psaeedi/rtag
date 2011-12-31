@@ -1185,7 +1185,7 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 	
 	void sendRequestToJoin(GroupDescriptor remoteGroup) {
 		System.err.println(node.getNodeDescriptor() + " requesting to join " + remoteGroup);
-		if (groupDescriptor.getUniqueId().equals(remoteGroup.getUniqueId())) {
+		if (groupDescriptor.equals(remoteGroup)) {
 			return;
 		}
 		/*if (node.getGroupCommunicationDispatcher()

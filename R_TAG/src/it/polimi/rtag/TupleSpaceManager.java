@@ -370,7 +370,7 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 		if (manager != null) {
 			manager.handleAndForwardTupleMessage(message, sender);
 		} else {
-			System.out.println(currentNode + "Manager null for " + recipient);
+			System.out.println("handleGroupMessage: " + currentNode + " Manager null for " + recipient);
 		}
 	}
 
