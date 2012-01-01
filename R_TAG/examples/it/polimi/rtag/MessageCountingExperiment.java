@@ -42,9 +42,9 @@ public class MessageCountingExperiment {
 
 	public static final int NUM_GROUPCASTS = 1;
 
-    private static final int NUMBER_OF_NODES = 100;
+    private static final int NUMBER_OF_NODES = 20;
 	
-	int localPort = 20001;
+	int localPort = 40001;
     
     String host = "localhost";
     
@@ -57,7 +57,8 @@ public class MessageCountingExperiment {
     
     PrintWriter pw = null;
     
-    public MessageCountingExperiment() {
+    public MessageCountingExperiment(int localPort) {
+    	this.localPort = localPort;
     	File messagesFile = new File("MessageCountingExperiment.csv");
     	try {
 			pw = new PrintWriter(messagesFile);
@@ -84,61 +85,6 @@ public class MessageCountingExperiment {
 			urls.add("reds-tcp:"+ host + ":" + port);
 		}
     	
-    	/*for (int i = 0; i < NUMBER_OF_NODES/8; i++) {
-			int port = localPort ++;
-			Node node = new Node(host, port);
-			node.start();
-			node.joinGroup(YELLOW);
-			nodes.add(node);
-			urls.add("reds-tcp:"+ host + ":" + port);
-    	}
-    	
-    	for (int i = 0; i < NUMBER_OF_NODES/8; i++) {
-			int port = localPort ++;
-			Node node = new Node(host, port);
-			node.start();
-			node.joinGroup(GREEN);
-			nodes.add(node);
-			urls.add("reds-tcp:"+ host + ":" + port);
-    	}
-    	
-    	for (int i = 0; i < NUMBER_OF_NODES/8; i++) {
-			int port = localPort ++;
-			Node node = new Node(host, port);
-			node.start();
-			node.joinGroup(ORANGE);
-			nodes.add(node);
-			urls.add("reds-tcp:"+ host + ":" + port);
-			
-    	}
-    	
-    	for (int i = 0; i < NUMBER_OF_NODES/8; i++) {
-			int port = localPort ++;
-			Node node = new Node(host, port);
-			node.start();
-			node.joinGroup(PURPLE);
-			nodes.add(node);
-			urls.add("reds-tcp:"+ host + ":" + port);
-			
-    	}
-    	for (int i = 0; i < NUMBER_OF_NODES/8; i++) {
-			int port = localPort ++;
-			Node node = new Node(host, port);
-			node.start();
-			node.joinGroup(PINK);
-			nodes.add(node);
-			urls.add("reds-tcp:"+ host + ":" + port);
-			
-    	}
-    	for (int i = 0; i < NUMBER_OF_NODES/8; i++) {
-			int port = localPort ++;
-			Node node = new Node(host, port);
-			node.start();
-			node.joinGroup(WHITE);
-			nodes.add(node);
-			urls.add("reds-tcp:"+ host + ":" + port);
-			
-    	}*/
     	if (parentUrl != null) {
     		connectToRemoteNode(parentUrl);
     	}
@@ -164,15 +110,6 @@ public class MessageCountingExperiment {
 			e.printStackTrace();
 		}
 
-    
-    	 
-    	//sendGroupcast(nodes.get(3), RED, "Hello" );
-    	
-    	
-    	//sendGroupcast(nodes.get(19), BLUE, "Hello" );
-    	//Thread.sleep(2500);
-    	//sendGroupcast(nodes.get(18), GREEN, "Hello" );
-    	//Thread.sleep(2500);
     }
     
     public void sendGroupcast() {
@@ -387,40 +324,14 @@ public class MessageCountingExperiment {
 	 * @throws InterruptedException 
 	 */
 	public static void main(String[] args) throws InterruptedException {
-		try {
-			  InetAddress localhost = InetAddress.getLocalHost();
-			  System.out.println(" IP Addr: " + localhost.getHostAddress());
-			  // Just in case this host has multiple IP addresses....
-			  InetAddress[] allMyIps = InetAddress.getAllByName(localhost.getCanonicalHostName());
-			  if (allMyIps != null && allMyIps.length > 1) {
-				  System.out.println(" Full list of IP addresses:");
-			    for (int i = 0; i < allMyIps.length; i++) {
-			    	System.out.println("    " + allMyIps[i]);
-			    }
-			  }
-			} catch (UnknownHostException e) {
-				System.out.println(" (error retrieving server host name)");
-			}
-
-			try {
-				System.out.println("Full list of Network Interfaces:");
-			  for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
-			    NetworkInterface intf = en.nextElement();
-			    System.out.println("    " + intf.getName() + " " + intf.getDisplayName());
-			    for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements(); ) {
-			    	System.out.println("        " + enumIpAddr.nextElement().toString());
-			    }
-			  }
-			} catch (SocketException e) {
-				System.out.println(" (error retrieving network interface list)");
-			}
-
+		
 		
 		
 		// TODO Auto-generated method stub
-		MessageCountingExperiment exp = new MessageCountingExperiment();
-		if (args.length > 0) {
-			exp.setParent(args[0]);
+		MessageCountingExperiment exp = new MessageCountingExperiment(
+				Integer.parseInt(args[0]));
+		if (args.length > 1) {
+			exp.setParent(args[1]);
 		}
 		exp.setUp();
 		// 1 minute waiting
@@ -451,12 +362,11 @@ public class MessageCountingExperiment {
 			while (true) {
 				String line = stdin.readLine();
 		        if ("quit".equals(line)) {
+		        	exp.writeToFile("quit");
+		        	exp.closeFile();
 		    		exp.tearDown();
 		        } else if ("groupcast".equals(line)) {
 		        	exp.sendGroupcast();
-		        } else if ("write".equals(line)) {
-		        	exp.writeToFile("results");
-		        	exp.closeFile();
 		        }
 			}
 		}
@@ -508,7 +418,7 @@ public class MessageCountingExperiment {
     	}
     	System.out.println(group);
     	
-    	TupleMessage message = new ExampleMessage(group.getFriendlyName(), content, "HELLO");
+    	TupleMessage message = new ExampleMessage(group.getFriendlyName(), content, "HELLO " + color);
         node.getTupleSpaceManager().storeAndSend(message);
 	}
 
