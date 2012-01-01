@@ -42,11 +42,11 @@ public class MessageCountingExperiment {
 
 	public static final int NUM_GROUPCASTS = 1;
 
-    private static final int NUMBER_OF_NODES = 10;
+    private static final int NUMBER_OF_NODES = 100;
 	
 	int localPort = 20001;
     
-    String host = "192.168.0.4";
+    String host = "localhost";
     
     static String parent;
     
@@ -451,11 +451,12 @@ public class MessageCountingExperiment {
 			while (true) {
 				String line = stdin.readLine();
 		        if ("quit".equals(line)) {
-		        	exp.writeToFile("quit");
-		        	exp.closeFile();
 		    		exp.tearDown();
 		        } else if ("groupcast".equals(line)) {
 		        	exp.sendGroupcast();
+		        } else if ("write".equals(line)) {
+		        	exp.writeToFile("results");
+		        	exp.closeFile();
 		        }
 			}
 		}
