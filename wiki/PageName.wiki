@@ -1,23 +1,32 @@
-#summary One-sentence summary of this page.
+=A-3=
+*A-3*, is a model and a reconfigurable
+middleware for designing and implementing high-volume and
+highly volatile distributed systems.
 
-Traditional distributed systems perform distribution relying upon stable network infrastructures where hosts are permanently connected to the main net-
-work through high-bandwidth and high-quality links. However, for mobile and
+===Introduction===
+
+Traditional distributed systems perform distribution relying upon stable network infrastructures where hosts are permanently connected to the main network through high-bandwidth and high-quality links. However, for mobile and
 pervasive systems most of the distribution occurring among embedded devices
 communicating with each other through radio medium, lacks of such reliable
 communication links and it is thus more prone to congestion, collision, and interference.
 Publish/subscribe (P/S) is an appealing communication primitive for such
-networks due to the loosely coupled interaction between the publishers and subscribers. In this paradigm, publishers produce events and subscribers express
-their interests through subscriptions. Any event matching the subscription is
-delivered to the corresponding subscriber. In this manner the subscribers nor
-the publishers do not use source/destination identifiers or addresses. This inherent the decoupling of publishers and subscribers.
+networks due to the loosely coupled interaction between the publishers and subscriber.
+
+Pervasive distributed systems are usually supported by a middleware that is
+in charge of keeping track of subscriptions and of dispatching the published messages to the interested subscribers. Middleware with multi layers can be installed on every node of a distributed system to provide a homogeneous high-level interface to applications for many aspects of a distributed computing environment, such as communication, concurrency, synchronization, replication, persistence,and access control.
+
+The coordination is easier if, instead of attempting to coordinate large amounts of elements, the designer can concentrate on coordinating “groups” of elements that are less dynamic in their
+behavior. Elements can be grouped together for a number of reasons: because
+they are conceptually similar, because they have common goals, because they
+are physically close, etc. Once the elements have been grouped, the designer
+can exploit special communication abstractions, receive updated views of the
+elements that are in the group, and perform state management.
 
 
-Add your content here.
+For more information about A-3 please read the A-3 papers:
+ * L. Baresi, S. Guinea, A-3: Self-Adaptation Capabilities through Groups and Coordination. In Proceedings of India Software Engineering Conference (ISEC) , pages 11–20, India, 2011.
+
+ * L. Baresi, S. Guinea, A-3: an Architectural Style for Coordinating Distributed Components. In Proceedings of IEEE/IFIP Conference on Software Architecture (WICSA), Colorado, 2011
 
 
-= Details =
-
-Add your content here.  Format your content with:
-  * Text in *bold* or _italic_
-  * Headings, paragraphs, and lists
-  * Automatic links to other wiki pages
+== Extension==
