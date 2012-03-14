@@ -1,0 +1,88 @@
+
+simulation.cycles CYCLES 
+network.size SIZE
+random.seed 1234567890
+
+CYCLES 1
+SIZE 100
+CYCLELENGTH 1000
+CRASH 0.2
+
+#####################################Protocol#################################
+
+protocol.geolocation it.polimi.peersim.protocols.GeoLocation
+
+protocol.link IdleProtocol
+
+protocol.discovery it.polimi.peersim.protocols.DiscoveryProtocol
+{
+	geolocation_protocol geolocation
+	discovery_radius 0.2
+	universe_protocol universe
+}
+protocol.group it.polimi.peersim.protocols.GroupProtocol
+
+protocol.universe it.polimi.peersim.protocols.UniverseProtocol
+{
+universe_protocol universe
+discovery_protocol discovery
+}
+
+
+##########################################Initializer###########################
+
+init.geoinit it.polimi.peersim.initializers.GeoInitializer
+init.geoinit.geolocation_protocol geolocation
+init.geoplot.plot_protocol geolocation
+
+
+init.universeinit it.polimi.peersim.initializers.UniverseInitializer
+{
+ universe_protocol universe 
+ discovery_protocol discovery
+ 
+}
+
+############################################Control############################
+
+control.crash DynamicNetwork
+{
+  add -CRASH*SIZE
+  minsize SIZE-(CRASH*SIZE)
+  #ONLY FOR THE FIRST CYCLE REMOVE THE NODES(cycle 0)
+}
+
+
+
+control.io it.polimi.peersim.observers.GeoObserver
+{
+plot_protocol geolocation
+protocol link
+discovery_protocol discovery
+universe_protocol universe
+file_base graph
+}
+
+
+control.discovery it.polimi.peersim.controls.DiscoveryController
+{
+	discovery_protocol discovery
+}
+
+control.group  it.polimi.peersim.controls.GroupController
+{
+	group_protocol group
+}
+
+control.coordination it.polimi.peersim.controls.GroupCoordinationController
+{
+universe_protocol universe
+}
+
+control.wire it.polimi.peersim.controls.WirePrtag
+{
+wireprtag_protocol link
+discovery_protocol discovery
+}
+
+
