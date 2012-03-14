@@ -1,0 +1,23 @@
+#summary One-sentence summary of this page.
+
+Traditional distributed systems perform distribution relying upon stable network infrastructures where hosts are permanently connected to the main net-
+work through high-bandwidth and high-quality links. However, for mobile and
+pervasive systems most of the distribution occurring among embedded devices
+communicating with each other through radio medium, lacks of such reliable
+communication links and it is thus more prone to congestion, collision, and interference.
+Publish/subscribe (P/S) is an appealing communication primitive for such
+networks due to the loosely coupled interaction between the publishers and subscribers. In this paradigm, publishers produce events and subscribers express
+their interests through subscriptions. Any event matching the subscription is
+delivered to the corresponding subscriber. In this manner the subscribers nor
+the publishers do not use source/destination identifiers or addresses. This inherent the decoupling of publishers and subscribers.
+
+
+Add your content here.
+
+
+= Details =
+
+Add your content here.  Format your content with:
+  * Text in *bold* or _italic_
+  * Headings, paragraphs, and lists
+  * Automatic links to other wiki pages
