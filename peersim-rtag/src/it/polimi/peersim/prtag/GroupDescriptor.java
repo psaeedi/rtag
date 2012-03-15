@@ -47,7 +47,7 @@ public class GroupDescriptor {
 	   
 	   this.uniqueId = oldDescriptor.uniqueId;
 		this.hierarchyName = oldDescriptor.hierarchyName;
-		this.leader = oldDescriptor.parentLeader;
+		this.leader = oldDescriptor.leader;
 		this.universe = oldDescriptor.universe;
 		this.parentLeader = oldDescriptor.parentLeader;
 		this.followers = new ArrayList<Node>(oldDescriptor.followers);
@@ -118,15 +118,15 @@ public class GroupDescriptor {
 	
 	public boolean isFollower(Node currentDescriptor) {
 		if(followers.isEmpty()){
-			System.out.println("*popopopo");
+			//System.out.println("*popopopo");
 		}
 		for (Node node: followers) {
-			System.out.println("*checkkkkkkkkk");
+			//System.out.println("*checkkkkkkkkk");
 			if (node.equals(currentDescriptor)) {
 				return true;
 			}
 		}
-		System.out.println("*:)popopopo");
+		//System.out.println("*:)popopopo");
 		return false;
 	}
 

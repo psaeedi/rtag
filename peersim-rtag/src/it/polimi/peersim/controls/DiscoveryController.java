@@ -28,6 +28,8 @@ public class DiscoveryController implements Control {
 		Node n;
 		Node k;
 		for (int i = 0; i < Network.size(); i++) {
+			//System.out.println("Discoverycon-network size(after crash)!"+ Network.size());
+			
             n = Network.get(i);
             DiscoveryProtocol discoveryProtocol = (DiscoveryProtocol) n.getProtocol(
             		discoveryProtocolId);
@@ -39,13 +41,14 @@ public class DiscoveryController implements Control {
                 }
             	k = Network.get(j);
             	if (discoveryProtocol.isCloseTo(n, k)) {
+            		//System.out.println("Discoverycon-execute-is adding neighbor!");
             		neighbours.add(k);
             	}
             }
             
-            if (neighbours.isEmpty()){
-    			System.out.println("oemptyo");
-    		}
+           /* if (neighbours.isEmpty()){
+    			//System.out.println("Discoverycon-execute-neighbor list is empty!");
+    		}*/
             discoveryProtocol.updateNeighbourhood(neighbours);
         }
 		
