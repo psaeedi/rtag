@@ -167,41 +167,36 @@ public class GeoObserver extends GraphObserver {
     }*/
     
     
+
     private static void graphToFile(Graph g, PrintStream ps, int geoPid) {
-    	
-        for (int i = 1; i < g.size(); i++) {
-            Node current = (Node) g.getNode(i);
-            double x_to = ((GeoLocation) current
-                    .getProtocol(geoPid)).getX();
-            double y_to = ((GeoLocation) current
-                    .getProtocol(geoPid)).getY();
-           /* UniverseProtocol universeProtocol = (UniverseProtocol) current.getProtocol(
-            		universeProtocolId);
-			ArrayList<Node> leadedUniverse = (ArrayList<Node>) universeProtocol.getFollowers();
-			*/
-            
-            
-            GroupDescriptor groupDescriptor = GroupDescriptor.createUniverse(current);
-            if(groupDescriptor.isLeader(current)){
-            ArrayList<Node>leadedUniverse = (ArrayList<Node>) groupDescriptor.getFollowers();
-			if(!leadedUniverse.isEmpty()){
-				System.out.println("node"+ current.getID()+ "No followers");
-			}
-				for	(Node k: leadedUniverse) {
-					 double x_from = ((GeoLocation) k
-		                        .getProtocol(geoPid)).getX();
-		             double y_from = ((GeoLocation) k
-		                        .getProtocol(geoPid)).getY();
-		        ps.println(x_from + " " + y_from);
-			}
-		        ps.println(x_to + " " + y_to);     
-	            
-                ps.println(); 
+	
+	    for (int i = 1; i < g.size(); i++) {
+	        Node current = (Node) g.getNode(i);
+	        double x_to = ((GeoLocation) current
+	                .getProtocol(geoPid)).getX();
+	        double y_to = ((GeoLocation) current
+	                .getProtocol(geoPid)).getY();
+	        Node n = (Node) g.getNode(i);
+	        UniverseProtocol universeProtocol = (UniverseProtocol) n.getProtocol(
+					universeProtocolId);
 			
-           
-				}
-			}
-    }
+	        GroupDescriptor groupDescriptor = universeProtocol.getLeadedUniverse();
+	        if (groupDescriptor == null) {
+	        	continue;
+	        }
+	        
+			for	(Node k: groupDescriptor.getFollowers()) {
+				 double x_from = ((GeoLocation) k
+	                        .getProtocol(geoPid)).getX();
+	             double y_from = ((GeoLocation) k
+	                        .getProtocol(geoPid)).getY();
+	        ps.println(x_from + " " + y_from);
+	        ps.println(x_to + " " + y_to);
+	        ps.println(); 
+	        }
+			
+	    }
+	}
     
     
     

@@ -1,9 +1,6 @@
 package it.polimi.peersim.protocols;
 
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
-import java.util.List;
 
 import peersim.config.Configuration;
 import peersim.core.Node;
@@ -12,18 +9,14 @@ import it.polimi.peersim.prtag.GroupCommunicationDispatcher;
 import it.polimi.peersim.prtag.GroupDescriptor;
 
 public class UniverseProtocol implements Protocol{ 
-//PropertyChangeListener {
-	
-	
-	private UniverseProtocol universeProtocol;
-	
+		
 	private ArrayList<GroupDescriptor> discoveredGroupName =
 			new ArrayList<GroupDescriptor>();
 	
-	private static GroupDescriptor leadedUniverse;
+	private GroupDescriptor leadedUniverse;
 	private GroupDescriptor followedUniverse;
-
-	private static Node currentNode;
+	
+	private Node currentNode;
 	private GroupCommunicationDispatcher groupCommunicationDispatcher;
 
 	
@@ -32,14 +25,16 @@ public class UniverseProtocol implements Protocol{
 	private static final String UNIVERSE_PROTOCOL = "universe_protocol";
 	private static int universeProtocolId;
 	
-	private static final String DISCOVERY_PROTOCOL = "discovery_protocol";
-	private static int discoveryProtocolId;
+	private static Node parentUniverse = null;
+	
+	//private static final String DISCOVERY_PROTOCOL = "discovery_protocol";
+	//private static int discoveryProtocolId;
 
 	public UniverseProtocol(String prefix) {
 		universeProtocolId = Configuration.getPid(
 				prefix + "." + UNIVERSE_PROTOCOL);
-		discoveryProtocolId = Configuration.getPid(
-				prefix + "." + DISCOVERY_PROTOCOL);
+		//discoveryProtocolId = Configuration.getPid(
+		//		prefix + "." + DISCOVERY_PROTOCOL);
 		
 	}
 
@@ -57,26 +52,16 @@ public class UniverseProtocol implements Protocol{
 	}
 	
 
-
-	
-
 	/**
 	 * Sets the current node and create a new universe for it.
 	 * Also set the current instance as a change listener for the
 	 * discovery protocol.
 	 * 
 	 * @param currentNode the current node.
-	 * @param discoveryProtocol the discovery protocol from which to
-	 * 		discover neighbors.
 	 */
-	public void initialize(Node currentNode, DiscoveryProtocol discoveryProtocol) {
+	public void initialize(Node currentNode){//, DiscoveryProtocol discoveryProtocol) {
 		this.currentNode = currentNode;
 		leadedUniverse = GroupDescriptor.createUniverse(this.currentNode);
-		
-		//**discoveryProtocol.propertyChangeSupport.addPropertyChangeListener(
-        	//**	DiscoveryProtocol.NODES_DISCOVERED, universeProtocol);
-		//**discoveryProtocol.propertyChangeSupport.addPropertyChangeListener(
-        	//**	DiscoveryProtocol.NODES_LOST, universeProtocol);
 	}
 
 
@@ -95,7 +80,7 @@ public class UniverseProtocol implements Protocol{
 	 *  o /  o
 	 *  O/-->o
 	 */
-	public static void handleNeighbourDiscovered(Node addedNode){	
+	public void handleNeighbourDiscovered(Node addedNode){	
 		Node n = currentNode;
 		UniverseProtocol protocol = null;
 		if (currentNode.getID() < addedNode.getID()) {
@@ -104,6 +89,9 @@ public class UniverseProtocol implements Protocol{
 		
 		//loop to reach the top leader.
 		while (true) {
+			if (n == null) {
+				throw new AssertionError("Leader cannot be null");
+			} 
 			//for each node we found we get its protocol
 			protocol = (UniverseProtocol) n.getProtocol(universeProtocolId);
 			//we ask the other node protocol if the followed universe is null
@@ -113,6 +101,9 @@ public class UniverseProtocol implements Protocol{
 			}
 			//otherwise we go to its leader, and repeat the loop
 			n = protocol.followedUniverse.getLeader();
+			if (n == null) {
+				throw new AssertionError("Leader cannot be null: " + protocol.followedUniverse);
+			} 
 			/*System.out.println("*?*Node " + currentNode.getID() + 
 					" added to " + addedNode);*/
 		}
@@ -134,13 +125,28 @@ public class UniverseProtocol implements Protocol{
 	 */
 	private void startFollowing(Node remoteNode) {
 		
+		//here the current node want to
+		//follow the remote node!
+		
 		UniverseProtocol remoteProtocol = (UniverseProtocol) 
 				remoteNode.getProtocol(universeProtocolId);
+	
 		
-		if(remoteProtocol.followedUniverse!=null)
-		{
-			throw new AssertionError("already following a universe");            
+		/*if(remoteProtocol.followedUniverse != null) {
+			throw new AssertionError("already following a universe");    
+			
+		}*/
+		
+		
+		if(!leadedUniverse.isParentLeader(currentNode)){
+		
+		remoteProtocol.leadedUniverse.addFollower(currentNode);
+		//System.out.println("?-------------we find top parent*");
+		return;
 		}
+		// TODO update the other followers!!!!!
+		followedUniverse = new GroupDescriptor(remoteProtocol.leadedUniverse);
+		
 	    // Ask the remote node protocol for its leaded universe
 		// it means which universe it is leading.
 
@@ -152,18 +158,18 @@ public class UniverseProtocol implements Protocol{
 		//if it has followers update them
 		
 		//leadeduniverse was initiated 
-		if(leadedUniverse == null)
-		{
+		
+		
+		if(leadedUniverse == null) {
 			//nothing to do
 			return;
 		}
-		if(leadedUniverse.getFollowers().size() == 0)
-		{
+		
+		if(leadedUniverse.getFollowers().size() == 0) {
 			//TODO inform the tuple space the group has been removed
 			leadedUniverse = null;
 			return;
-		}
-		else{//it has followers
+		} else {//it has followers
 			for(Node follower: leadedUniverse.getFollowers()){
 				GroupDescriptor followedUniverse = remoteProtocol.acceptFollower(follower);
 			//we need to update the group descriptor of all followers
@@ -181,6 +187,7 @@ public class UniverseProtocol implements Protocol{
 		
 	}
 
+	// TODO RETURN A GROUP DESCRIPTOR!!!!!!!!
 	private GroupDescriptor acceptFollower(Node remoteNode) {
 		//the remote node is the top leader that wants to join the current node
 		//so first check the current node is a leader or follower
@@ -190,22 +197,19 @@ public class UniverseProtocol implements Protocol{
 				remoteNode.getProtocol(universeProtocolId);
 		if(leadedUniverse.isLeader(currentNode)){
 			if(!followerProtocol.followedUniverse.isFollower(remoteNode)){
-		leadedUniverse.addFollower(remoteNode);
-		return null;
+				leadedUniverse.addFollower(remoteNode);
+				return null;
 			}
 		}
 		//if it is the follower
 		Node leader = leadedUniverse.getLeader();
 		//ask leader add to the group
-		UniverseProtocol askLeaderProtocol = (UniverseProtocol) 
+		UniverseProtocol leaderProtocol = (UniverseProtocol) 
 				leader.getProtocol(universeProtocolId);
-	    askLeaderProtocol.acceptFollower(remoteNode);
+		leaderProtocol.acceptFollower(remoteNode);
 		return null;
 	}
 	
-	
-
-
 	/**
 	 * Invoked every time one of the neighbor disappear.
 	 * 
@@ -214,7 +218,7 @@ public class UniverseProtocol implements Protocol{
 	 * If the neighbor was a follower the leader will handle it. 
 	 * If this node is the leader then it has to notify the other followers. 
 	 */
-	public static void handleNeighbourLost(Node lostNode) {
+	public void handleNeighbourLost(Node lostNode) {
 	    //ask the lostnode if it is a leader? 
 		UniverseProtocol protocol = null;
 		protocol = (UniverseProtocol) lostNode.getProtocol(universeProtocolId);
@@ -286,54 +290,52 @@ public class UniverseProtocol implements Protocol{
 		groupCommunicationDispatcher.leaveGroupsWithName(friendlyName);
 		
 	}
-	
- 
-	/*@Override
-	public void propertyChange(PropertyChangeEvent evt) {
-		
-		System.out.println("Name      = " + evt.getPropertyName());
-		if (evt.getPropertyName().equals(DiscoveryProtocol.NODES_DISCOVERED)) {
-			System.out.println("*!*!*Node " + currentNode.getID());
-			ArrayList<Node> added = (ArrayList<Node>) evt.getNewValue();
-			for (Node n: added) {
-				handleNeighbourDiscovered(n);
-			}
-		} else if (evt.getPropertyName().equals(DiscoveryProtocol.NODES_LOST)) {
-			System.out.println("*!*?*Node " + currentNode.getID());
-			ArrayList<Node> lost = (ArrayList<Node>) evt.getNewValue();
-			for (Node n: lost) {
-				handleNeighbourLost(n);
-			}
-		}
 
-	}*/
 	
 	public ArrayList<Node> getFollowers(){
 	
 		if(leadedUniverse.isLeader(currentNode)){
 			followers = (ArrayList<Node>) leadedUniverse.getFollowers();
-			System.out.println("?-------------pan**pan*");
+			//System.out.println("?-------------pan**pan*");
 		}
 		return followers;
 	}
 	
 	
 
-	public static void notifyAddedNode(ArrayList<Node> added) {
+	public void notifyAddedNode(ArrayList<Node> added) {
+	
+		
+		if(parentUniverse==null){
+			//ToDO this works for one universe(one group), fix it
+			//for multi groups!
+			parentUniverse = this.currentNode;
+			leadedUniverse.setParentLeader(currentNode);
+			System.out.println("created a top parent " + currentNode.getID()  );
+			//return;
+		}
 	
 		for (Node node: added) {
 			handleNeighbourDiscovered(node);
-			//System.out.println("?pan******Node " + currentNode.getID()  );
+			//System.out.println("nofify added Node " + currentNode.getID()  );
 		}
 		
 	}
 
-	public static void notifyRemovedNode(ArrayList<Node> removed) {
+	public void notifyRemovedNode(ArrayList<Node> removed) {
 		for (Node n: removed) {
 			handleNeighbourLost(n);
-			//System.out.println("?pan******Node " + currentNode.getID()  );
+			System.out.println("notify removed Node " + currentNode.getID()  );
 		}
 		
+	}
+
+	public GroupDescriptor getLeadedUniverse() {
+		return leadedUniverse;
+	}
+
+	public GroupDescriptor getFollowedUniverse() {
+		return followedUniverse;
 	}
 	
 
