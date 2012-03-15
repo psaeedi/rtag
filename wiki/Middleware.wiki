@@ -59,5 +59,5 @@ a new element, in how it decides to create a new group and
 compose it with the rest of the system, and in finding the
 correct destinations for when application messages are sent.
 It is also key in providing A-3’s views and state management
-features. The tuple space is implemented using the LIGHTS
+features. The tuple space is implemented using the [http://lights.sourceforge.net/ LighTS ]
 framework.
