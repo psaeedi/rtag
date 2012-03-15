@@ -32,8 +32,7 @@ For more information about A-3 please read the A-3 papers:
 
 == RTAG: An Extension to A-3==
 
-The A-3 middleware implementation is completely decentral-
-ized, and is built as an extension to REDS, a distributed
+The A-3 middleware implementation is completely decentralized, and is built as an extension to REDS, a distributed
 publish and subscribe message dispatching middleware. 
 
 REDS implements distributed algorithms that support
