@@ -1,5 +1,5 @@
 #labels Featured
-=A-3=
+=A-3 (_it.polimi_)=
 *A-3*, is a reconfigurable
 middleware for designing and implementing high-volume and
 highly volatile distributed systems.
