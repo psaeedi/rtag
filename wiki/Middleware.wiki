@@ -32,7 +32,7 @@ For more information about A-3 please read the A-3 papers:
 
 == RTAG: An Extension to A-3==
 
-The A-3 middleware implementation is completely decentralized, and is built as an extension to [http://http://zeus.ws.dei.polimi.it/reds/ REDS], a distributed
+The A-3 middleware implementation is completely decentralized, and is built as an extension to [http://zeus.ws.dei.polimi.it/reds/ REDS], a distributed
 publish and subscribe message dispatching middleware. 
 
 REDS implements distributed algorithms that support
@@ -40,7 +40,7 @@ the dynamic reconfiguration of its infrastructure, making it
 resilient to changes in the infrastructure’s own topology. In
 A-3 we employ REDS for group communication, and for
 managing the group topology. In our previous version of
-A-3,  [http://http://www.jgroups.org/ JGroups]framework creates a channel in which
+A-3,  [http://www.jgroups.org/ JGroups]framework creates a channel in which
 all the participants were connected with each other.
 
 Although REDS is more capable in managing a dynamic
