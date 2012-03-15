@@ -30,4 +30,35 @@ For more information about A-3 please read the A-3 papers:
  * L. Baresi, S. Guinea, A-3: an Architectural Style for Coordinating Distributed Components. In Proceedings of IEEE/IFIP Conference on Software Architecture (WICSA), Colorado, 2011
 
 
-== Extension==
+== RTAG: An Extension to A-3==
+
+The A-3 middleware implementation is completely decentral-
+ized, and is built as an extension to REDS, a distributed
+publish and subscribe message dispatching middleware. 
+
+REDS implements distributed algorithms that support
+the dynamic reconfiguration of its infrastructure, making it
+resilient to changes in the infrastructure’s own topology. In
+A-3 we employ REDS for group communication, and for
+managing the group topology. In our previous version of
+A-3, JGroups framework creates a channel in which
+all the participants were connected with each other.
+
+Although REDS is more capable in managing a dynamic
+network and JGroups is superior in terms of multicast,
+however, if are used together they duplicate the number
+of active links. We extend A-3 middleware to be able to
+reduce the active links and avoid bottlenecks. 
+
+The main
+extension we introduce is a distributed tuple space that keeps
+track of how the system’s application and coordination group
+topologies change as elements enter or leave the system.
+This is instrumental, since it allows for various optimizations
+in how the middleware searches for a group in which to add
+a new element, in how it decides to create a new group and
+compose it with the rest of the system, and in finding the
+correct destinations for when application messages are sent.
+It is also key in providing A-3’s views and state management
+features. The tuple space is implemented using the LIGHTS
+framework.
