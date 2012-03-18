@@ -46,9 +46,6 @@ public class DiscoveryController implements Control {
             	}
             }
             
-           /* if (neighbours.isEmpty()){
-    			//System.out.println("Discoverycon-execute-neighbor list is empty!");
-    		}*/
             discoveryProtocol.updateNeighbourhood(neighbours);
         }
 		

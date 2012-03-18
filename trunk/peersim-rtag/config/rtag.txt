@@ -4,7 +4,7 @@ network.size SIZE
 random.seed 1234567890
 
 CYCLES 1
-SIZE 60
+SIZE 10
 CYCLELENGTH 1000
 CRASH 0.2
 
@@ -17,7 +17,7 @@ protocol.link IdleProtocol
 protocol.discovery it.polimi.peersim.protocols.DiscoveryProtocol
 {
 	geolocation_protocol geolocation
-	discovery_radius 0.2
+	discovery_radius 1
 	#the larger more neighbors
 	universe_protocol universe
 }
@@ -27,6 +27,7 @@ protocol.universe it.polimi.peersim.protocols.UniverseProtocol
 {
 universe_protocol universe
 discovery_protocol discovery
+follower_threshold 2
 }
 
 

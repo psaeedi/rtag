@@ -4,11 +4,9 @@ import peersim.config.Configuration;
 import peersim.core.Node;
 import peersim.core.Protocol;
 import it.polimi.peersim.protocols.GeoLocation;
-import it.polimi.peersim.prtag.GroupDescriptor;
 
-import java.beans.PropertyChangeListener;
-import java.beans.PropertyChangeSupport;
 import java.util.*; 
+
 
 public class DiscoveryProtocol implements Protocol{
 	
@@ -23,8 +21,6 @@ public class DiscoveryProtocol implements Protocol{
 	
 	private ArrayList<Node> neighbors = new ArrayList<Node>();
 	
-	public final static String NODES_DISCOVERED = "NODES_DISCOVERED";
-	public final static String NODES_LOST = "NODES_LOST";
 	private Node currentNode;
 
 	public DiscoveryProtocol(String prefix) {
@@ -43,29 +39,23 @@ public class DiscoveryProtocol implements Protocol{
 	 * 
 	 * @param currentNode the current node.
 	 */
-	public void initialize(Node currentNode){//, DiscoveryProtocol discoveryProtocol) {
+	public void initialize(Node currentNode) {
 		this.currentNode = currentNode;
 	}
 
 	public void updateNeighbourhood(ArrayList<Node> newNeighbors) {
-		//added has now  all the neighbors(new and old)
-	
+		
 		if (newNeighbors.isEmpty()){
-			//System.out.println("updatenieighborhood-empty1-no neighbor find-isolated");
 			throw new RuntimeException("no neighbor find-isolated node");
 		}
 	
-		
 		ArrayList<Node> added = new ArrayList<Node>(newNeighbors);
-		/*if (added.isEmpty()){
-			System.out.println("empty2");
-		}*/
+		//added has now  all the neighbors(new and old)
 		//remove all the old neighbors
 		added.removeAll(this.getNeighbors());
-		//added.removeAll(newNeighbors);
-		
-		//removed has now all the old neighbors
+
 		ArrayList<Node> removed = new ArrayList<Node>(this.getNeighbors());
+		//removed has now all the old neighbors
 		removed.removeAll(newNeighbors);
 
 		this.setNeighbors(neighbors);
@@ -74,12 +64,16 @@ public class DiscoveryProtocol implements Protocol{
 				currentNode.getProtocol(universeProtocolId);
 		//add to the list of ur neighbors
 		if (!added.isEmpty()){
+			//we inform the current node of its neighbor
 			universeProtocol.notifyAddedNode(added);
+			System.out.println("Node " + " is removed from the neighbor list" +
+					added.indexOf(added));
 		}
 		
 		if (!removed.isEmpty()){
 			universeProtocol.notifyRemovedNode(removed);
-			System.out.println("Node " + " is removed from the neighbor list" + added.indexOf(added));
+			System.out.println("Node " + " is removed from the neighbor list" +
+					added.indexOf(added));
 		}
 	}
 
@@ -106,7 +100,6 @@ public class DiscoveryProtocol implements Protocol{
         if (x1 == -1 || x2 == -1 || y1 == -1 || y2 == -1)
             throw new RuntimeException( "Found un-initialized coordinate." +
                    "InetInitializer class in the config file.");
-  
         return Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
     }
 	
@@ -116,7 +109,9 @@ public class DiscoveryProtocol implements Protocol{
         try {
             inp = (DiscoveryProtocol) super.clone();
             inp.setNeighbors((ArrayList<Node>) this.getNeighbors().clone());
+            inp.currentNode = this.currentNode;
         } catch (CloneNotSupportedException e) {
+        	e.printStackTrace();
         } // never happens
         return inp;
     }
