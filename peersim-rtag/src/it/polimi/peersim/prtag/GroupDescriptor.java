@@ -44,21 +44,27 @@ public class GroupDescriptor {
 	//constructor by copy
    public GroupDescriptor(GroupDescriptor oldDescriptor){
 	   
-	   
-	   this.uniqueId = oldDescriptor.uniqueId;
+	    this.uniqueId = oldDescriptor.uniqueId;
 		this.hierarchyName = oldDescriptor.hierarchyName;
 		this.leader = oldDescriptor.leader;
 		this.universe = oldDescriptor.universe;
 		this.parentLeader = oldDescriptor.parentLeader;
 		this.followers = new ArrayList<Node>(oldDescriptor.followers);
+		if(isFollower(this.parentLeader)){
+			throw new RuntimeException("1Attempting to create universe with a follower as a parent leader.");
+		}
    }
 
-	public GroupDescriptor(long id, String friendlyName, Node leader) {
+	public GroupDescriptor(long id, String friendlyName, Node leader, Node parentLeader) {
 		super();
 		this.uniqueId = id;
 		this.hierarchyName = friendlyName;
 		this.leader = leader;
+		this.parentLeader = parentLeader;
 		this.universe = UNIVERSE.equals(friendlyName);
+		if(isFollower(this.parentLeader)){
+			throw new RuntimeException("2Attempting to create universe with a follower as a parent leader.");
+		}
 	
 	}
 
@@ -116,17 +122,15 @@ public class GroupDescriptor {
 		return isLeader(currentNode) || isFollower(currentNode);
 	}
 	
-	public boolean isFollower(Node currentDescriptor) {
+	public boolean isFollower(Node currentNode) {
 		if(followers.isEmpty()){
-			//System.out.println("*popopopo");
+			//System.out.println("follower list is empty-GroupDescriptor");
 		}
 		for (Node node: followers) {
-			//System.out.println("*checkkkkkkkkk");
-			if (node.equals(currentDescriptor)) {
+			if (node.equals(currentNode)) {
 				return true;
 			}
 		}
-		//System.out.println("*:)popopopo");
 		return false;
 	}
 
@@ -162,8 +166,13 @@ public class GroupDescriptor {
 		
 	}
 
-	public static GroupDescriptor createUniverse(Node node) {
-		return new GroupDescriptor(node.getID(), UNIVERSE, node);
+	/*public static GroupDescriptor createUniverse(Node node) {
+		return new GroupDescriptor(node.getID(), UNIVERSE, node, node);
+		
+	}*/
+	
+	public static GroupDescriptor createUniverse(Node node, Node parentLeader) {
+		return new GroupDescriptor(node.getID(), UNIVERSE, node, parentLeader);
 		
 	}
 
@@ -194,12 +203,13 @@ public class GroupDescriptor {
 			throw new RuntimeException("Cannot add leader as follower: " + remotenode);
 		}
 		
-		System.out.println("node"+ followers.size()+ "size followers");
-		   
 		if (followers.contains(remotenode)) {
 			throw new RuntimeException("Attempting to add the same follower twice. Node " + 
 					remotenode + " group: " + this);
 		}
+		
+		System.out.println("************************IMP:node is added as follower-groupdescriptor:" + remotenode.getID() +
+				", size followers:" + followers.size());   
 		return followers.add(remotenode);
 	}
 
@@ -209,6 +219,8 @@ public class GroupDescriptor {
 	 * @see java.util.HashSet#remove(java.lang.Object)
 	 */
 	public boolean removeFollower(Node node) {
+		System.out.println("----------------IMP:node is removed as follower-groupdescriptor:" + node.getID() +
+				", size followers:" + followers.size());   
 		return followers.remove(node);
 	}
 	
