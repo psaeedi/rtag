@@ -3,10 +3,10 @@ simulation.cycles CYCLES
 network.size SIZE
 random.seed 1234567890
 
-CYCLES 1
-SIZE 10
+CYCLES 10
+SIZE 20
 CYCLELENGTH 1000
-CRASH 0.2
+CRASH 0
 
 #####################################Protocol#################################
 
@@ -17,7 +17,7 @@ protocol.link IdleProtocol
 protocol.discovery it.polimi.peersim.protocols.DiscoveryProtocol
 {
 	geolocation_protocol geolocation
-	discovery_radius 1
+	discovery_radius 0.5
 	#the larger more neighbors
 	universe_protocol universe
 }
@@ -47,12 +47,12 @@ init.universeinit it.polimi.peersim.initializers.UniverseInitializer
 
 ############################################Control############################
 
-control.crash DynamicNetwork
-{
-  add -CRASH*SIZE
-  minsize SIZE-(CRASH*SIZE)
+#control.crash DynamicNetwork
+#{
+ # add -CRASH*SIZE
+ # minsize SIZE-(CRASH*SIZE)
   #ONLY FOR THE FIRST CYCLE REMOVE THE NODES(cycle 0)
-}
+#}
 
 
 
@@ -81,10 +81,14 @@ control.coordination it.polimi.peersim.controls.GroupCoordinationController
 universe_protocol universe
 }
 
+control.congestion it.polimi.peersim.controls.ThresholdController
+{
+	universe_protocol universe
+}
+
 control.wire it.polimi.peersim.controls.WirePrtag
 {
 wireprtag_protocol link
 discovery_protocol discovery
 }
-
 
