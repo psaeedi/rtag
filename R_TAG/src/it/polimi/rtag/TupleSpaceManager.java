@@ -3,6 +3,8 @@
  */
 package it.polimi.rtag;
 
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import java.io.Serializable;
 
 import polimi.reds.NodeDescriptor;
@@ -10,6 +12,7 @@ import polimi.reds.broker.overlay.AlreadyNeighborException;
 import polimi.reds.broker.overlay.NeighborhoodChangeListener;
 import polimi.reds.broker.overlay.Overlay;
 import polimi.reds.broker.overlay.PacketListener;
+import it.polimi.rtag.app.AbstractApp;
 import it.polimi.rtag.messaging.TupleGroupCommand;
 import it.polimi.rtag.messaging.TupleMessageAck;
 import it.polimi.rtag.messaging.TupleMessage;
@@ -27,6 +30,17 @@ import lights.interfaces.TupleSpaceException;
  *
  */
 public class TupleSpaceManager implements PacketListener, NeighborhoodChangeListener {
+
+	private AbstractApp application;
+	
+	public AbstractApp getApplication() {
+		return application;
+	}
+
+
+	public void setApplication(AbstractApp application) {
+		this.application = application;
+	}
 
 	private static final String[] SUBJECTS = {
 		TupleGroupCommand.SUBJECT,
@@ -50,6 +64,7 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 		this.dispatcher = node.getGroupCommunicationDispatcher();
 		setOverlay(overlay);
 	}
+	
 	
 	/**
 	 * @param overlay the overlay to set
@@ -299,6 +314,9 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 							sender);
 				} else {
 					// TODO handle other
+					if (application != null) {
+						application.handleMessageReceived(sender, message);
+					}
 				}
 				break;
 			}
@@ -603,5 +621,4 @@ public class TupleSpaceManager implements PacketListener, NeighborhoodChangeList
 			manager.handleAndForwardTupleMessage(m, currentNode);
 		}
 	}
-		
 }
