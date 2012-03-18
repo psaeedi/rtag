@@ -1,38 +1,37 @@
 package it.polimi.peersim.protocols;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import peersim.config.Configuration;
 import peersim.core.Node;
 import peersim.core.Protocol;
-import it.polimi.peersim.prtag.GroupCommunicationDispatcher;
-import it.polimi.peersim.prtag.GroupDescriptor;
+import it.polimi.peersim.prtag.LocalUniverseDescriptor;
 
 public class UniverseProtocol implements Protocol{ 
-
-		
-	private ArrayList<GroupDescriptor> discoveredGroupName =
-			new ArrayList<GroupDescriptor>();
-	
-	private GroupDescriptor leadedUniverse;
-	private GroupDescriptor followedUniverse;
-	
-	private Node currentNode;
-	private GroupCommunicationDispatcher groupCommunicationDispatcher;
-
-	
-	private ArrayList<Node> followers = new ArrayList<Node>();
 
 	private static final String UNIVERSE_PROTOCOL = "universe_protocol";
 	private static int universeProtocolId;
 	
 	private static final String FOLLOWER_THRESHOLD = "follower_threshold";
-	protected final int followerThreshold;
+	private final int followerThreshold;
 	
-	//private static Node topParent = null;
+	private Node localNode;
 	
-	//private static final String DISCOVERY_PROTOCOL = "discovery_protocol";
-	//private static int discoveryProtocolId;
+	// All the leaders of this Node
+	public ArrayList<Node> leaders = new ArrayList<Node>();
+	
+	// All the followers of this node
+	public ArrayList<Node> followers = new ArrayList<Node>();
+	
+	// Additional information about the followers
+	// This is used to give leaders informations about its followers' followers
+	private HashMap<Node, LocalUniverseDescriptor> followerUniverseDescriptors = 
+			new HashMap<Node, LocalUniverseDescriptor>();
+	
+	// The local universe of the current node
+	private LocalUniverseDescriptor localUniverse;
+	
 
 	public UniverseProtocol(String prefix) {
 		universeProtocolId = Configuration.getPid(
@@ -47,9 +46,10 @@ public class UniverseProtocol implements Protocol{
 		UniverseProtocol inp = null;
         try {
         	inp = (UniverseProtocol) super.clone();
-        	inp.discoveredGroupName = (ArrayList<GroupDescriptor>) 
-        			this.discoveredGroupName.clone();
-  
+        	inp.localUniverse = this.getLocaluniverse();
+        	inp.leaders = new ArrayList<Node>(this.leaders);
+        	inp.followers = new ArrayList<Node>(this.followers);
+        	inp.followerUniverseDescriptors = new HashMap<Node, LocalUniverseDescriptor>(this.followerUniverseDescriptors);
         } catch (CloneNotSupportedException e) {
         } // never happens
         return inp;
@@ -64,391 +64,97 @@ public class UniverseProtocol implements Protocol{
 	 * @param currentNode the current node.
 	 */
 	public void initialize(Node currentNode){//, DiscoveryProtocol discoveryProtocol) {
-		this.currentNode = currentNode;
-		leadedUniverse = GroupDescriptor.createUniverse(this.currentNode, this.currentNode);
+		localNode = currentNode;
+		localUniverse = new LocalUniverseDescriptor(localNode);
 	}
-
 
 	
 	/**
-	 * Invoked every time a new neighbor is added.
+	 * Tells if the localNode should become a leader of another given 
+	 * node or the other way around.
 	 * 
-	 * This method simulates the coordination that
-	 * happens when a node is discovered.
-	 * 
-	 * The larger Id will ask the other node to ask its 
-	 * top parent leader to join him as follower!
-	 * 
-	 *  o   /O 
-	 *  o  / o
-	 *  o /  o
-	 *  O/-->o
+	 * @param remoteNode the given remote node
+	 * @return <code>true</code> if the localNode should become a leader of 
+	 * 		the give one, <code>false</code> if the other way around.
 	 */
-	public void handleNeighbourDiscovered(Node addedNode){	
-		//Node n = currentNode;
-		Node remoteParentLeader ;
-		Node currentParentLeader ;
-		
-		UniverseProtocol remoteprotocol = (UniverseProtocol) 
-				addedNode.getProtocol(universeProtocolId);
-		
-		//1- find who add who?
-		if(whoAskWhotoFollow(addedNode)!=currentNode)
-		{
-			//if the current node should ask continue otherwise
-			//go back to notifyAddedNode
+	public boolean shouldLead(Node remoteNode) {
+		return localNode.getID() < remoteNode.getID();
+	}
+	
+	public void handleNeighbourDiscovered(Node remoteNode) {
+		if (leaders.contains(remoteNode)) {
+			// TODO show a debug error message. this should not be happening
 			return;
 		}
-		 
-		//2-get  the family name , if any, of each node.
-		remoteParentLeader = remoteprotocol.getParentLeaderOf();
-		currentParentLeader = getParentLeaderOf();
 		
-	
-
-		if(currentParentLeader == remoteParentLeader && currentParentLeader!=null)
-		{
-			//the neighbor nodes are already in a same hierarchy
-			if(currentNode==remoteParentLeader){
-			  return;
-			  //no need to do anything
-			  //since we want to add the remoteparentleader as follower of current!
-			}
-			//we should send a request to added node to join us!
-			//not the parent! since it is our parents as well
-			requestToJoin(addedNode);
-
+		if (followers.contains(remoteNode)) {
+			// TODO show a debug error message. this should not be happening
+			return;
 		}
 		
-		if(remoteParentLeader==null){
-			//addednode is in no universe
-			System.out.println("remoteparentleader is null" );
-			remoteprotocol.startFollowing(currentNode);
-		}
-		
-		else{
-			 System.out.println("remoteParentLeader " + remoteParentLeader.getID());
-			 UniverseProtocol protocol = (UniverseProtocol) 
-					remoteParentLeader.getProtocol(universeProtocolId);
-			//in variable protocol we have an instance
-			//of the top leader protocol
-			//we tell the parentLeader of addednode to start following the current node
-
-		 System.out.println("remote " + addedNode.getID()+ "currentnode" + currentNode.getID() );
-		//asking you <parentleader> to start following me
-		 
-		protocol.startFollowing(currentNode);
-		}
-	}
-	
-
-	private void requestToJoin(Node addedNode) {
-		// this is only for two family node!
-		// with a same parentLeader
-		//TODO
-		throw new RuntimeException("requestTojoin is not implemented");
-	}
-
-	private Node getParentLeaderOf() {
-		       Node parentLeader = null;
-		
-		   
-				if(leadedUniverse!=null){
-					parentLeader = leadedUniverse.getParentLeader();
-					return parentLeader;
-				}
-				
-				else if(followedUniverse!=null){
-					 parentLeader = followedUniverse.getParentLeader();
-					 return parentLeader;
-				}
-				return parentLeader;
-		
-	}
-
-	
-
-	private  Node whoAskWhotoFollow(Node addedNode) {
-		//since both nodes are invoke for being neighbor
-		//only one should ask to join him as follower
-		UniverseProtocol remoteprotocol = (UniverseProtocol) 
-				addedNode.getProtocol(universeProtocolId);
-		
-		//First see if any of two neighbors is not a leader!
-		//the one without is not going to be the potential leader
-		//else go for larger id
-				if(leadedUniverse==null){
-						if(remoteprotocol.leadedUniverse!=null){
-							//System.out.println( "remote node has a LEADEDUNIVERSE but 
-							//current node has NO LEADEDUNIVERSE" );
-							//potential leader is the addedNode
-							return addedNode;
-						}
-						System.out.println( "neither are in universe" );
-						//go for the larger id
-						if (currentNode.getID() < addedNode.getID()) {
-							//System.out.println( "so select the larger id" );
-							return addedNode;
-						}
-				}
-				
-				else {
-					//both with leaded universes, so go for larger id
-						if(remoteprotocol.leadedUniverse!=null){
-							if (currentNode.getID() < addedNode.getID()) {
-								//System.out.println( "so select the larger id" );
-								return addedNode;
-							}
-							//System.out.println( "remote node has NO LEADEDUNIVERSE but current node has a LEADEDUNIVERSE" );
-						}
-				}
-				//so the neighbor who should ask to follow is selected(potential leader)
-		return  currentNode;
-	}
-
-	/**
-	 * Simulates that the current node will start 
-	 * following the remote node.
-	 * 
-	 * If the current leaded group has no followers it will be dismantled.
-	 * 
-	 * If the remote node has no leaded group it will be created.
-	 * 
-	 * @param addedNode
-	 */
-	private void startFollowing(Node potentialLeader) {
-		//here the current node wants to
-		//follow the remote node!
-		//current node potential follower, which is a parentLeader or in no universe
-		
-		UniverseProtocol remoteProtocol = (UniverseProtocol) 
-				potentialLeader.getProtocol(universeProtocolId);
-	    //followeduniverse of potential follower
-		if(followedUniverse != null) {
-			//it should be no followed universe!?
-			throw new AssertionError("already following a universe:@startFollowing");    
-		}
-		
-		//we ask the remote node(potential leader) to add the current node(potential follower)
-		remoteProtocol.addPotentialFollower(currentNode);
-		//check if u are not passing the threshold (max num of followers)
-
-	}
-		
-
-
-	
-   //remote node wants to join the current node(potential leader)
-	private void addPotentialFollower(Node potentialFollower) {
-		 UniverseProtocol  remoteprotocol = (UniverseProtocol) 
-				 potentialFollower.getProtocol(universeProtocolId);
-		 
-			  //remote node is a leader	 
-		 
-         if(remoteprotocol.leadedUniverse != null){
-	        	//if potentialfollower is following the same universe already 
-	    	    if(leadedUniverse!=null){
-		            //get its hierarchy parent name
-		    	    Node parentLeader = leadedUniverse.getParentLeader();
-			        
-					if(remoteprotocol.isFollowerOf(parentLeader))
-					{//TODO check the threshold ! then reask to join
-						throw new RuntimeException("they are already in a same heirarchy:currentNode" +
-								 currentNode.getID()  );
-						
-					}
-					//else we have two different universes!
-	    	    }
-        }
-      
-		//potential leader  is not yet a  leader at all!
-        // we should first sort this!
-         createleadedUniverse();   
-	
-		//now sort the potential follower leaded universe
-		// Ask the remote node protocol for its leaded universe
-		// it means which universe it is leading.
-         
-         if(remoteprotocol.leadedUniverse != null) {
-                remoteprotocol.manageTheLeadeUniverse(leadedUniverse.getParentLeader());
-         }
-         //creates its followedUniverse, 
-         remoteprotocol.followedUniverse = new GroupDescriptor(leadedUniverse); 
-		 //now add it in the follower list
-		 leadedUniverse.addFollower(potentialFollower);
-		
-	}
-
-	
-	/**
-	 * manageTheLeadeUniverse, is responsible to
-	 * update the parentLeader only
-	 * The leader will be untouched also the followers!
-	 * 
-	 * 
-	 **/
-	private void manageTheLeadeUniverse(Node newParentLeader) {
-		
-		    if(leadedUniverse == null) {
-		    	throw new RuntimeException("there is no leadedUniverse to manage:currentNode" +
-						 currentNode.getID()  );
-		    }
+		if (shouldLead(remoteNode)) {
+			// Add the remote node to the list of followers
+			followers.add(remoteNode);
+			// Update the local univers
+			localUniverse.addFollower(remoteNode);
 			
-		    //if it is empty delete it
-			//if it has followers update them
-			if(leadedUniverse.getFollowers().size() == 0) {
-				//TODO inform the tuple space the group has been removed
-				leadedUniverse = null;
-			} else {//it has followers
-				for(Node follower: leadedUniverse.getFollowers()){
-						UniverseProtocol followerProtocol = (UniverseProtocol) 
-								follower.getProtocol(universeProtocolId);
-					
-						//we need to update the group descriptor of all followers
-						// we changed the parentLeader, not the leader	
-						if(followerProtocol.followedUniverse!=null){
-						   followerProtocol.followedUniverse.setParentLeader(newParentLeader);
-						}
-					
-					}
-				//for the leader itself
-				leadedUniverse.setParentLeader(newParentLeader);
-				}
+			// Get grandchild information
+			UniverseProtocol followerProtocol = (UniverseProtocol) 
+					remoteNode.getProtocol(universeProtocolId);
+			LocalUniverseDescriptor followerUniverseDescriptor = followerProtocol.localUniverse;
+			// save a copy to the remote node
+			followerUniverseDescriptors.put(remoteNode,
+					new LocalUniverseDescriptor(followerUniverseDescriptor));
+			// Add the current node as a leader of the remote
+			followerProtocol.leaders.add(localNode);
 			
+			// Notify all the leaders of this node with the new descriptor
+			for (Node topLeader: leaders) {
+				UniverseProtocol topLeaderProtocol = (UniverseProtocol) 
+						topLeader.getProtocol(universeProtocolId);
+				// save a copy to the remote node
+				topLeaderProtocol.followerUniverseDescriptors.put(localNode,
+						getLocaluniverse());
+			}
 			return;
-	}
-
-	private void createleadedUniverse() {
-		if(leadedUniverse == null){
-			//but it is a follower, so it become a leader as well 
-			if(followedUniverse!=null){
-				Node parentLeader = followedUniverse.getParentLeader();
-				leadedUniverse =  GroupDescriptor.createUniverse(currentNode, parentLeader);
-	
-			}
-			//it is not following any universe nor leading 
-			else{
-	           leadedUniverse = GroupDescriptor.createUniverse(currentNode, currentNode);
-	           }
-		}
-		return;
-	}
-
-	private boolean isFollowerOf(Node parentLeader) {
-		
-		if(leadedUniverse == null){
-			return false;
-		}
-		if(parentLeader == leadedUniverse.getParentLeader()){
-			if(parentLeader==currentNode)
-			{
-				throw new RuntimeException("parentLeader is the current node");
-			}
-			//it is already in a same hierarchy
-		     return true;
-		}
-		return false;
-	}
-
-	
-	/**
-	 * Invoked every time one of the neighbor disappear.
-	 * 
-	 * If the lost neighbor is the leader a new leader should be elected.
-	 * 
-	 * If the neighbor was a follower the leader will handle it. 
-	 * If this node is the leader then it has to notify the other followers. 
-	 */
-	public void handleNeighbourLost(Node lostNode) {
-	    //ask the lostnode if it is a leader? 
-		UniverseProtocol protocol = null;
-		protocol = (UniverseProtocol) lostNode.getProtocol(universeProtocolId);
-		
-		if(protocol.followedUniverse.isLeader(lostNode))
-		{
-			//first check it has any follower or its group become empty!
-			if(leadedUniverse.getFollowers().size() == 0)
-			{//TODO inform the tuple space the group has been removed
-				leadedUniverse = null;
-				return;
-			}
-			//elect a new leader, replace the lost leader!
-			protocol.electNewLeader(lostNode);
-		}
-		else{
-			//inform all the members of the lost
-			for(Node follower: leadedUniverse.getMembers()){
-				UniverseProtocol followerProtocol = (UniverseProtocol) 
-						follower.getProtocol(universeProtocolId);
-				//we need to update the group descriptor of all followers
-				//instead of sending messages we call the protocol to do that
-				//TODO how are the followers are informed?
-				return;
-				}
-		}
-	}
-		
-	
-	private void electNewLeader(Node lostNode) {
-		long minId=0;
-		Node nextLeader = null;
-		
-		for(Node follower: leadedUniverse.getFollowers()){
-			UniverseProtocol followerProtocol = (UniverseProtocol) 
-					follower.getProtocol(universeProtocolId);
-			//select follower with smallest id as the leader
-			if(follower.getID()>minId){
-		        minId=follower.getID();
-		        nextLeader = follower;
-			}
+		} else {
+			//nothing to be done
+			// The other node will do
 			return;
 		}
 		
-		for(Node follower: leadedUniverse.getFollowers()){
-			UniverseProtocol followerProtocol = (UniverseProtocol) 
-					follower.getProtocol(universeProtocolId);
-			//we need to update the group descriptor of all followers
-			//instead of sending messages we call the protocol to do that
-			followerProtocol.followedUniverse.setLeader(nextLeader);
-			return;
+	}
+	
+	public void handleNeighbourLost(Node remoteNode) {
+	    if (leaders.contains(remoteNode)) {
+	    	// The lost node was one of the local universe leaders
+	    	leaders.remove(remoteNode);
+	    	return;
+	    }
+	    
+	    if (followers.contains(remoteNode)) {
+	    	followers.remove(remoteNode);
+	    	followerUniverseDescriptors.remove(remoteNode);
+	    	
+	    	localUniverse.removeFollower(remoteNode);
+	    	
+	    	// Update the group descriptor of the leaders
+	    	for (Node topLeader: leaders) {
+				UniverseProtocol topLeaderProtocol = (UniverseProtocol) 
+						topLeader.getProtocol(universeProtocolId);
+				// save a copy to the remote node
+				topLeaderProtocol.followerUniverseDescriptors.put(localNode,
+						getLocaluniverse());
 			}
-
+	    }
 	}
 
-	public void joinGroup(String friendlyName) {
-		// if string is equal to the constant universe, rise an exception
-		if (GroupDescriptor.UNIVERSE.equals(friendlyName)) {
-			throw new RuntimeException("The application cannot join the universe.");
-		}
-		// otherwise tell dispatcher to create and join a group of what we need
-		groupCommunicationDispatcher.joinGroupAndNotifyNetwork(friendlyName);
-	}
-
-	public void leaveGroup(String friendlyName) {
-		if (GroupDescriptor.UNIVERSE.equals(friendlyName)) {
-			throw new RuntimeException("The application cannot leave the universe.");
-		}
-		groupCommunicationDispatcher.leaveGroupsWithName(friendlyName);
+	public void notifyAddedNodes(ArrayList<Node> added) {
 		
-	}
-
-	
-	public ArrayList<Node> getFollowers(){
-	
-		if(leadedUniverse.isLeader(currentNode)){
-			followers = (ArrayList<Node>) leadedUniverse.getFollowers();
-		}
-		return followers;
-	}
-	
-	
-
-	public void notifyAddedNode(ArrayList<Node> added) {
-	
-	
+		
 		for (Node addedNode: added) {
-			if(addedNode==currentNode){
-				throw new RuntimeException("WARNING:node is adding itself in a list of added node");
+			if (addedNode.getID() == localNode.getID()){
+				throw new RuntimeException("WARNING:node has found itself");
 			}
 			//for every found neighbor it should manage its neighbor
 			handleNeighbourDiscovered(addedNode);
@@ -457,22 +163,99 @@ public class UniverseProtocol implements Protocol{
 	}
 
 
-	public void notifyRemovedNode(ArrayList<Node> removed) {
-		for (Node n: removed) {
-			handleNeighbourLost(n);
-			System.out.println("notify removed Node " + currentNode.getID()  );
+	public void notifyRemovedNodes(ArrayList<Node> removed) {
+		for (Node lostNode: removed) {
+			if (lostNode.getID() == localNode.getID()){
+				throw new RuntimeException("WARNING:node has lost itself itself.");
+			}
+			handleNeighbourLost(lostNode);
 		}
 		
 	}
 
-	public GroupDescriptor getLeadedUniverse() {
-		return leadedUniverse;
+	public LocalUniverseDescriptor getLocaluniverse() {
+		if (this.localUniverse == null) {
+			return null;
+		}
+		return new LocalUniverseDescriptor(localUniverse);
 	}
 
-	public GroupDescriptor getFollowedUniverse() {
-		return followedUniverse;
+	
+	public void broadCast(String message) {
+		System.out.println("[Node " + localNode.getID() + "] " + message);
+		// TODO add tuple space to avoid duplication
+		
+		// We send to all the leaders
+		for (Node topLeader: leaders) {
+			UniverseProtocol topLeaderProtocol = (UniverseProtocol) 
+					topLeader.getProtocol(universeProtocolId);
+			topLeaderProtocol.broadCast(message);
+		}
+		
+		// Send to all the followers which are not grandchildrens
+		ArrayList<Node> children = new ArrayList<Node>(followers);
+		for (Node follower: followers) {
+			children.removeAll(followerUniverseDescriptors.get(follower).getFollowers());
+		}
+		for (Node child: leaders) {
+			UniverseProtocol childProtocol = (UniverseProtocol) 
+					child.getProtocol(universeProtocolId);
+			childProtocol.broadCast(message);
+		}
 	}
 	
+	private void followerToLeader(Node remotenode) {
+		System.out.println("[Node " + localNode.getID() + 
+				"] Swapping follower " + remotenode.getID());
+		if (!followers.contains(remotenode)) {
+			throw new AssertionError("Node " + remotenode.getID() + " was not a follower");
+		}
+		
+		followers.remove(remotenode);
+		followerUniverseDescriptors.remove(remotenode);
+		localUniverse.removeFollower(remotenode);
+		leaders.add(remotenode);
+		
+		UniverseProtocol leaderProtocol = (UniverseProtocol) 
+				remotenode.getProtocol(universeProtocolId);
+		leaderProtocol.leaders.remove(localNode);
+		leaderProtocol.followers.add(localNode);
+		leaderProtocol.followerUniverseDescriptors.put(localNode, getLocaluniverse());
+	}
+	
+	
+	private Node getLessCongestedFollower() {
+		int followersCount = Integer.MAX_VALUE;
+		Node lessCongested = null;
+		for (Node follower: followers) {
+			LocalUniverseDescriptor descriptor = followerUniverseDescriptors.get(follower);
+			int count = descriptor.getFollowers().size();
+			if (count < followersCount) {
+				followersCount = count;
+				lessCongested = follower;
+			}
+		}
+		return lessCongested;
+	}
+	
+	private Node getRandomFollower() {
+		return this.followers.get((int)Math.floor(Math.random() * this.followers.size()));
+	}
 
+	public boolean isCongested() {
+		return followers.size() / followerThreshold > leaders.size(); 
+	}
+
+	public void handleCongestion() {
+		System.out.println("Starting congestion control loop.");
+		while (isCongested()) {
+			Node follower = getLessCongestedFollower();
+			if (follower == null) {
+				return;
+			}
+			followerToLeader(follower);
+		}
+	}
+	
 	
 }

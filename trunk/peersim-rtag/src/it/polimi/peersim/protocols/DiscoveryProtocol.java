@@ -65,13 +65,13 @@ public class DiscoveryProtocol implements Protocol{
 		//add to the list of ur neighbors
 		if (!added.isEmpty()){
 			//we inform the current node of its neighbor
-			universeProtocol.notifyAddedNode(added);
-			System.out.println("Node " + " is removed from the neighbor list" +
+			universeProtocol.notifyAddedNodes(added);
+			System.out.println("Node " + " is added from the neighbor list" +
 					added.indexOf(added));
 		}
 		
 		if (!removed.isEmpty()){
-			universeProtocol.notifyRemovedNode(removed);
+			universeProtocol.notifyRemovedNodes(removed);
 			System.out.println("Node " + " is removed from the neighbor list" +
 					added.indexOf(added));
 		}
@@ -126,7 +126,4 @@ public class DiscoveryProtocol implements Protocol{
 		this.neighbors = neighbors;
 	}
 	
-	
-
-		
 }
