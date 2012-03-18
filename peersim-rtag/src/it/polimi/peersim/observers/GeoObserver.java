@@ -8,7 +8,7 @@ package it.polimi.peersim.observers;
 import it.polimi.peersim.protocols.DiscoveryProtocol;
 import it.polimi.peersim.protocols.GeoLocation;
 import it.polimi.peersim.protocols.UniverseProtocol;
-import it.polimi.peersim.prtag.GroupDescriptor;
+import it.polimi.peersim.prtag.LocalUniverseDescriptor;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -170,7 +170,7 @@ public class GeoObserver extends GraphObserver {
 
     private static void graphToFile(Graph g, PrintStream ps, int geoPid) {
 	
-	    for (int i = 1; i < g.size(); i++) {
+	    for (int i = 0; i < g.size(); i++) {
 	        Node current = (Node) g.getNode(i);
 	        double x_to = ((GeoLocation) current
 	                .getProtocol(geoPid)).getX();
@@ -180,11 +180,22 @@ public class GeoObserver extends GraphObserver {
 	        UniverseProtocol universeProtocol = (UniverseProtocol) n.getProtocol(
 					universeProtocolId);
 			
-	        GroupDescriptor groupDescriptor = universeProtocol.getLeadedUniverse();
+	        LocalUniverseDescriptor groupDescriptor = universeProtocol.getLocaluniverse();
 	        if (groupDescriptor == null) {
 	        	continue;
 	        }
 	        
+	        
+			System.out.print("[Node " + n.getID() +" ] leaders {");
+			for	(Node k: universeProtocol.leaders) {
+				System.out.print(k.getID() +", ");
+			}
+			System.out.print("} followers {");
+			for	(Node k:  universeProtocol.followers) {
+				System.out.print(k.getID() +", ");
+			}
+			System.out.println("}");
+			
 			for	(Node k: groupDescriptor.getFollowers()) {
 				 double x_from = ((GeoLocation) k
 	                        .getProtocol(geoPid)).getX();
