@@ -1,5 +1,4 @@
-#labels api
-
+#labels API
 = Application Programming Interface (API) =
 
 rtag provides
