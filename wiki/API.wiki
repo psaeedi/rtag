@@ -1,4 +1,4 @@
-#labels API
+#labels Featured,Phase-Implementation,Phase-Requirements
 = Application Programming Interface (API) =
 
 rtag provides
