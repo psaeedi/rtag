@@ -22,7 +22,7 @@ The designer needs to extend the !AbstractApp.java for each API.
 
 
 !TupleSpaceManager will internally manage the APIs:
-@class TupleSpaceManager
+@class !TupleSpaceManager
 <code language="xml">
 public void storeHandleAndForward(TupleMessage message, NodeDescriptor sender) {
 		if (message.isExpired()) {
