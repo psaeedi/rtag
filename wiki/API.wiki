@@ -18,10 +18,10 @@ its behaviors using the APIs provided to us by the middleware.
 
 package:it.polimi.rtag.app
 there are 5 classes that enable us to generate APIs and invoke the system.
-The designer needs to extend the AbstractApp.java[Wikipage] for each API.
+The designer needs to extend the !AbstractApp.java for each API.
 
 
-TupleSpaceManager will internally manage the APIs:
+!TupleSpaceManager will internally manage the APIs:
 @class TupleSpaceManager
 <code language="xml">
 public void storeHandleAndForward(TupleMessage message, NodeDescriptor sender) {
