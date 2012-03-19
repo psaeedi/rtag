@@ -6,7 +6,7 @@ a consistent APIs for application developers to make the developed
 applications independent across underlying communication protocols.
 
 There are two main tasks in the development of an A-3 system. First we
-need to dene what groups should exist within the system, and second, we need
+need to define what groups should exist within the system, and second, we need
 to define our components and their behaviors. 
 
 To define a component we start
@@ -18,7 +18,7 @@ its behaviors using the APIs provided to us by the middleware.
 
 package:it.polimi.rtag.app
 there are 5 classes that enable us to generate APIs and invoke the system.
-The designer needs to extend the AbstractApp.java[source] for each API.
+The designer needs to extend the AbstractApp.java[Wikipage] for each API.
 
 
 TupleSpaceManager will internally manage the APIs:
