@@ -1,0 +1,16 @@
+#labels api
+
+= Application Programming Interface (API) =
+
+rtag provides
+a consistent APIs for application developers to make the developed
+applications independent across underlying communication protocols.
+
+There are two main tasks in the development of an A-3 system. First we
+need to dene what groups should exist within the system, and second, we need
+to define our components and their behaviors. 
+
+To define a component we start
+with a map of application-specic keys and values. This map is used by the
+middleware to discover in what groups the component belongs. Then we code
+its behaviors using the APIs provided to us by the middleware.
