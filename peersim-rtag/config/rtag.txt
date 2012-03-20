@@ -3,10 +3,10 @@ simulation.cycles CYCLES
 network.size SIZE
 random.seed 1234567890
 
-CYCLES 10
+CYCLES 4
 SIZE 20
 CYCLELENGTH 1000
-CRASH 0
+CRASH 0.2
 
 #####################################Protocol#################################
 
@@ -47,12 +47,12 @@ init.universeinit it.polimi.peersim.initializers.UniverseInitializer
 
 ############################################Control############################
 
-#control.crash DynamicNetwork
-#{
- # add -CRASH*SIZE
- # minsize SIZE-(CRASH*SIZE)
+control.crash DynamicNetwork
+{
+  add -CRASH*SIZE
+  minsize SIZE-(CRASH*SIZE)
   #ONLY FOR THE FIRST CYCLE REMOVE THE NODES(cycle 0)
-#}
+}
 
 
 
