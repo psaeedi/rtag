@@ -27,7 +27,7 @@ public class GroupController implements  Control {
             groupProtocol.clear();
             String group = (n.getID() % 2 == 0) ? "RED" : "BLUE";
             groupProtocol.add(group);
-            System.out.println("Node " + n.getID() + " added to " + group );
+           // System.out.println("Node " + n.getID() + " added to " + group );
         }
         return false;
     }
