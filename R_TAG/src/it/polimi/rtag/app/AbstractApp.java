@@ -8,7 +8,8 @@ import polimi.reds.NodeDescriptor;
 
 /**
  * @author Panteha Saeedi (saeedi@elet.polimi.it)
- *
+ * user define application should extend this class
+ * just define what application should do
  */
 public abstract class AbstractApp {
 

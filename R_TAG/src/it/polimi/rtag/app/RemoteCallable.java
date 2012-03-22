@@ -9,18 +9,29 @@ import java.util.Map;
 /**
  * @author Panteha Saeedi (saeedi@elet.polimi.it)
  *
+ * extend this for each method that you want to call
  */
-public abstract class CallableMethod {
+public abstract class RemoteCallable {
 
 	private String name;
 	private String responseName;
 	
-	public CallableMethod(String name, String responseName) {
+	public RemoteCallable(String name, String responseName) {
 		super();
+		//name of the callable method
+		//also used as a command in message
 		this.name = name;
 		this.responseName = responseName;
 	}
 	
+	
+	
+	/**
+	 * general way to call a calable method
+	 * @param args a map name and value of parameter
+	 *
+	 * @return a serializable object
+	 */
 	public abstract Serializable doCompute(Map<String, Serializable> args);
 
 	public String getName() {
