@@ -5,7 +5,6 @@
 
 package it.polimi.peersim.observers;
 
-import it.polimi.peersim.protocols.DiscoveryProtocol;
 import it.polimi.peersim.protocols.GeoLocation;
 import it.polimi.peersim.protocols.UniverseProtocol;
 import it.polimi.peersim.prtag.LocalUniverseDescriptor;
@@ -15,6 +14,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 
+import peersim.cdsim.CDState;
 import peersim.config.Configuration;
 import peersim.core.Network;
 import peersim.core.Node;
@@ -78,6 +78,12 @@ public class GeoObserver extends GraphObserver {
 	private ArrayList<UniverseProtocol> leadeduniverse =
 			new ArrayList<UniverseProtocol>();
 
+	private int thisCycle;
+	
+	public static ArrayList<Integer> cycles = new ArrayList<Integer>();
+
+	private static int networkSize;
+
     // ------------------------------------------------------------------------
     // Constructor
     // ------------------------------------------------------------------------
@@ -138,6 +144,7 @@ public class GeoObserver extends GraphObserver {
      *            current graph.
      * @param ps
      *            a {@link java.io.PrintStream} object to write to.
+     * @param thisCycle 
      * @param coordPid
      *            coordinate protocol identifier.
      */
@@ -169,9 +176,10 @@ public class GeoObserver extends GraphObserver {
     
 
     private static void graphToFile(Graph g, PrintStream ps, int geoPid) {
-	
+    	    	
 	    for (int i = 0; i < g.size(); i++) {
 	        Node current = (Node) g.getNode(i);
+	        
 	        double x_to = ((GeoLocation) current
 	                .getProtocol(geoPid)).getX();
 	        double y_to = ((GeoLocation) current
@@ -185,7 +193,7 @@ public class GeoObserver extends GraphObserver {
 	        	continue;
 	        }
 	        
-	        
+	       
 			System.out.print("[Node " + n.getID() +" ] leaders {");
 			for	(Node k: universeProtocol.leaders) {
 				System.out.print(k.getID() +", ");
@@ -210,5 +218,6 @@ public class GeoObserver extends GraphObserver {
 	}
     
     
-    
+   
+   
 }

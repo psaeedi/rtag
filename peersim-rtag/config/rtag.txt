@@ -4,9 +4,9 @@ network.size SIZE
 random.seed 1234567890
 
 CYCLES 4
-SIZE 20
-CYCLELENGTH 1000
-CRASH 0.2
+SIZE 200
+CYCLELENGTH 5000
+CRASH 0.8
 
 #####################################Protocol#################################
 
@@ -17,7 +17,7 @@ protocol.link IdleProtocol
 protocol.discovery it.polimi.peersim.protocols.DiscoveryProtocol
 {
 	geolocation_protocol geolocation
-	discovery_radius 0.5
+	discovery_radius 2.2
 	#the larger more neighbors
 	universe_protocol universe
 }
@@ -28,8 +28,14 @@ protocol.universe it.polimi.peersim.protocols.UniverseProtocol
 universe_protocol universe
 discovery_protocol discovery
 follower_threshold 2
+checkcycle_protocol checkcycle
 }
 
+protocol.checkcycle it.polimi.peersim.protocols.CheckCycleProtocol
+{
+universe_protocol universe
+start_cycle 2
+}
 
 ##########################################Initializer###########################
 
@@ -49,9 +55,14 @@ init.universeinit it.polimi.peersim.initializers.UniverseInitializer
 
 control.crash DynamicNetwork
 {
+  RandNI
   add -CRASH*SIZE
-  minsize SIZE-(CRASH*SIZE)
+  #We keep a minimum number of nodes for our network
+  #minsize 5+(SIZE*0.1)
+  
   #ONLY FOR THE FIRST CYCLE REMOVE THE NODES(cycle 0)
+  #minsize SIZE-(SIZE*CRASH)
+   minsize 10
 }
 
 
@@ -63,6 +74,7 @@ protocol link
 discovery_protocol discovery
 universe_protocol universe
 file_base graph
+include degree
 }
 
 
@@ -71,24 +83,22 @@ control.discovery it.polimi.peersim.controls.DiscoveryController
 	discovery_protocol discovery
 }
 
-control.group  it.polimi.peersim.controls.GroupController
-{
-	group_protocol group
-}
+#control.group  it.polimi.peersim.controls.GroupController
+#{
+#	group_protocol group
+#}
 
-control.coordination it.polimi.peersim.controls.GroupCoordinationController
-{
-universe_protocol universe
-}
 
 control.congestion it.polimi.peersim.controls.ThresholdController
 {
 	universe_protocol universe
 }
 
-control.wire it.polimi.peersim.controls.WirePrtag
-{
-wireprtag_protocol link
-discovery_protocol discovery
-}
+#control.wire it.polimi.peersim.controls.WirePrtag
+#{
+#wireprtag_protocol link
+#discovery_protocol discovery
+#}
 
+
+order.control crash discovery congestion io

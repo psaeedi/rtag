@@ -25,9 +25,16 @@ public class ThresholdController implements Control {
             Node n = Network.get(i);
             UniverseProtocol universeProtocol = (UniverseProtocol) n.getProtocol(
             		universeProtocolId);
-            if (universeProtocol.isCongested()) {
-            	universeProtocol.handleCongestion();
+            
+            if (universeProtocol.hasNoLeader()){
+            	universeProtocol.handleNodeNoLeader();
             }
+            
+            else if (universeProtocol.isCongested()) {
+            	universeProtocol.handleCongestion();
+            	
+            }
+           
         }
 		// TODO check what this return false does
 		return false;
