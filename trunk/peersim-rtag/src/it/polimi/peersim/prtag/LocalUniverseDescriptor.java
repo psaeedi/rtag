@@ -109,6 +109,7 @@ public class LocalUniverseDescriptor {
 	 * @see java.util.HashSet#remove(java.lang.Object)
 	 */
 	public boolean removeFollower(Node node) {  
+		System.out.println("removed follower"+ node.getID());
 		return followers.remove(node);
 	}
 	

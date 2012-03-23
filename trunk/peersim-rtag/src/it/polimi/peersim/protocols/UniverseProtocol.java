@@ -16,6 +16,9 @@ public class UniverseProtocol implements Protocol{
 	private static final String FOLLOWER_THRESHOLD = "follower_threshold";
 	private final int followerThreshold;
 	
+	private static final String CHECKCYCLE_PROTOCOL = "checkcycle_protocol";
+	private static int checkCycleProtocolId;
+	
 	private Node localNode;
 	
 	// All the leaders of this Node
@@ -38,6 +41,8 @@ public class UniverseProtocol implements Protocol{
 				prefix + "." + UNIVERSE_PROTOCOL);
 		followerThreshold = Configuration.getInt(
 				prefix + "." + FOLLOWER_THRESHOLD, 2);
+		checkCycleProtocolId = Configuration.getPid(
+				 prefix + "." + CHECKCYCLE_PROTOCOL);
 		
 	}
 
@@ -223,6 +228,35 @@ public class UniverseProtocol implements Protocol{
 		leaderProtocol.followerUniverseDescriptors.put(localNode, getLocaluniverse());
 	}
 	
+	private void LeaderTofollower(Node remoteNode) {
+		//remote node has other leaders and it is my follower
+		//I want to become his follower
+		System.out.println("@[Node " + localNode.getID() + 
+				"] not a leader anymore, instead following its follower:" + remoteNode.getID());
+		if (!followers.contains(remoteNode)) {
+			throw new AssertionError("Node " + remoteNode.getID() + " was not a follower");
+		}
+		//if it is not a leader already add it
+		if(!leaders.contains(remoteNode)){
+			//now follow ur follower, so add it to the leader
+			//list and remove it from the follower list
+			followers.remove(remoteNode);
+			leaders.add(remoteNode);
+			//TODO check below
+			followerUniverseDescriptors.remove(remoteNode);
+		}
+		
+		UniverseProtocol leaderProtocol = (UniverseProtocol) 
+				remoteNode.getProtocol(universeProtocolId);
+		leaderProtocol.leaders.remove(localNode);
+		leaderProtocol.followers.add(localNode);
+		leaderProtocol.followerUniverseDescriptors.put(localNode, getLocaluniverse());
+		localUniverse.removeFollower(remoteNode);
+		
+		
+	}
+	
+	
 	
 	private Node getLessCongestedFollower() {
 		int followersCount = Integer.MAX_VALUE;
@@ -238,24 +272,66 @@ public class UniverseProtocol implements Protocol{
 		return lessCongested;
 	}
 	
+	private Node getFollowerWithOtherLeaders() {
+		for (Node follower: followers) {
+			UniverseProtocol followerLeaderProtocol = (UniverseProtocol) 
+					follower.getProtocol(universeProtocolId);
+			
+			int descriptor = followerLeaderProtocol.leaders.size();
+			//except me it has other leaders
+			if(descriptor > 1){
+			   return follower;
+			}
+				
+		}
+		return null;
+	}
+	
 	private Node getRandomFollower() {
 		return this.followers.get((int)Math.floor(Math.random() * this.followers.size()));
 	}
 
 	public boolean isCongested() {
+		
 		return followers.size() / followerThreshold > leaders.size(); 
+	}
+	
+    public boolean hasNoLeader() {
+    	//System.out.println("node "+ localNode.getID()+ " the leaders size is:" + leaders.size());
+		return leaders.isEmpty();
+		
 	}
 
 	public void handleCongestion() {
 		System.out.println("Starting congestion control loop.");
 		while (isCongested()) {
 			Node follower = getLessCongestedFollower();
+			//CheckCycleProtocol checkcycleProtocol = (CheckCycleProtocol) 
+				//	localNode.getProtocol(checkCycleProtocolId);
+			
+			//checkcycleProtocol.nextCycle(localNode, universeProtocolId );
+			
 			if (follower == null) {
 				return;
 			}
 			followerToLeader(follower);
 		}
 	}
+
+	public void handleNodeNoLeader() {
+		System.out.println("Starting no leader control loop.");
+		while (hasNoLeader()) {
+			Node newLeader = getFollowerWithOtherLeaders();
+			if (newLeader == null) {
+				System.out.println("##no follower found with other leaders."+localNode.getID());
+				return;
+			}
+			
+			LeaderTofollower(newLeader);
+		}
+		
+	}
+
 	
 	
 }

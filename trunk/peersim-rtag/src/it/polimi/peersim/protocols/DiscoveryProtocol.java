@@ -58,7 +58,7 @@ public class DiscoveryProtocol implements Protocol{
 		//removed has now all the old neighbors
 		removed.removeAll(newNeighbors);
 
-		this.setNeighbors(neighbors);
+		this.setNeighbors(newNeighbors);
 
 		UniverseProtocol universeProtocol = (UniverseProtocol) 
 				currentNode.getProtocol(universeProtocolId);
@@ -66,15 +66,17 @@ public class DiscoveryProtocol implements Protocol{
 		if (!added.isEmpty()){
 			//we inform the current node of its neighbor
 			universeProtocol.notifyAddedNodes(added);
-			System.out.println("Node " + " is added from the neighbor list" +
-					added.indexOf(added));
+			//System.out.println("A Node " + " is added to the neighbor list of Node:" +
+					//currentNode.getID());
 		}
 		
 		if (!removed.isEmpty()){
 			universeProtocol.notifyRemovedNodes(removed);
-			System.out.println("Node " + " is removed from the neighbor list" +
-					added.indexOf(added));
+			//System.out.println("A Node " + " is removed from the neighbor list of Node:" +
+					//currentNode.getID());
 		}
+		
+		System.out.println("Node "+currentNode.getID()+"neighbors:" + neighbors.size()); 
 	}
 
 	

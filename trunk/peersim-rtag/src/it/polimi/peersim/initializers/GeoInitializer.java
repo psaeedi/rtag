@@ -47,8 +47,8 @@ public class GeoInitializer implements Control {
         for (int i = 0; i < Network.size(); i++) {
             n = Network.get(i);
             location = (GeoLocation) n.getProtocol(pid);
-            location.setX(CommonState.r.nextDouble());
-            location.setY(CommonState.r.nextDouble());
+            location.setX(5*CommonState.r.nextDouble());
+            location.setY(5*CommonState.r.nextDouble());
         }
         return false;
     }
