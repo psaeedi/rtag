@@ -3,10 +3,10 @@ simulation.cycles CYCLES
 network.size SIZE
 random.seed 1234567890
 
-CYCLES 4
-SIZE 200
-CYCLELENGTH 5000
-CRASH 0.8
+CYCLES 5
+SIZE 50
+CYCLELENGTH 100
+CRASH 0.2
 
 #####################################Protocol#################################
 
@@ -17,25 +17,20 @@ protocol.link IdleProtocol
 protocol.discovery it.polimi.peersim.protocols.DiscoveryProtocol
 {
 	geolocation_protocol geolocation
-	discovery_radius 2.2
+	discovery_radius 3
 	#the larger more neighbors
 	universe_protocol universe
 }
-protocol.group it.polimi.peersim.protocols.GroupProtocol
+
 
 protocol.universe it.polimi.peersim.protocols.UniverseProtocol
 {
 universe_protocol universe
 discovery_protocol discovery
 follower_threshold 2
-checkcycle_protocol checkcycle
 }
 
-protocol.checkcycle it.polimi.peersim.protocols.CheckCycleProtocol
-{
-universe_protocol universe
-start_cycle 2
-}
+
 
 ##########################################Initializer###########################
 
@@ -78,10 +73,10 @@ include degree
 }
 
 
-control.discovery it.polimi.peersim.controls.DiscoveryController
-{
-	discovery_protocol discovery
-}
+#control.discovery it.polimi.peersim.controls.DiscoveryController
+#{
+#	discovery_protocol discovery
+#}
 
 #control.group  it.polimi.peersim.controls.GroupController
 #{
@@ -101,4 +96,4 @@ control.congestion it.polimi.peersim.controls.ThresholdController
 #}
 
 
-order.control crash discovery congestion io
+order.control crash congestion io

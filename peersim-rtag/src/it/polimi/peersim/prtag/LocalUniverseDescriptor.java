@@ -1,21 +1,37 @@
 package it.polimi.peersim.prtag;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 import peersim.core.Node;
 
-public class LocalUniverseDescriptor {
+/**
+ * @author Panteha Saeedi@ elet.polimi.it
+ *
+ */
+
+  public class LocalUniverseDescriptor implements Serializable{
 
 	/**
 	 * The group leader.
+	 * Each node is leader of at most of its own universe and is 
+	 * following multple other universes (Can have multiple leaders and multiple followers).
 	 */
-	private Node leader;
+  private Node leader;
 	
 	/**
 	 * All the followers. 
+	 * We do not keep trace of the leader's leaders.
 	 */
-	private ArrayList<Node> followers = new ArrayList<Node>();
+   private ArrayList<Node> followers = new ArrayList<Node>();
+	
+	
+	/**
+	 * All the application groups,
+	 * which the node is joined in 
+	 */
+   private ArrayList<GroupDescriptor> groupDescriptor = new ArrayList<GroupDescriptor>();
 	
 	//constructor by copy
    public LocalUniverseDescriptor(LocalUniverseDescriptor oldDescriptor){
@@ -27,6 +43,7 @@ public class LocalUniverseDescriptor {
 		super();
 		this.leader = leader;
 	}
+
 
 	/**
 	 * @return the leader
@@ -91,16 +108,14 @@ public class LocalUniverseDescriptor {
 	 */
 	public void addFollower(Node remoteNode) {
 		if (leader != null && leader.equals(remoteNode)) {
-			throw new RuntimeException("Cannot add leader as follower: " + remoteNode);
+			throw new RuntimeException("Cannot add leader as follower: " + remoteNode.getID());
 		}
 		
 		if (followers.contains(remoteNode)) {
 			throw new RuntimeException("Attempting to add the same follower twice. Node " + 
-					remoteNode + " group: " + this);
+					remoteNode.getID() + " group: " + this);
 		}
-		
 		followers.add(remoteNode);
-		System.out.println(followers);
 	}
 
 	/**
@@ -109,7 +124,6 @@ public class LocalUniverseDescriptor {
 	 * @see java.util.HashSet#remove(java.lang.Object)
 	 */
 	public boolean removeFollower(Node node) {  
-		System.out.println("removed follower"+ node.getID());
 		return followers.remove(node);
 	}
 	

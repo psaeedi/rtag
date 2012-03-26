@@ -21,6 +21,7 @@ public class ThresholdController implements Control {
 
 	@Override
 	public boolean execute() {
+		// TODO move this in the nextCycle of the universe protocol
 		for (int i = 0; i < Network.size(); i++) {
             Node n = Network.get(i);
             UniverseProtocol universeProtocol = (UniverseProtocol) n.getProtocol(

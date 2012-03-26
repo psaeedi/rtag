@@ -1,0 +1,74 @@
+/**
+ * 
+ */
+package it.polimi.peersim.protocols;
+
+import it.polimi.peersim.prtag.LocalUniverseDescriptor;
+import it.polimi.peersim.prtag.RoutingPath;
+
+import com.google.common.collect.HashMultimap;
+
+import peersim.core.Node;
+import peersim.edsim.EDProtocol;
+import peersim.transport.Transport;
+
+/**
+ * @author Panteha Saeedi@ elet.polimi.it
+ *
+ */
+public class RoutingProtocol implements Transport, EDProtocol {
+	
+	HashMultimap<Node, RoutingPath> routingTable = HashMultimap.create();
+
+	public RoutingProtocol(String prefix) {
+		super();
+		// TODO Auto-generated constructor stub
+	}
+
+	@Override
+	public Object clone() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public void processEvent(Node arg0, int arg1, Object arg2) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public long getLatency(Node arg0, Node arg1) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public void send(Node arg0, Node arg1, Object arg2, int arg3) {
+		// TODO Auto-generated method stub
+		// Fake implemantation
+		
+	}
+	
+	public void removeExpiredPath(){
+		//TODO remove all the expired entry from the table
+
+	}
+	
+	public void removeLostPath(Node lostNode){
+		// remove all the lost entry from the table
+		this.routingTable.removeAll(lostNode);
+		// TODO remove all the entries with that node as a source
+	}
+	
+	public void addPath(LocalUniverseDescriptor localUniverse){
+		// TODO it creates the path for all the leaders and 
+		// the followers of that descriptor
+		for (Node follower: localUniverse.getFollowers()){
+			 RoutingPath routingpath = new RoutingPath(follower, 
+					 localUniverse.getLeader());
+		}
+		
+	}
+
+}
