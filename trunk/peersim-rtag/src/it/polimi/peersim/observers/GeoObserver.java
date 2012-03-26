@@ -23,6 +23,8 @@ import peersim.reports.GraphObserver;
 import peersim.util.FileNameGenerator;
 
 /**
+ * @author Panteha Saeedi@ elet.polimi.it
+ * 
  * This class prints to files the topology wiring using a Gnuplot friendly
  * syntax. Uses the {@link peersim.graph.Graph} interface to visit the topology.
  * 

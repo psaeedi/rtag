@@ -1,14 +1,22 @@
 package it.polimi.peersim.protocols;
 
 import peersim.config.Configuration;
+import peersim.core.Network;
 import peersim.core.Node;
 import peersim.core.Protocol;
 import it.polimi.peersim.protocols.GeoLocation;
+import peersim.cdsim.CDState;
+import peersim.cdsim.DaemonProtocol;
+
+/**
+ * @author Panteha Saeedi@ elet.polimi.it
+ *
+ */
 
 import java.util.*; 
 
 
-public class DiscoveryProtocol implements Protocol{
+public class DiscoveryProtocol extends DaemonProtocol{
 	
 	private static final String GEOLOCATION_PROTOCOL = "geolocation_protocol";
 	private static int geolocationProtocolId;
@@ -22,8 +30,12 @@ public class DiscoveryProtocol implements Protocol{
 	private ArrayList<Node> neighbors = new ArrayList<Node>();
 	
 	private Node currentNode;
+	
+
 
 	public DiscoveryProtocol(String prefix) {
+		super(prefix);
+
 		geolocationProtocolId = Configuration.getPid(
 				prefix + "." + GEOLOCATION_PROTOCOL);
 		discoveryRadius = Configuration.getDouble(
@@ -31,6 +43,27 @@ public class DiscoveryProtocol implements Protocol{
 		universeProtocolId = Configuration.getPid(
 				prefix + "." + UNIVERSE_PROTOCOL);
     }
+	
+	
+	public void nextCycle( Node n, int protocolID ) {
+		//if( CDState.getCycleT() != 0 ) return;
+		 ArrayList<Node> neighbours = new ArrayList<Node>();
+         // TODO explore only the top matrix
+         for (int j = 0; j < Network.size(); j++) {
+        	 Node k = Network.get(j);
+             if (n.getID() == k.getID()) {
+             	continue;
+             }
+         	
+         	if (isCloseTo(n, k)) {
+         		neighbours.add(k);
+         	}
+         }
+         
+         updateNeighbourhood(neighbours);
+	}
+	
+	
 	
 	/**
 	 * Sets the current node and create a new universe for it.
@@ -108,13 +141,11 @@ public class DiscoveryProtocol implements Protocol{
 	
 	public Object clone() {
 		DiscoveryProtocol inp = null;
-        try {
+       
             inp = (DiscoveryProtocol) super.clone();
             inp.setNeighbors((ArrayList<Node>) this.getNeighbors().clone());
             inp.currentNode = this.currentNode;
-        } catch (CloneNotSupportedException e) {
-        	e.printStackTrace();
-        } // never happens
+        
         return inp;
     }
 

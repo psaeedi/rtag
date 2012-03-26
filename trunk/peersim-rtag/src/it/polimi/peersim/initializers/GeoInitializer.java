@@ -8,8 +8,8 @@ import peersim.core.Network;
 import peersim.core.Node;
 
 /**
- * 
- * @author 
+ * @author Panteha Saeedi@ elet.polimi.it
+ *
  */
 public class GeoInitializer implements Control {
     

@@ -12,7 +12,7 @@ import peersim.core.Node;
  * the current node and by setting it as a change listener
  * for discovery events.
  * 
- * @author pani
+ * @author Panteha Saeedi@ elet.polimi.it
  *
  */
 public class UniverseInitializer implements Control {

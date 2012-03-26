@@ -1,23 +1,30 @@
 package it.polimi.peersim.protocols;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 
 import peersim.config.Configuration;
 import peersim.core.Node;
-import peersim.core.Protocol;
+import peersim.edsim.EDProtocol;
+import peersim.transport.Transport;
+import it.polimi.peersim.prtag.BroadcastContent;
 import it.polimi.peersim.prtag.LocalUniverseDescriptor;
+import it.polimi.peersim.prtag.UniverseMessage;
 
-public class UniverseProtocol implements Protocol{ 
+/**
+ * @author Panteha Saeedi@ elet.polimi.it
+ *
+ */
+
+// TODO implement Transport
+public class UniverseProtocol implements Transport, EDProtocol { 
 
 	private static final String UNIVERSE_PROTOCOL = "universe_protocol";
 	private static int universeProtocolId;
 	
 	private static final String FOLLOWER_THRESHOLD = "follower_threshold";
 	private final int followerThreshold;
-	
-	private static final String CHECKCYCLE_PROTOCOL = "checkcycle_protocol";
-	private static int checkCycleProtocolId;
 	
 	private Node localNode;
 	
@@ -41,9 +48,6 @@ public class UniverseProtocol implements Protocol{
 				prefix + "." + UNIVERSE_PROTOCOL);
 		followerThreshold = Configuration.getInt(
 				prefix + "." + FOLLOWER_THRESHOLD, 2);
-		checkCycleProtocolId = Configuration.getPid(
-				 prefix + "." + CHECKCYCLE_PROTOCOL);
-		
 	}
 
 	@Override
@@ -86,6 +90,16 @@ public class UniverseProtocol implements Protocol{
 		return localNode.getID() < remoteNode.getID();
 	}
 	
+	public void notifyAddedNodes(ArrayList<Node> added) {
+		for (Node addedNode: added) {
+			if (addedNode.getID() == localNode.getID()){
+				throw new RuntimeException("WARNING:node has found itself");
+			}
+			//for every found neighbor it should manage its neighbor
+			handleNeighbourDiscovered(addedNode);
+		}
+	}
+	
 	public void handleNeighbourDiscovered(Node remoteNode) {
 		if (leaders.contains(remoteNode)) {
 			// TODO show a debug error message. this should not be happening
@@ -98,6 +112,7 @@ public class UniverseProtocol implements Protocol{
 		}
 		
 		if (shouldLead(remoteNode)) {
+			/*
 			// Add the remote node to the list of followers
 			followers.add(remoteNode);
 			// Update the local univers
@@ -117,15 +132,26 @@ public class UniverseProtocol implements Protocol{
 			for (Node topLeader: leaders) {
 				UniverseProtocol topLeaderProtocol = (UniverseProtocol) 
 						topLeader.getProtocol(universeProtocolId);
+			
 				// save a copy to the remote node
 				topLeaderProtocol.followerUniverseDescriptors.put(localNode,
 						getLocaluniverse());
-			}
+			}*/
+			// Nothing to be done
 			return;
 		} else {
-			//nothing to be done
-			// The other node will do
-			return;
+			UniverseMessage addfollowermessage = UniverseMessage.createAddfollower(getLocaluniverse());
+			send(localNode, remoteNode, addfollowermessage, universeProtocolId);
+		}
+		
+	}
+	
+	public void notifyRemovedNodes(ArrayList<Node> removed) {
+		for (Node lostNode: removed) {
+			if (lostNode.getID() == localNode.getID()){
+				throw new RuntimeException("WARNING: node has lost itself itself.");
+			}
+			handleNeighbourLost(lostNode);
 		}
 		
 	}
@@ -134,49 +160,30 @@ public class UniverseProtocol implements Protocol{
 	    if (leaders.contains(remoteNode)) {
 	    	// The lost node was one of the local universe leaders
 	    	leaders.remove(remoteNode);
+	    	// No message needs to be sent
 	    	return;
 	    }
 	    
 	    if (followers.contains(remoteNode)) {
-	    	followers.remove(remoteNode);
-	    	followerUniverseDescriptors.remove(remoteNode);
+	    	// The lost node is a follower.
+	    	// we need to update the universe descriptor and notify both
+	    	// followers and leaders with the new descriptor.
 	    	
+	    	// Remove the lost node from the list
+	    	followers.remove(remoteNode);
+	    	// Remove the lost node universe descriptor
+	    	followerUniverseDescriptors.remove(remoteNode);
+	    	// Update the local universe descriptor	    	
 	    	localUniverse.removeFollower(remoteNode);
 	    	
-	    	// Update the group descriptor of the leaders
+	    	// Notify the leaders that this local universe has changed.
 	    	for (Node topLeader: leaders) {
-				UniverseProtocol topLeaderProtocol = (UniverseProtocol) 
-						topLeader.getProtocol(universeProtocolId);
-				// save a copy to the remote node
-				topLeaderProtocol.followerUniverseDescriptors.put(localNode,
-						getLocaluniverse());
+	    		UniverseMessage updateMsg = UniverseMessage.createUpdateDescriptor(getLocaluniverse());
+	    		send(localNode, topLeader, updateMsg, universeProtocolId);
 			}
 	    }
 	}
 
-	public void notifyAddedNodes(ArrayList<Node> added) {
-		
-		
-		for (Node addedNode: added) {
-			if (addedNode.getID() == localNode.getID()){
-				throw new RuntimeException("WARNING:node has found itself");
-			}
-			//for every found neighbor it should manage its neighbor
-			handleNeighbourDiscovered(addedNode);
-		}
-
-	}
-
-
-	public void notifyRemovedNodes(ArrayList<Node> removed) {
-		for (Node lostNode: removed) {
-			if (lostNode.getID() == localNode.getID()){
-				throw new RuntimeException("WARNING:node has lost itself itself.");
-			}
-			handleNeighbourLost(lostNode);
-		}
-		
-	}
 
 	public LocalUniverseDescriptor getLocaluniverse() {
 		if (this.localUniverse == null) {
@@ -186,15 +193,20 @@ public class UniverseProtocol implements Protocol{
 	}
 
 	
-	public void broadCast(String message) {
+	public void broadCast(BroadcastContent message) {
 		System.out.println("[Node " + localNode.getID() + "] " + message);
-		// TODO add tuple space to avoid duplication
+		// forward the broadcast to the top protocols
+		EDProtocol receiver = (EDProtocol)localNode.getProtocol(message.getPid());
+		receiver.processEvent(localNode, message.getPid(), message);
 		
 		// We send to all the leaders
 		for (Node topLeader: leaders) {
-			UniverseProtocol topLeaderProtocol = (UniverseProtocol) 
+			UniverseMessage broadcast = UniverseMessage.createBroadcast(message);
+			send(localNode, topLeader, broadcast, universeProtocolId);
+			//The above replaced below
+			/*UniverseProtocol topLeaderProtocol = (UniverseProtocol) 
 					topLeader.getProtocol(universeProtocolId);
-			topLeaderProtocol.broadCast(message);
+			topLeaderProtocol.broadCast(message);*/
 		}
 		
 		// Send to all the followers which are not grandchildrens
@@ -203,9 +215,8 @@ public class UniverseProtocol implements Protocol{
 			children.removeAll(followerUniverseDescriptors.get(follower).getFollowers());
 		}
 		for (Node child: leaders) {
-			UniverseProtocol childProtocol = (UniverseProtocol) 
-					child.getProtocol(universeProtocolId);
-			childProtocol.broadCast(message);
+			UniverseMessage broadcast = UniverseMessage.createBroadcast(message);
+			send(localNode, child, broadcast, universeProtocolId);
 		}
 	}
 	
@@ -216,19 +227,12 @@ public class UniverseProtocol implements Protocol{
 			throw new AssertionError("Node " + remotenode.getID() + " was not a follower");
 		}
 		
-		followers.remove(remotenode);
-		followerUniverseDescriptors.remove(remotenode);
-		localUniverse.removeFollower(remotenode);
-		leaders.add(remotenode);
-		
-		UniverseProtocol leaderProtocol = (UniverseProtocol) 
-				remotenode.getProtocol(universeProtocolId);
-		leaderProtocol.leaders.remove(localNode);
-		leaderProtocol.followers.add(localNode);
-		leaderProtocol.followerUniverseDescriptors.put(localNode, getLocaluniverse());
+		UniverseMessage addfollowermessage = UniverseMessage.createAddfollower(getLocaluniverse());
+		send(localNode, remotenode, addfollowermessage, universeProtocolId);
 	}
 	
-	private void LeaderTofollower(Node remoteNode) {
+	/*
+	private void leaderTofollower(Node remoteNode) {
 		//remote node has other leaders and it is my follower
 		//I want to become his follower
 		System.out.println("@[Node " + localNode.getID() + 
@@ -252,11 +256,7 @@ public class UniverseProtocol implements Protocol{
 		leaderProtocol.followers.add(localNode);
 		leaderProtocol.followerUniverseDescriptors.put(localNode, getLocaluniverse());
 		localUniverse.removeFollower(remoteNode);
-		
-		
-	}
-	
-	
+	}*/
 	
 	private Node getLessCongestedFollower() {
 		int followersCount = Integer.MAX_VALUE;
@@ -274,15 +274,12 @@ public class UniverseProtocol implements Protocol{
 	
 	private Node getFollowerWithOtherLeaders() {
 		for (Node follower: followers) {
-			UniverseProtocol followerLeaderProtocol = (UniverseProtocol) 
-					follower.getProtocol(universeProtocolId);
-			
-			int descriptor = followerLeaderProtocol.leaders.size();
+			LocalUniverseDescriptor followerDescriptor = followerUniverseDescriptors.get(follower);
+			int followersCount = followerDescriptor.getFollowers().size();
 			//except me it has other leaders
-			if(descriptor > 1){
+			if(followersCount > 1){
 			   return follower;
 			}
-				
 		}
 		return null;
 	}
@@ -292,24 +289,18 @@ public class UniverseProtocol implements Protocol{
 	}
 
 	public boolean isCongested() {
-		
 		return followers.size() / followerThreshold > leaders.size(); 
 	}
 	
     public boolean hasNoLeader() {
     	//System.out.println("node "+ localNode.getID()+ " the leaders size is:" + leaders.size());
 		return leaders.isEmpty();
-		
 	}
 
 	public void handleCongestion() {
 		System.out.println("Starting congestion control loop.");
 		while (isCongested()) {
 			Node follower = getLessCongestedFollower();
-			//CheckCycleProtocol checkcycleProtocol = (CheckCycleProtocol) 
-				//	localNode.getProtocol(checkCycleProtocolId);
-			
-			//checkcycleProtocol.nextCycle(localNode, universeProtocolId );
 			
 			if (follower == null) {
 				return;
@@ -321,15 +312,114 @@ public class UniverseProtocol implements Protocol{
 	public void handleNodeNoLeader() {
 		System.out.println("Starting no leader control loop.");
 		while (hasNoLeader()) {
-			Node newLeader = getFollowerWithOtherLeaders();
-			if (newLeader == null) {
-				System.out.println("##no follower found with other leaders."+localNode.getID());
+			Node follower = getFollowerWithOtherLeaders();
+			if (follower == null) {
+				System.out.println("##no follower found with other leaders." + localNode.getID());
+				return;
+			}
+			followerToLeader(follower);
+		}
+	}
+
+	@Override
+	public long getLatency(Node src, Node dest) {
+	
+		return 1000;
+	}
+
+	/**
+	 * Sends a message
+	 */
+	@Override
+	public void send(Node src, Node dest, Object msg, int pid) {
+		getLatency(src, dest);
+		UniverseProtocol remoteProtocol = (UniverseProtocol) 
+				dest.getProtocol(pid);
+		remoteProtocol.processEvent(src, pid, msg);
+	}
+
+	/**
+	 * Receives a message 
+	 */
+	@Override
+	public void processEvent(Node node, int pid, Object event) {
+		if (event instanceof UniverseMessage) {
+			UniverseMessage message = (UniverseMessage) event;
+			
+			System.out.println(node.getID() + "->" + localNode.getID() + " message " + ((UniverseMessage) event).getHead());
+			
+			if (UniverseMessage.UPDATE_DESCRIPTOR.equals(message.getHead())) {
+				handleLocalUniverseDescriptorChanged((LocalUniverseDescriptor)message.getBody());
 				return;
 			}
 			
-			LeaderTofollower(newLeader);
+			if (UniverseMessage.BROADCAST.equals(message.getHead())) {
+				broadCast((BroadcastContent)message.getBody());
+				return;
+			}
+			
+			if (UniverseMessage.ADDFOLOWER.equals(message.getHead())) {
+				getLatency(localNode, node);
+				addFollower(node, (LocalUniverseDescriptor)message.getBody());
+				return;
+			}
+			
+			if (UniverseMessage.ADDFOLOWER_ACK.equals(message.getHead())) {
+				getLatency(localNode, node);
+				addFollowerAck(node);
+				return;
+			}
+			
+		} else {
+			throw new AssertionError(
+					"The universe protocol should only receive UniverseMessages");
 		}
+	}
+
+	private void addFollower(Node follower, LocalUniverseDescriptor remoteUniverse) {
+		// TODO add follower
 		
+	    leaders.remove(follower);
+		followers.add(follower);
+		followerUniverseDescriptors.put(follower, remoteUniverse);
+		localUniverse.addFollower(follower);
+		
+		UniverseMessage addfollowermessageAck = UniverseMessage.createAddfollowerAck();
+		send(localNode, follower, addfollowermessageAck, universeProtocolId);
+		// TODO What happens if this message is lost?
+		
+		// TODO update its leaders by sending them the updated descriptor
+		for (Node topLeader: leaders) {
+    		UniverseMessage updateMsg = UniverseMessage.createUpdateDescriptor(getLocaluniverse());
+    		send(localNode, topLeader, updateMsg, universeProtocolId);
+		}
+	}
+	
+	/**
+	 * @param leader
+	 * 
+	 */
+	private void addFollowerAck(Node leader) {
+		// If the new leader was previously a follower
+		followers.remove(leader);
+		followerUniverseDescriptors.remove(leader);
+		localUniverse.removeFollower(leader); 
+		
+		// Add it as a new leader
+		leaders.add(leader);
+	}
+	
+	/**
+	 * Handles an updated universe descriptor 
+	 */
+	private void handleLocalUniverseDescriptorChanged(
+			LocalUniverseDescriptor descriptor) {
+		Node universeLeader = descriptor.getLeader();
+		// If it is a follower universe store it
+		if (followers.contains(universeLeader)) {
+			followerUniverseDescriptors.put(
+					universeLeader, descriptor);
+		}
 	}
 
 	
