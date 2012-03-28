@@ -5,6 +5,7 @@ package it.polimi.rtag.app;
 
 import java.io.Serializable;
 import java.util.Map;
+import it.polimi.rtag.Node;
 
 /**
  * @author Panteha Saeedi (saeedi@elet.polimi.it)
@@ -24,15 +25,13 @@ public abstract class RemoteCallable {
 		this.responseName = responseName;
 	}
 	
-	
-	
 	/**
 	 * general way to call a calable method
 	 * @param args a map name and value of parameter
 	 *
 	 * @return a serializable object
 	 */
-	public abstract Serializable doCompute(Map<String, Serializable> args);
+	public abstract Serializable doCompute(Map<String, Serializable> args, Node currentNode);
 
 	public String getName() {
 		return name;

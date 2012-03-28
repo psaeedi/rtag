@@ -45,9 +45,9 @@ public class PizzaDeliveryExample {
 			e.printStackTrace();
 		}
 		OrderPizza command = new OrderPizza("OrderPizza", "OrderPizzaResponse");
-		appPizzeria.put(command.getName(), command);
+		appPizzeria.putRemoteCallable(command.getName(), command);
 		appPizzeria.addCallListener(command.getName(), new PizzeriaListener());
-		appCaller.put(command.getName(), command);
+		appCaller.putRemoteCallable(command.getName(), command);
 		appCaller.addResponseListener(command.getResponseName(), new CustomerListener());
 		
 		try {

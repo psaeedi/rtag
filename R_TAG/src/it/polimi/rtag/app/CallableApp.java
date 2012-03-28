@@ -22,21 +22,29 @@ import polimi.reds.NodeDescriptor;
 public class CallableApp extends AbstractApp {
 
 	private Node currentNode;
-	private Map<String, RemoteCallable> commands = new HashMap<String, RemoteCallable>();
+	private Map<String, RemoteCallable> remoteCallables = new HashMap<String, RemoteCallable>();
+	private Map<String, Command> commands = new HashMap<String, Command>();
 	private PropertyChangeSupport asyncCommandSupport;
 	private PropertyChangeSupport asyncRespondeSupport;
+	private PropertyChangeSupport commandSupport;
 	
 	public CallableApp() {
 		asyncCommandSupport = new PropertyChangeSupport(this);
 		asyncRespondeSupport = new PropertyChangeSupport(this);
+		commandSupport = new PropertyChangeSupport(this);
 	}
 	
-	public RemoteCallable put(String name, RemoteCallable callable) {
-		return commands.put(name, callable);
+	public RemoteCallable putRemoteCallable(String name, RemoteCallable callable) {
+		// TODO remove param name and use the callable name
+		return remoteCallables.put(name, callable);
 	}
 	
-	public RemoteCallable remove(String name) {
-		RemoteCallable callable = commands.remove(name);
+	public Command putCommand(Command command) {
+		return commands.put(command.getName(), command);
+	}
+	
+	public RemoteCallable removeRemoteCallable(String name) {
+		RemoteCallable callable = remoteCallables.remove(name);
 		if (callable != null) {
 			PropertyChangeListener[] listeners =
 					asyncCommandSupport.getPropertyChangeListeners(name);
@@ -62,22 +70,36 @@ public class CallableApp extends AbstractApp {
 		asyncRespondeSupport.addPropertyChangeListener(name, listener);
 	}
 	
-	public void invokeCommand(NodeDescriptor recipient, String name, Map<String, Serializable> params) {
-		if (!commands.containsKey(name)) {
-			throw new AssertionError("Command " + name + " not found.");
+	public void addCommandListener(String name,
+			PropertyChangeListener listener) {
+		commandSupport.addPropertyChangeListener(name, listener);
+	}
+	
+	public void invokeRemoteCallable(NodeDescriptor recipient, String name, Map<String, Serializable> params) {
+		if (!remoteCallables.containsKey(name)) {
+			throw new AssertionError("RemoteCallable " + name + " not found.");
 		}
-		RemoteCallable command = commands.get(name);
+		RemoteCallable command = remoteCallables.get(name);
 		CallableInvocationMessage message = new CallableInvocationMessage(recipient, params, command);
 		currentNode.getTupleSpaceManager().storeAndSend(message);
 	}
 	
-	public void handleCommandInvoked(NodeDescriptor caller, String name, Map<String, Serializable> params) {
+	public void invokeCommand(NodeDescriptor recipient, String name, Serializable params) {
 		if (!commands.containsKey(name)) {
 			throw new AssertionError("Command " + name + " not found.");
 		}
-		RemoteCallable command = commands.get(name);
+		Command command = commands.get(name);
+		CommandMessage message = new CommandMessage(recipient, params, command);
+		currentNode.getTupleSpaceManager().storeAndSend(message);
+	}
+	
+	public void handleRemoteCallableInvoked(NodeDescriptor caller, String name, Map<String, Serializable> params) {
+		if (!remoteCallables.containsKey(name)) {
+			throw new AssertionError("Command " + name + " not found.");
+		}
+		RemoteCallable command = remoteCallables.get(name);
 		asyncCommandSupport.firePropertyChange(command.getName(), null, params);
-		Serializable result = command.doCompute(params);
+		Serializable result = command.doCompute(params, currentNode);
 		sendResponse(command, result, caller);
 	}
 
@@ -90,16 +112,23 @@ public class CallableApp extends AbstractApp {
 	public void handleCommandResponse(CallableResponseMessage response) {
 		asyncRespondeSupport.firePropertyChange(response.getCommand(), null, response.getContent());
 	}
+	
+	public void handleCommandMessage(CommandMessage message) {
+		commandSupport.firePropertyChange(message.getCommand(), null, message.getContent());
+	}
 
 	@Override
 	public void handleMessageReceived(NodeDescriptor sender,
 			TupleMessage message) {
 		if (message instanceof CallableInvocationMessage) {
 			CallableInvocationMessage invocation = (CallableInvocationMessage) message;
-			handleCommandInvoked(sender, invocation.getCommand(), invocation.getParams());
+			handleRemoteCallableInvoked(sender, invocation.getCommand(), invocation.getParams());
 		} else if (message instanceof CallableResponseMessage) {
 			CallableResponseMessage response = (CallableResponseMessage) message;
 			handleCommandResponse(response);
+		} else if (message instanceof CommandMessage) {
+			CommandMessage command = (CommandMessage) message;
+			handleCommandMessage(command);
 		}
 		
 	}

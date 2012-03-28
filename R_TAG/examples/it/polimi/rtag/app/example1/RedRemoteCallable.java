@@ -1,7 +1,7 @@
 /**
  * 
  */
-package it.polimi.rtag.app.pizzaDelivery;
+package it.polimi.rtag.app.example1;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -14,7 +14,7 @@ import it.polimi.rtag.app.RemoteCallable;
  * @author pani
  *
  */
-public class OrderPizza extends RemoteCallable {
+public class RedRemoteCallable extends RemoteCallable {
 
 	public final static String MARGARITA = "MARGARITA";
 	public final static double MARGARITA_PRICE = 5.30; 
@@ -26,7 +26,7 @@ public class OrderPizza extends RemoteCallable {
 	 * @param name
 	 * @param responseName
 	 */
-	public OrderPizza(String name, String responseName) {
+	public RedRemoteCallable(String name, String responseName) {
 		super(name, responseName);
 		// TODO Auto-generated constructor stub
 	}
