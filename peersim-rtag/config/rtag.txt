@@ -2,10 +2,12 @@
 simulation.cycles CYCLES 
 network.size SIZE
 random.seed 1234567890
+network.node.appgroup_protocol group
+network.node.universe_protocol universe
 
-CYCLES 5
-SIZE 50
-CYCLELENGTH 100
+CYCLES 4
+SIZE 10
+CYCLELENGTH 500
 CRASH 0.2
 
 #####################################Protocol#################################
@@ -17,34 +19,59 @@ protocol.link IdleProtocol
 protocol.discovery it.polimi.peersim.protocols.DiscoveryProtocol
 {
 	geolocation_protocol geolocation
-	discovery_radius 3
+	discovery_radius 3.5
 	#the larger more neighbors
 	universe_protocol universe
+	grouping_protocol group
 }
-
 
 protocol.universe it.polimi.peersim.protocols.UniverseProtocol
 {
-universe_protocol universe
-discovery_protocol discovery
-follower_threshold 2
+	universe_protocol universe
+	discovery_protocol discovery
+	follower_threshold 3
+	follower_thresholdrate 2
 }
 
+protocol.routing it.polimi.peersim.protocols.RoutingProtocol
 
+
+protocol.app it.polimi.peersim.protocols.AppProtocol
+{
+grouping_protocol group
+}
+
+protocol.group it.polimi.peersim.protocols.GroupingProtocol
+{
+	universe_protocol universe
+	routing_protocol routing
+	grouping_protocol group
+}
 
 ##########################################Initializer###########################
 
-init.geoinit it.polimi.peersim.initializers.GeoInitializer
-init.geoinit.geolocation_protocol geolocation
-init.geoplot.plot_protocol geolocation
 
 
-init.universeinit it.polimi.peersim.initializers.UniverseInitializer
+#init.geoinit it.polimi.peersim.initializers.GeoInitializer
+#{
+#	geolocation_protocol geolocation
+#	plot_protocol geolocation
+#}
+
+#init.universeinit it.polimi.peersim.initializers.UniverseInitializer
+#{
+#	universe_protocol universe 
+#	discovery_protocol discovery
+#}
+
+init.protocolinit it.polimi.peersim.initializers.ProtocolStackInitializer
 {
- universe_protocol universe 
- discovery_protocol discovery
- 
+universe_protocol universe 
+discovery_protocol discovery
+grouping_protocol group
+geolocation_protocol geolocation
 }
+
 
 ############################################Control############################
 
@@ -64,24 +91,13 @@ control.crash DynamicNetwork
 
 control.io it.polimi.peersim.observers.GeoObserver
 {
-plot_protocol geolocation
-protocol link
-discovery_protocol discovery
-universe_protocol universe
-file_base graph
-include degree
+	plot_protocol geolocation
+	protocol link
+	discovery_protocol discovery
+	universe_protocol universe
+	file_base graph
+	include degree
 }
-
-
-#control.discovery it.polimi.peersim.controls.DiscoveryController
-#{
-#	discovery_protocol discovery
-#}
-
-#control.group  it.polimi.peersim.controls.GroupController
-#{
-#	group_protocol group
-#}
 
 
 control.congestion it.polimi.peersim.controls.ThresholdController
@@ -96,4 +112,4 @@ control.congestion it.polimi.peersim.controls.ThresholdController
 #}
 
 
-order.control crash congestion io
+order.control congestion crash io

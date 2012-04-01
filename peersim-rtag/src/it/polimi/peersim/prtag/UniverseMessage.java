@@ -6,6 +6,8 @@ package it.polimi.peersim.prtag;
 
 import java.io.Serializable;
 
+import peersim.core.Node;
+
 /**
  * @author Panteha Saeedi@ elet.polimi.it
  *
@@ -17,27 +19,30 @@ public class UniverseMessage {
 	public static String ADDFOLOWER = "Addfollower";
 	public static String ADDFOLOWER_ACK = "Addfollower_ack";
 	
-	public static UniverseMessage createUpdateDescriptor(LocalUniverseDescriptor descriptor) {
-		return new UniverseMessage(UPDATE_DESCRIPTOR, descriptor);
+	private Node sender;
+	
+	public static UniverseMessage createUpdateDescriptor(Node sender, LocalUniverseDescriptor descriptor) {
+		return new UniverseMessage(sender, UPDATE_DESCRIPTOR, descriptor);
 	}
 	
-	public static UniverseMessage createBroadcast(BroadcastContent body) {
-		return new UniverseMessage(BROADCAST, body);
+	public static UniverseMessage createBroadcast(Node sender, BroadcastContent body) {
+		return new UniverseMessage(sender, BROADCAST, body);
 	}
 	
-	public static UniverseMessage createAddfollower(LocalUniverseDescriptor descriptor) {
-		return new UniverseMessage(ADDFOLOWER, descriptor);
+	public static UniverseMessage createAddfollower(Node sender, LocalUniverseDescriptor descriptor) {
+		return new UniverseMessage(sender, ADDFOLOWER, descriptor);
 	}
 	
-	public static UniverseMessage createAddfollowerAck() {
-		return new UniverseMessage(ADDFOLOWER_ACK, null);
+	public static UniverseMessage createAddfollowerAck(Node sender) {
+		return new UniverseMessage(sender, ADDFOLOWER_ACK, null);
 	}
 	
 	private String head;
 	private Serializable body;
 	
-	private UniverseMessage(String head, Serializable body) {
+	private UniverseMessage(Node sender, String head, Serializable body) {
 		super();
+		this.sender = sender;
 		this.head = head;
 		this.body = body;
 	}
@@ -47,6 +52,10 @@ public class UniverseMessage {
 	}
 	public Serializable getBody() {
 		return body;
+	}
+
+	public Node getSender() {
+		return sender;
 	}
 
 	

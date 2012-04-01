@@ -27,11 +27,12 @@ public class DiscoveryProtocol extends DaemonProtocol{
 	private static final String UNIVERSE_PROTOCOL = "universe_protocol";
 	private static int universeProtocolId;
 	
+	
+	
 	private ArrayList<Node> neighbors = new ArrayList<Node>();
 	
 	private Node currentNode;
 	
-
 
 	public DiscoveryProtocol(String prefix) {
 		super(prefix);
@@ -45,7 +46,7 @@ public class DiscoveryProtocol extends DaemonProtocol{
     }
 	
 	
-	public void nextCycle( Node n, int protocolID ) {
+	public void nextCycle(Node n, int protocolID ) {
 		//if( CDState.getCycleT() != 0 ) return;
 		 ArrayList<Node> neighbours = new ArrayList<Node>();
          // TODO explore only the top matrix
@@ -108,6 +109,7 @@ public class DiscoveryProtocol extends DaemonProtocol{
 			//System.out.println("A Node " + " is removed from the neighbor list of Node:" +
 					//currentNode.getID());
 		}
+		
 		
 		System.out.println("Node "+currentNode.getID()+"neighbors:" + neighbors.size()); 
 	}

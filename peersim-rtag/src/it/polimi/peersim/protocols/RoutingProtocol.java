@@ -7,7 +7,6 @@ import it.polimi.peersim.prtag.LocalUniverseDescriptor;
 import it.polimi.peersim.prtag.RoutingPath;
 
 import com.google.common.collect.HashMultimap;
-
 import peersim.core.Node;
 import peersim.edsim.EDProtocol;
 import peersim.transport.Transport;
@@ -27,8 +26,12 @@ public class RoutingProtocol implements Transport, EDProtocol {
 
 	@Override
 	public Object clone() {
-		// TODO Auto-generated method stub
-		return false;
+		RoutingProtocol inp = null;
+        try {
+        	inp = (RoutingProtocol) super.clone();
+        } catch (CloneNotSupportedException e) {
+        } // never happens
+        return inp;
 	}
 
 	@Override
@@ -44,15 +47,16 @@ public class RoutingProtocol implements Transport, EDProtocol {
 	}
 
 	@Override
-	public void send(Node arg0, Node arg1, Object arg2, int arg3) {
-		// TODO Auto-generated method stub
-		// Fake implemantation
-		
+	public void send(Node src, Node dest, java.lang.Object msg, int pid) {
+		// TODO this is the key method of this protocol
+		// Fake implementation
+		// Instead of passing from node to node we just send it to the destination.
+		EDProtocol protocol = (EDProtocol)dest.getProtocol(pid);
+		protocol.processEvent(dest, pid, msg);
 	}
 	
 	public void removeExpiredPath(){
 		//TODO remove all the expired entry from the table
-
 	}
 	
 	public void removeLostPath(Node lostNode){
