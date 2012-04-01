@@ -3,56 +3,35 @@
  */
 package it.polimi.peersim.protocols;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+
+import it.polimi.peersim.messages.BaseMessage;
+import it.polimi.peersim.messages.RoutingMessage;
 import it.polimi.peersim.prtag.LocalUniverseDescriptor;
 import it.polimi.peersim.prtag.RoutingPath;
 
 import com.google.common.collect.HashMultimap;
 import peersim.core.Node;
-import peersim.edsim.EDProtocol;
-import peersim.transport.Transport;
 
 /**
  * @author Panteha Saeedi@ elet.polimi.it
  *
  */
-public class RoutingProtocol implements Transport, EDProtocol {
+public class RoutingProtocol extends ForwardingProtocol<RoutingMessage> {
 	
 	HashMultimap<Node, RoutingPath> routingTable = HashMultimap.create();
 
 	public RoutingProtocol(String prefix) {
-		super();
-		// TODO Auto-generated constructor stub
+		super(prefix);
 	}
 
 	@Override
 	public Object clone() {
-		RoutingProtocol inp = null;
-        try {
-        	inp = (RoutingProtocol) super.clone();
-        } catch (CloneNotSupportedException e) {
-        } // never happens
-        return inp;
-	}
-
-	@Override
-	public void processEvent(Node arg0, int arg1, Object arg2) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public long getLatency(Node arg0, Node arg1) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public void send(Node src, Node dest, java.lang.Object msg, int pid) {
-		// TODO this is the key method of this protocol
-		// Fake implementation
-		// Instead of passing from node to node we just send it to the destination.
-		EDProtocol protocol = (EDProtocol)dest.getProtocol(pid);
-		protocol.processEvent(dest, pid, msg);
+		RoutingProtocol clone = null;
+		clone = (RoutingProtocol) super.clone();
+		clone.routingTable = HashMultimap.create(routingTable);
+        return clone;
 	}
 	
 	public void removeExpiredPath(){
@@ -71,8 +50,27 @@ public class RoutingProtocol implements Transport, EDProtocol {
 		for (Node follower: localUniverse.getFollowers()){
 			 RoutingPath routingpath = new RoutingPath(follower, 
 					 localUniverse.getLeader());
+		}		
+	}
+
+	@Override
+	public RoutingMessage handlePushDownMessage(Node currentNode,
+			Node recipient, Serializable content) {
+		// Mock implementation using the recipient as a proxy
+		return new RoutingMessage(protocolId, recipient, recipient, content);
+	}
+
+	@Override
+	public BaseMessage handlePushUpMessage(Node currentNode, Node sender,
+			RoutingMessage message) {
+		if (currentNode.equals(message.getRecipient())) {
+			return (BaseMessage) message.getContent();
+		} else {
+			// Forward the message
+			pushDownMessage(
+					currentNode, message.getRecipient(), message.getContent());
+			return null;
 		}
-		
 	}
 
 }

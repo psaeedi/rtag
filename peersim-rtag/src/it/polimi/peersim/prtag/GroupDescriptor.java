@@ -15,6 +15,7 @@ import peersim.core.Node;
  */
 public class GroupDescriptor implements Serializable{
 
+	private static final long serialVersionUID = 2887953880462731123L;
 
 	public static final String APPGROUP = "_APPGROUP";
 	

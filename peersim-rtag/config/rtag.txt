@@ -25,28 +25,37 @@ protocol.discovery it.polimi.peersim.protocols.DiscoveryProtocol
 	grouping_protocol group
 }
 
+protocol.channel it.polimi.peersim.protocols.MockChannel
+{
+	protocol_id channel
+	lower_protocol_id channel
+}
+
 protocol.universe it.polimi.peersim.protocols.UniverseProtocol
 {
-	universe_protocol universe
+	protocol_id universe
+	lower_protocol_id channel
 	discovery_protocol discovery
 	follower_threshold 3
 	follower_thresholdrate 2
 }
 
 protocol.routing it.polimi.peersim.protocols.RoutingProtocol
+{
+	protocol_id routing
+	lower_protocol_id universe
+}
+
+protocol.grouping it.polimi.peersim.protocols.GroupingProtocol
+{
+	protocol_id grouping
+	lower_protocol_id routing
+	universe_protocol universe
+}
 
 
 protocol.app it.polimi.peersim.protocols.AppProtocol
-{
-grouping_protocol group
-}
 
-protocol.group it.polimi.peersim.protocols.GroupingProtocol
-{
-	universe_protocol universe
-	routing_protocol routing
-	grouping_protocol group
-}
 
 ##########################################Initializer###########################
 
@@ -66,12 +75,10 @@ protocol.group it.polimi.peersim.protocols.GroupingProtocol
 
 init.protocolinit it.polimi.peersim.initializers.ProtocolStackInitializer
 {
-universe_protocol universe 
-discovery_protocol discovery
-grouping_protocol group
-geolocation_protocol geolocation
+	universe_protocol universe 
+	discovery_protocol discovery
+	geolocation_protocol geolocation
 }
-
 
 ############################################Control############################
 
@@ -100,16 +107,5 @@ control.io it.polimi.peersim.observers.GeoObserver
 }
 
 
-control.congestion it.polimi.peersim.controls.ThresholdController
-{
-	universe_protocol universe
-}
 
-#control.wire it.polimi.peersim.controls.WirePrtag
-#{
-#wireprtag_protocol link
-#discovery_protocol discovery
-#}
-
-
-order.control congestion crash io
+#order.control congestion crash io

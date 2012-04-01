@@ -99,19 +99,19 @@ public class DiscoveryProtocol extends DaemonProtocol{
 		//add to the list of ur neighbors
 		if (!added.isEmpty()){
 			//we inform the current node of its neighbor
-			universeProtocol.notifyAddedNodes(added);
+			universeProtocol.notifyAddedNodes(currentNode, added);
 			//System.out.println("A Node " + " is added to the neighbor list of Node:" +
 					//currentNode.getID());
 		}
 		
 		if (!removed.isEmpty()){
-			universeProtocol.notifyRemovedNodes(removed);
+			universeProtocol.notifyRemovedNodes(currentNode, removed);
 			//System.out.println("A Node " + " is removed from the neighbor list of Node:" +
 					//currentNode.getID());
 		}
 		
 		
-		System.out.println("Node "+currentNode.getID()+"neighbors:" + neighbors.size()); 
+		System.out.println("Node "+currentNode.getID() + " neighbors: " + neighbors.size()); 
 	}
 
 	
