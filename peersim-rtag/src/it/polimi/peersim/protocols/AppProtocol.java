@@ -1,16 +1,25 @@
 package it.polimi.peersim.protocols;
 
-import java.io.Serializable;
-
-import it.polimi.peersim.messages.BaseMessage;
-import it.polimi.peersim.messages.GroupingMessage;
 import peersim.cdsim.CDProtocol;
 import peersim.cdsim.CDState;
-import peersim.cdsim.DaemonProtocol;
 import peersim.config.Configuration;
 import peersim.core.Node;
 
+/**
+ * 
+ * The protocol stack is:
+ * 6 - App
+ * 5 - Grouping
+ * 4 - Routing
+ * 3 - UniverseProtocol
+ * 2 - TupleSpaceProtocol
+ * 1 - MockChannel
+ */
 public class AppProtocol implements CDProtocol {
+	
+	private static final String GROUPING_PROTOCOL = "grouping_protocol";
+	private static int groupingProtocolId;
+	
 	
 	private String friendlyName;
 	
@@ -18,6 +27,8 @@ public class AppProtocol implements CDProtocol {
 	private static String GREEN = "Green";
 	
 	public AppProtocol(String prefix) {
+		groupingProtocolId = Configuration.getPid(
+				prefix + "." + GROUPING_PROTOCOL);
     }
 	
 	@Override
@@ -38,8 +49,10 @@ public class AppProtocol implements CDProtocol {
 			} else {
 				friendlyName = GREEN;
 			}
+			GroupingProtocol grouping = (GroupingProtocol)
+					currentNode.getProtocol(groupingProtocolId);
+			grouping.joinOrCreateGroup(currentNode, friendlyName);
 		}
-		// TODO join group
 	}
 
 	

@@ -23,6 +23,12 @@ import peersim.core.Node;
 /**
  * @author Panteha Saeedi@ elet.polimi.it
  *
+ * The protocol stack is:
+ * 5 - Grouping
+ * 4 - Routing
+ * 3 - UniverseProtocol
+ * 2 - TupleSpaceProtocol
+ * 1 - MockChannel
  */
 public class GroupingProtocol extends ForwardingProtocol<GroupingMessage> implements CDProtocol {
 	

@@ -3,9 +3,7 @@ package it.polimi.peersim.protocols;
 import peersim.config.Configuration;
 import peersim.core.Network;
 import peersim.core.Node;
-import peersim.core.Protocol;
 import it.polimi.peersim.protocols.GeoLocation;
-import peersim.cdsim.CDState;
 import peersim.cdsim.DaemonProtocol;
 
 /**
@@ -19,13 +17,13 @@ import java.util.*;
 public class DiscoveryProtocol extends DaemonProtocol{
 	
 	private static final String GEOLOCATION_PROTOCOL = "geolocation_protocol";
-	private static int geolocationProtocolId;
+	private final int geolocationProtocolId;
 	
 	private static final String DISCOVERY_RADIUS = "discovery_radius";
 	protected final double discoveryRadius;
 	
 	private static final String UNIVERSE_PROTOCOL = "universe_protocol";
-	private static int universeProtocolId;
+	private final int universeProtocolId;
 	
 	
 	

@@ -5,7 +5,6 @@ package it.polimi.peersim.protocols;
 
 import java.io.Serializable;
 import java.util.HashMap;
-import java.util.Set;
 import java.util.UUID;
 
 import it.polimi.peersim.messages.BaseMessage;
@@ -31,8 +30,17 @@ public class TupleSpaceProtocol extends ForwardingProtocol<TupleSpaceMessage>
 		super(prefix);
 	}
 	
+	@Override
+	public Object clone() {
+		TupleSpaceProtocol clone = null;
+		clone = (TupleSpaceProtocol) super.clone();
+		clone.messages = new HashMap<UUID, TupleSpaceMessage>(messages);
+        return clone;
+	}
+	
+	
 	private boolean alreadyIn(TupleSpaceMessage tupleSpaceMessage) {
-		return messages.containsKey(tupleSpaceMessage.getUuid());
+		return messages.containsKey(tupleSpaceMessage.getInnerUuid());
 	}
 
 	@Override
@@ -62,7 +70,7 @@ public class TupleSpaceProtocol extends ForwardingProtocol<TupleSpaceMessage>
 			// discard
 			return null;
 		}
-		messages.put(message.getUuid(), message);
+		messages.put(message.getInnerUuid(), message);
 		return (BaseMessage) message.getContent();
 	}
 
