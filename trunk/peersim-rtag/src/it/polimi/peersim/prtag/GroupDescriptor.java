@@ -11,8 +11,7 @@ import java.util.UUID;
 import peersim.core.Node;
 
 /**
- * @author pani
- *
+ * @author Panteha Saeedi@ elet.polimi.it
  */
 public class GroupDescriptor implements Serializable{
 
@@ -224,6 +223,12 @@ public class GroupDescriptor implements Serializable{
 	 */
 	public boolean removeFollower(Node descriptor) {
 		return followers.remove(descriptor);
+	}
+
+	public boolean hierarchyNameExist(String name) {
+		if(this.hierarchyName.equals(name)){
+		return true;}
+		return false;
 	}
 	
 

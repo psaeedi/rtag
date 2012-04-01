@@ -1,5 +1,6 @@
 package it.polimi.peersim.initializers;
 
+import it.polimi.peersim.protocols.GroupingProtocol;
 import it.polimi.peersim.protocols.DiscoveryProtocol;
 import it.polimi.peersim.protocols.UniverseProtocol;
 import peersim.config.Configuration;
@@ -19,21 +20,31 @@ public class UniverseInitializer implements Control {
 	
 	private static final String UNIVERSE_PROTOCOL = "universe_protocol";
 	private static final String DICSCOVERY_PROTOCOL = "discovery_protocol";
+	
+	
+	
 
     /** Protocol identifier, obtained from config property {@link #UNIVERSE_PROTOCOL}. */
 	private static int universeProtocolId;
 	private static int discoveryProtocolId;
-    
+
+	
+	
+	
+	
     /**
      * @param prefix
      */
     public UniverseInitializer(String prefix) {
     	universeProtocolId = Configuration.getPid(prefix + "." + UNIVERSE_PROTOCOL);
+    	
     	discoveryProtocolId = Configuration.getPid(prefix + "." + DICSCOVERY_PROTOCOL);
     }
 
 	@Override
 	public boolean execute() {
+		System.err.println("=======Executing UniverseInitializer");
+		
 		for (int i = 0; i < Network.size(); i++) {
 			Node n = Network.get(i);
 			DiscoveryProtocol discoveryProtocol = (DiscoveryProtocol)
@@ -43,7 +54,7 @@ public class UniverseInitializer implements Control {
             		n.getProtocol(universeProtocolId);
             // create an empty universe and then send it to setUniverse(node, universe)
             // Each node should be initialized with its own universe
-            universeProtocol.initialize(n); 
+            universeProtocol.initialize(n);
         }
 		return false;
 	}

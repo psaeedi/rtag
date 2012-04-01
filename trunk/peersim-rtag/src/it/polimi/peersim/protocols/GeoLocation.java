@@ -50,4 +50,5 @@ public class GeoLocation extends DaemonProtocol {
 		// TODO Move the nodes around
 		super.nextCycle(node, protocolID);
 	}
+
 }

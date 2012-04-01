@@ -21,7 +21,7 @@ public class GeoInitializer implements Control {
     private static final String GEOLOCATION_PROTOCOL = "geolocation_protocol";
 
     /** Protocol identifier, obtained from config property {@link #GEOLOCATION_PROTOCOL}. */
-    private final int pid;
+    private final int geolocationId;
 
     /**
      * Standard constructor that reads the configuration parameters. Invoked by
@@ -31,7 +31,7 @@ public class GeoInitializer implements Control {
      *            the configuration prefix for this class.
      */
     public GeoInitializer(String prefix) {
-        pid = Configuration.getPid(prefix + "." + GEOLOCATION_PROTOCOL);
+    	geolocationId = Configuration.getPid(prefix + "." + GEOLOCATION_PROTOCOL);
     }
 
     /**
@@ -40,17 +40,23 @@ public class GeoInitializer implements Control {
      * the square) of the surface area.
      */
     public boolean execute() {
-
+    	System.err.println("=======Executing GeoInitializer");
+    	
         // Set coordinates x,y
     	GeoLocation location;
     	Node n;
         for (int i = 0; i < Network.size(); i++) {
             n = Network.get(i);
-            location = (GeoLocation) n.getProtocol(pid);
+            location = (GeoLocation) n.getProtocol(geolocationId);
             location.setX(5*CommonState.r.nextDouble());
             location.setY(5*CommonState.r.nextDouble());
         }
         return false;
     }
+
+	public void initialize(Node n) {
+		// TODO Auto-generated method stub
+		
+	}
 
 }
