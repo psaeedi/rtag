@@ -22,7 +22,6 @@ protocol.discovery it.polimi.peersim.protocols.DiscoveryProtocol
 	discovery_radius 3.5
 	#the larger more neighbors
 	universe_protocol universe
-	grouping_protocol group
 }
 
 protocol.channel it.polimi.peersim.protocols.MockChannel
@@ -31,10 +30,16 @@ protocol.channel it.polimi.peersim.protocols.MockChannel
 	lower_protocol_id channel
 }
 
+protocol.tuplespace it.polimi.peersim.protocols.TupleSpaceProtocol
+{
+	protocol_id tuplespace
+	lower_protocol_id channel
+}
+
 protocol.universe it.polimi.peersim.protocols.UniverseProtocol
 {
 	protocol_id universe
-	lower_protocol_id channel
+	lower_protocol_id tuplespace
 	discovery_protocol discovery
 	follower_threshold 3
 	follower_thresholdrate 2
@@ -55,6 +60,9 @@ protocol.grouping it.polimi.peersim.protocols.GroupingProtocol
 
 
 protocol.app it.polimi.peersim.protocols.AppProtocol
+{
+	grouping_protocol grouping
+}
 
 
 ##########################################Initializer###########################

@@ -4,6 +4,7 @@
 package it.polimi.peersim.messages;
 
 import java.io.Serializable;
+import java.util.UUID;
 
 /**
  * @author Panteha Saeedi
@@ -15,6 +16,7 @@ public class BaseMessage implements Serializable {
 
 	private static final long serialVersionUID = -4434574380875379068L;
 
+	private final UUID uuid = UUID.randomUUID(); 
 	private final int pid;
 	private final Serializable content;
 	
@@ -33,5 +35,9 @@ public class BaseMessage implements Serializable {
 	
 	public Serializable getContent() {
 		return content;
+	}
+	
+	public UUID getUuid() {
+		return uuid;
 	}
 }

@@ -17,6 +17,11 @@ import peersim.core.Node;
 /**
  * @author Panteha Saeedi@ elet.polimi.it
  *
+ * The protocol stack is:
+ * 4 - Routing
+ * 3 - UniverseProtocol
+ * 2 - TupleSpaceProtocol
+ * 1 - MockChannel
  */
 public class RoutingProtocol extends ForwardingProtocol<RoutingMessage> {
 	

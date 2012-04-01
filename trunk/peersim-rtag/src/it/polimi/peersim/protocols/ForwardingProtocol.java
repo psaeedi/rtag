@@ -19,10 +19,10 @@ import peersim.core.Protocol;
 public abstract class ForwardingProtocol<K extends BaseMessage> implements Protocol {
 
 	public static final String PROTOCOL_ID = "protocol_id";
-	protected int protocolId;
+	protected final int protocolId;
 	
 	public static final String LOWER_PROTOCOL_ID = "lower_protocol_id";
-	protected int lowerProtocolID;
+	protected final int lowerProtocolID;
 	
 	public ForwardingProtocol(String prefix) {
 		protocolId = Configuration.getPid(
@@ -33,12 +33,12 @@ public abstract class ForwardingProtocol<K extends BaseMessage> implements Proto
 	
 	@Override
 	public Object clone() {
-		ForwardingProtocol<K> inp = null;
+		ForwardingProtocol<K> clone = null;
         try {
-        	inp = (ForwardingProtocol<K>) super.clone();
+        	clone = (ForwardingProtocol<K>) super.clone();
         } catch (CloneNotSupportedException e) {
         } // never happens
-        return inp;
+        return clone;
 	}
 	
 	public void pushDownMessage(Node currentNode, Node recipient, Serializable content) {
@@ -46,6 +46,9 @@ public abstract class ForwardingProtocol<K extends BaseMessage> implements Proto
 		if (message != null) {
 			ForwardingProtocol<?> lowerProtocol = (ForwardingProtocol<?>)
 					recipient.getProtocol(lowerProtocolID);
+			if (this.getClass().equals(lowerProtocol.getClass())) {
+				throw new AssertionError("Loop: " + this);
+			}
 			lowerProtocol.pushDownMessage(currentNode, recipient, message);
 		}
 	}

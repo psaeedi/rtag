@@ -7,7 +7,6 @@ import java.util.HashMap;
 import peersim.cdsim.CDProtocol;
 import peersim.config.Configuration;
 import peersim.core.Node;
-import peersim.edsim.EDProtocol;
 import it.polimi.peersim.messages.BaseMessage;
 import it.polimi.peersim.messages.UniverseMessage;
 import it.polimi.peersim.prtag.LocalUniverseDescriptor;
@@ -365,7 +364,7 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage> implem
 	public void sendBroadCast(Node currentNode, BaseMessage message) {
 		System.out.println("[{Node " + currentNode.getID() + "] " + message);
 		// forward the broadcast to the top protocols
-		EDProtocol receiver = (EDProtocol)currentNode.getProtocol(message.getPid());
+		//EDProtocol receiver = (EDProtocol)currentNode.getProtocol(message.getPid());
 		System.out.println("broadcast-content " + message.getContent());
 		
 		// We send to all the leaders
