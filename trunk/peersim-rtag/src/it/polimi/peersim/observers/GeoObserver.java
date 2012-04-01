@@ -180,13 +180,13 @@ public class GeoObserver extends GraphObserver {
     private static void graphToFile(Graph g, PrintStream ps, int geoPid) {
     	    	
 	    for (int i = 0; i < g.size(); i++) {
-	        Node current = (Node) g.getNode(i);
-	        
-	        double x_to = ((GeoLocation) current
-	                .getProtocol(geoPid)).getX();
-	        double y_to = ((GeoLocation) current
-	                .getProtocol(geoPid)).getY();
 	        Node n = (Node) g.getNode(i);
+
+	        
+	        double x_to = ((GeoLocation) n
+	                .getProtocol(geoPid)).getX();
+	        double y_to = ((GeoLocation) n
+	                .getProtocol(geoPid)).getY();
 	        UniverseProtocol universeProtocol = (UniverseProtocol) n.getProtocol(
 					universeProtocolId);
 			
@@ -194,7 +194,6 @@ public class GeoObserver extends GraphObserver {
 	        if (groupDescriptor == null) {
 	        	continue;
 	        }
-	        
 	       
 			System.out.print("[Node " + n.getID() +" ] leaders {");
 			for	(Node k: universeProtocol.leaders) {

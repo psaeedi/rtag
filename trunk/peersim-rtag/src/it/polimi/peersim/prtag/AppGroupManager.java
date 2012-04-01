@@ -3,6 +3,10 @@
  */
 package it.polimi.peersim.prtag;
 
+import java.util.UUID;
+
+import peersim.core.Node;
+
 /**
  * @author Panteha Saeedi@ elet.polimi.it
  *
@@ -10,16 +14,20 @@ package it.polimi.peersim.prtag;
 public class AppGroupManager {
 
 	private String name;
+	private Node ownerNode;
 	private GroupDescriptor followedGroup;
 	private GroupDescriptor leadedGroup;
 	
-	public AppGroupManager(String name) {
+	public AppGroupManager(String name, Node ownerNode) {
 		super();
 		this.name = name;
+		this.ownerNode = ownerNode;
+		
 	}
 
 	public AppGroupManager(AppGroupManager oldgroupmanager) {
 		this.name = oldgroupmanager.name;
+		this.ownerNode = oldgroupmanager.ownerNode;
 	}
 
 	public GroupDescriptor getFollowedGroup() {
@@ -30,6 +38,14 @@ public class AppGroupManager {
 		this.followedGroup = followedGroup;
 	}
 	
+	public GroupDescriptor getOrCreateLeadedGroup() {
+		GroupDescriptor leadedGroup = getLeadedGroup();
+		if (leadedGroup == null) {
+			leadedGroup = new GroupDescriptor(UUID.randomUUID(), name, ownerNode);
+		}
+		return leadedGroup;
+	}
+
 	public GroupDescriptor getLeadedGroup() {
 		return leadedGroup;
 	}

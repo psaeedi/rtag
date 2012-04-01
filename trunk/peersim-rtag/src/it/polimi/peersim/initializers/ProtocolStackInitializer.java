@@ -23,15 +23,12 @@ public class ProtocolStackInitializer implements Control {
     private static final String GEOLOCATION_PROTOCOL = "geolocation_protocol";
     private static final String DICSCOVERY_PROTOCOL = "discovery_protocol";
 	private static final String UNIVERSE_PROTOCOL = "universe_protocol";
-	//private static final String ROUTING_PROTOCOL = "routing_protocol";
-	private static final String GROUPING_PROTOCOL = "grouping_protocol";
 	
     /** Protocol identifier, obtained from config property {@link #UNIVERSE_PROTOCOL}. */
     private final int geolocationId;
     private final int discoveryProtocolId;
 	private final int universeProtocolId;
-	//private final int routingProtocolId;
-	private final int groupingProtocolId;
+
 	
     /**
      * @param prefix
@@ -40,8 +37,6 @@ public class ProtocolStackInitializer implements Control {
     	geolocationId = Configuration.getPid(prefix + "." + GEOLOCATION_PROTOCOL);
     	discoveryProtocolId = Configuration.getPid(prefix + "." + DICSCOVERY_PROTOCOL);
     	universeProtocolId = Configuration.getPid(prefix + "." + UNIVERSE_PROTOCOL);   	
-    	//routingProtocolId = Configuration.getPid(prefix + "." + ROUTING_PROTOCOL);
-    	groupingProtocolId = Configuration.getPid(prefix + "." + GROUPING_PROTOCOL);
     }
 
 	@Override
@@ -59,7 +54,6 @@ public class ProtocolStackInitializer implements Control {
 			
 			initializeDiscovery(n);
 			initializeUniverse(n);
-			initializeGrouping(n);
         }
 		return false;
 	}
@@ -76,13 +70,5 @@ public class ProtocolStackInitializer implements Control {
         // create an empty universe and then send it to setUniverse(node, universe)
         // Each node should be initialized with its own universe
         universeProtocol.initialize(n);
-	}
-	
-	public void initializeGrouping(Node n) {
-		GroupingProtocol groupingProtocol = (GroupingProtocol)
-        		n.getProtocol(groupingProtocolId);
-        // create an empty universe and then send it to setUniverse(node, universe)
-        // Each node should be initialized with its own universe
-		groupingProtocol.initialize(n);
 	}
 }
