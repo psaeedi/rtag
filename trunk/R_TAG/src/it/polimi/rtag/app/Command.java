@@ -3,9 +3,6 @@
  */
 package it.polimi.rtag.app;
 
-import java.io.Serializable;
-import java.util.Map;
-
 /**
  * @author Panteha Saeedi (saeedi@elet.polimi.it)
  *

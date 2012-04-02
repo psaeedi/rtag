@@ -1,11 +1,14 @@
 package it.polimi.rtag.app.example1;
 
-import it.polimi.rtag.app.*;
-
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 
 public class RedSlave extends RedApp {
+	/**
+	 * slaves are the all nodes in the network that are going to receive application 
+	 * commands or remotecallable from a master.
+	 * some slaves can be also master.
+	 */
 
 	public RedSlave() {
 		super();

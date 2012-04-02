@@ -7,7 +7,7 @@ import it.polimi.rtag.app.Command;
 import it.polimi.rtag.app.CallableApp;
 
 /**
- * @author pani
+ * @author Panteha saeedi@ elet.polimi.it
  *
  */
 public class RedApp extends CallableApp {

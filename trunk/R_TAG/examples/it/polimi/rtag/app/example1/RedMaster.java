@@ -1,19 +1,33 @@
 package it.polimi.rtag.app.example1;
 
 import it.polimi.rtag.*;
-import it.polimi.rtag.app.CommandMessage;
 import it.polimi.rtag.messaging.TupleMessage;
-import it.polimi.rtag.messaging.TupleMessage.Scope;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.Serializable;
 
-public class RedMaster extends RedApp implements Runnable {
+/**
+ * @author Panteha saeedi@ elet.polimi.it
+ *
+ */
 
+public class RedMaster extends RedApp implements Runnable {
+	
+	/**
+	 * master of application is a node (that can also not be part of the group)
+	 * but it has an interface with an operator or an automatic server.
+	 * In the network there might be one or several nodes that can act as a master.
+	 * each time only one should be active and operator can send commands 
+	 * or remotecallables to the rest of the network.
+	 * not all the nodes have the ability to be a master since for instance
+	 * the have no interface with an operator.
+	 */
+	
 	private boolean active = false;
 	
 	public RedMaster() {
+		//for each command you should add a listener.
 		super();
 		addCommandListener(joinApp.getName(), new JoinAppListener());
 		addCommandListener(leaveApp.getName(), new LeaveAppListener());
@@ -38,7 +52,7 @@ public class RedMaster extends RedApp implements Runnable {
 	private class BecomeMasterAppListener implements PropertyChangeListener {
 		@Override
 		public void propertyChange(PropertyChangeEvent event) {
-			throw new AssertionError("I am a master");
+			throw new AssertionError("I am already a master");
 		}
 	}
 	
