@@ -17,7 +17,7 @@ import polimi.reds.NodeDescriptor;
 
 /**
  * @author Panteha Saeedi (saeedi@elet.polimi.it)
- * implementing both the client and server1
+ * implementing both the client and server
  */
 public class CallableApp extends AbstractApp {
 

@@ -1,16 +1,23 @@
 package it.polimi.rtag.app.example1;
 
 import it.polimi.rtag.Node;
+
 import java.net.ConnectException;
 import java.net.MalformedURLException;
 
 import polimi.reds.broker.overlay.AlreadyNeighborException;
 import polimi.reds.broker.overlay.NotRunningException;
 
+/**
+ * @author Panteha saeedi@ elet.polimi.it
+ *
+ */
+
 public class Launch1 {
 
 	/**
 	 * @param args
+	 * 
 	 */
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
@@ -41,6 +48,7 @@ public class Launch1 {
 		}
 		
 		node1.joinGroup("purple");
+		//invoke command (CallableApp)
 		master.invokeCommand(node2.getNodeDescriptor(), master.joinApp.getName(), "purple");
 		master.start();
 	}
