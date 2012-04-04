@@ -17,22 +17,23 @@ public class Launch1 {
 
 	/**
 	 * @param args
+	 * @throws InterruptedException 
 	 * 
 	 */
-	public static void main(String[] args) {
+	public static void main(String[] args) throws InterruptedException {
 		// TODO Auto-generated method stub
 
 		
-		Node node1 = new Node("localhost", 40000);
+		Node nodemaster = new Node("localhost", 40000);
 		RedMaster master = new RedMaster();
-		master.setCurrentNode(node1);
-		node1.start();
-		Node node2 = new Node("localhost", 20000);
+		master.setCurrentNode(nodemaster);
+		nodemaster.start();
+		Node nodeslave = new Node("localhost", 20000);
 		RedSlave slave = new RedSlave();
-		slave.setCurrentNode(node2);
-		node2.start();
+		slave.setCurrentNode(nodeslave);
+		nodeslave.start();
 		try {
-			node1.getOverlay().addNeighbor("reds-tcp:localhost:" + 20000);
+			nodemaster.getOverlay().addNeighbor("reds-tcp:localhost:" + 20000);
 		} catch (AlreadyNeighborException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -47,10 +48,12 @@ public class Launch1 {
 			e.printStackTrace();
 		}
 		
-		node1.joinGroup("purple");
+		nodemaster.joinGroup("purple");
 		//invoke command (CallableApp)
-		master.invokeCommand(node2.getNodeDescriptor(), master.joinApp.getName(), "purple");
+		master.invokeCommand(nodeslave.getNodeDescriptor(), master.joinApp.getName(), "purple");
 		master.start();
+		Thread.sleep(10000);
+		master.stop();
 	}
 
 }

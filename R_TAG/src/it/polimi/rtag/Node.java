@@ -92,7 +92,7 @@ public class Node {
 	}
 
 	public GroupDescriptor joinGroup(String friendlyName) {
-		// if string is equal to the constant universe, rise an excdption
+		// if string is equal to the constant universe, rise an exception
 		if (GroupDescriptor.UNIVERSE.equals(friendlyName)) {
 			throw new RuntimeException("The application cannot join the universe.");
 		}

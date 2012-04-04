@@ -23,6 +23,7 @@ public class RedSlave extends RedApp {
 		public void propertyChange(PropertyChangeEvent event) {
 			String name = (String)event.getNewValue();
 			getCurrentNode().joinGroup(name);
+			System.out.println("joining "+ name);
 		}
 	}
 	

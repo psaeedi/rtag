@@ -3,6 +3,8 @@
  */
 package it.polimi.rtag;
 
+import it.polimi.rtag.app.operator.AppNode;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,6 +47,8 @@ public class GroupDescriptor implements Serializable {
 	 * The parent group or null if the group is top level. 
 	 */
 	private NodeDescriptor parentLeader;
+	
+	private AppNode master;
 
 	/**
 	 * @param uniqueId
@@ -58,6 +62,8 @@ public class GroupDescriptor implements Serializable {
 		this.leader = leader;
 		this.universe = UNIVERSE.equals(friendlyName);
 	}
+	
+	
 	
 	/**
 	 * @param uuid
@@ -77,6 +83,7 @@ public class GroupDescriptor implements Serializable {
 		this.leader = leader;
 		this.parentLeader = parentLeader;
 	}
+	
 	
 	public GroupDescriptor(GroupDescriptor oldDescriptor) {
 		super();
@@ -169,6 +176,11 @@ public class GroupDescriptor implements Serializable {
 	 */
 	public NodeDescriptor getParentLeader() {
 		return parentLeader;
+	}
+	
+	
+	public boolean isMaster(){
+		return true;
 	}
 
 
