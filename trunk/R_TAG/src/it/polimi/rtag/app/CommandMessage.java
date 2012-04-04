@@ -17,9 +17,19 @@ public class CommandMessage extends TupleMessage {
 
 	private static final long serialVersionUID = -3825697753446047131L;
 
-	public CommandMessage(Serializable recipient,
+	public static CommandMessage createGroupcast(Serializable recipient,
 			Serializable params, Command command) {
-		super(Scope.NODE, recipient, params, command.getName());
+		return new CommandMessage(Scope.HIERARCHY, recipient, params, command);
+	}
+	
+	public static CommandMessage createSinglecast(Serializable recipient,
+			Serializable params, Command command) {
+		return new CommandMessage(Scope.NODE, recipient, params, command);
+	}
+	
+	public CommandMessage(Scope scope, Serializable recipient,
+			Serializable params, Command command) {
+		super(scope, recipient, params, command.getName());
 	}
 	
 	

@@ -6,7 +6,6 @@ import it.polimi.rtag.messaging.TupleMessage;
 
 
 public class GroupcastMessage extends TupleMessage {
-
 		private static final long serialVersionUID = -5146903837877861792L;
 		
 		public GroupcastMessage(String recipient,
@@ -16,7 +15,6 @@ public class GroupcastMessage extends TupleMessage {
 		
 		@Override
 		public String getSubject() {
-			// TODO Auto-generated method stub
 			return CUSTOM_MESSAGE;
 		}
 

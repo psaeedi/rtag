@@ -1,7 +1,9 @@
 package it.polimi.rtag.app.operator;
 
+import it.polimi.rtag.Node;
 
-public class ExampleRedNode extends AppNode implements Runnable{
+
+public class ExampleRedNode extends Node implements Runnable {
 	
 	/*
 	 * For each app group define one class like this
@@ -15,25 +17,40 @@ public class ExampleRedNode extends AppNode implements Runnable{
 	 * 6- get the required behaviors
 	 * */
 	//group friendly name: 
-	public  String RED = "Red";
-	protected boolean active;
-	private AppCommands appCommand;
-
-
+	private final static String RED = "Red";
+	
+	private AppCommand appCommand;
+	
 	public ExampleRedNode(String host, int port) {
 		super(host, port);
+		
+		appCommand = new SlaveListener();
+		this.setApplication(appCommand);
+		
+		appCommand.setMasterBehaviors(new RedMasterBehaviour());
+		appCommand.setSlaveBehaviors(new RedSlaveBehaviour());
 	}
 
 	@Override
 	public void run() {
-		setUp("RED");
 		//or joinToNewGroup("RED");
-		setMaster("RED");
-		getBehaviors("RED", active, active);
-		
+		//setMaster("RED");
+		//getBehaviors("RED", active, active);		
 	}
 
-	
-	
 
+	@Override
+	public void start() {
+		super.start();
+		Thread th = new Thread(this);
+		th.start();
+	}
+
+	public void setMaster() {
+		appCommand.setMaster(RED);
+	}
+
+	public void setBehaviors(boolean canBeMaster, boolean canBeSlave) {
+		appCommand.setBehaviors(RED, canBeMaster, canBeSlave);
+	}
 }

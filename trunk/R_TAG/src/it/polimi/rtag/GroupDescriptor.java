@@ -3,8 +3,6 @@
  */
 package it.polimi.rtag;
 
-import it.polimi.rtag.app.operator.AppNode;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,8 +46,6 @@ public class GroupDescriptor implements Serializable {
 	 */
 	private NodeDescriptor parentLeader;
 	
-	private AppNode master;
-
 	/**
 	 * @param uniqueId
 	 * @param friendlyName
