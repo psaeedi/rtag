@@ -1,12 +1,12 @@
 package it.polimi.rtag.app.operator;
 
 
-import it.polimi.rtag.app.operator.AppCommands;
+import it.polimi.rtag.app.operator.AppCommand;
 import it.polimi.rtag.app.pizzaDelivery.OrderPizza;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 
-public class MasterListener extends AppCommands{
+public class MasterListener extends AppCommand {
 	
     //this class should be extended for extra required listeners
 
@@ -52,22 +52,5 @@ public class MasterListener extends AppCommands{
 			getCurrentNode().getTupleSpaceManager().setApplication(new SlaveListener());
 		}
 	}
-	
-	private class MessageListener implements PropertyChangeListener {
-		@Override
-		public void propertyChange(PropertyChangeEvent event) {
-			throw new AssertionError("Already a slave");
-		}
-	}
-	
-	
-	private class ResponseListener implements PropertyChangeListener {
-		@Override
-		public void propertyChange(PropertyChangeEvent event) {
-			throw new AssertionError("Already a slave");
-		}
-	}
-	
-
 
 }

@@ -89,7 +89,7 @@ public class CallableApp extends AbstractApp {
 			throw new AssertionError("Command " + name + " not found.");
 		}
 		Command command = commands.get(name);
-		CommandMessage message = new CommandMessage(recipient, params, command);
+		CommandMessage message = CommandMessage.createSinglecast(recipient, params, command);
 		currentNode.getTupleSpaceManager().storeAndSend(message);
 	}
 	

@@ -1,11 +1,9 @@
 package it.polimi.rtag.app.operator;
 
-public interface MasterBehaviors {
+public interface SlaveBehavior {
 
-    /*
+	/**
      * implement this for each group!
-     * */
-
+     **/    
 	public void setBehavior();
-
 }

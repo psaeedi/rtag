@@ -1,5 +1,8 @@
 package it.polimi.rtag;
 
+import it.polimi.rtag.app.AbstractApp;
+import it.polimi.rtag.messaging.TupleMessage;
+
 import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.util.List;
@@ -84,6 +87,14 @@ public class Node {
 		return groupCommunicationDispatcher;
 	}
 
+	public void setApplication(AbstractApp app) {
+		this.getTupleSpaceManager().setApplication(app);
+	}
+	
+	public void storeAndSend(TupleMessage message) {
+		this.getTupleSpaceManager().storeAndSend(message);
+	}
+	
 	/**
 	 * @return the topologyManager
 	 */
