@@ -54,7 +54,8 @@ public class GroupAwareTopologyManager extends SimpleTopologyManager {
 	/**
 	 * When the application wants to release a node.
 	 * 
-	 * @see polimi.reds.broker.overlay.SimpleTopologyManager#removeNeighbor(polimi.reds.NodeDescriptor)
+	 * @see polimi.reds.broker.overlay.SimpleTopologyManager#
+	 * removeNeighbor(polimi.reds.NodeDescriptor)
 	 */
 	@Override
 	public void removeNeighbor(NodeDescriptor descriptor) {

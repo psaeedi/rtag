@@ -224,6 +224,11 @@ public class GroupCommunicationManager implements NeighborhoodChangeListener {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		
+		//TODO may be we should add here that the
+		// to inform the master of changes about its 
+		//slaves.
+		
 	}
 	
 	/**
