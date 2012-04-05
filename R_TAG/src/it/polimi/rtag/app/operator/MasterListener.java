@@ -2,7 +2,6 @@ package it.polimi.rtag.app.operator;
 
 
 import it.polimi.rtag.app.operator.AppCommand;
-import it.polimi.rtag.app.pizzaDelivery.OrderPizza;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 
@@ -10,6 +9,7 @@ public class MasterListener extends AppCommand {
 	
     //this class should be extended for extra required listeners
 
+	
 
 	public MasterListener() {
 		//for each command you should add a listener.
@@ -17,6 +17,7 @@ public class MasterListener extends AppCommand {
 		addCommandListener(leaveAppGroup.getName(), new LeaveAppListener());
 		addCommandListener(activateMaster.getName(), new ActivateMasterAppListener());
 		addCommandListener(activateSlave.getName(), new ActivateSlaveAppListener());
+		addCommandListener(electMaster.getName(), new ActivatelectnewMasterAppListener());
 	}
 
    
@@ -51,6 +52,17 @@ public class MasterListener extends AppCommand {
 		public void propertyChange(PropertyChangeEvent event) {
 			getCurrentNode().getTupleSpaceManager().setApplication(new SlaveListener());
 		}
+	}
+	
+	public class ActivatelectnewMasterAppListener implements
+	PropertyChangeListener {
+
+		@Override
+		public void propertyChange(PropertyChangeEvent arg0) {
+			// TODO Auto-generated method stub
+		
+		}
+
 	}
 
 }

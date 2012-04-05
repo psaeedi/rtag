@@ -8,8 +8,11 @@ import it.polimi.rtag.app.CallableApp;
 import it.polimi.rtag.app.Command;
 
 /**
+ * author Panteha Saeedi@elet.polimi.it
  * extend this class to add more commands
- * commands are used to send a 
+ * commands are used to send a message that does not need a respond
+ * 
+ * for each command we need to add a listener for the nodes
  */
 public class AppCommand extends CallableApp {
 	
@@ -17,18 +20,7 @@ public class AppCommand extends CallableApp {
 	public Command leaveAppGroup = new Command("leaveAppGroup");
 	public Command activateMaster = new Command("activateMaster");
 	public Command activateSlave = new Command("activateSlave");
-	
-	/*private Serializable recipient;
-	private Map<String, Serializable> params;
-	private RemoteCallable command;
-	public CallableInvocationMessage deliverMessage =
-			new CallableInvocationMessage(recipient, params, command);
-	
-	private Serializable caller;
-	private Serializable result;
-	public CallableResponseMessage responseMessage = 
-			new CallableResponseMessage(caller, result, command);*/
-	
+	public Command electMaster = new Command("electmaster");
 	
 	HashMap<String, Node> masterofexistingGroups = new HashMap<String, Node>();
 	HashMap<String, Node> memebrofexistingGroups = new HashMap<String, Node>();
@@ -43,7 +35,8 @@ public class AppCommand extends CallableApp {
 		putCommand(joinAppGroup);
 		putCommand(leaveAppGroup);
 		putCommand(activateMaster);
-		putCommand(activateSlave);		
+		putCommand(activateSlave);	
+		putCommand(electMaster);	
 	}
 
 	
@@ -63,6 +56,7 @@ public class AppCommand extends CallableApp {
 		masterofexistingGroups.put(friendlyName, this.getCurrentNode());
 		// TODO inform the network?
 	}
+	
 	
     public void setBehaviors(
     		String groupFriendlyName,

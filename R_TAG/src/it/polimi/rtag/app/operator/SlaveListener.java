@@ -7,8 +7,7 @@ import java.beans.PropertyChangeListener;
 
 public class SlaveListener extends AppCommand {
 	 //this class should be extended for extra added listeners		
-		
-    private boolean active = false;
+
 	
 	public SlaveListener() {
 		//for each command you should add a listener.
@@ -16,12 +15,7 @@ public class SlaveListener extends AppCommand {
 		addCommandListener(leaveAppGroup.getName(), new LeaveAppListener());
 		addCommandListener(activateMaster.getName(), new ActivateMasterAppListener());
 		addCommandListener(activateSlave.getName(), new ActivateSlaveAppListener());
-		//For sending messages
-		//addCallListener(deliverMessage.getSubject(), new MessageListener());
-		//addResponseListener(responseMessage.getSubject(), new ResponseListener());
-		//TODO we should add a listener for Master death!
-		//all the slaves of that group should be updated,
-		//in the app they will define the master election
+		addCommandListener(electMaster.getName(), new ActivatelectnewMasterAppListener());
 	}
 	
 		
@@ -57,6 +51,17 @@ public class SlaveListener extends AppCommand {
 		public void propertyChange(PropertyChangeEvent event) {
 			throw new AssertionError("Already a slave");
 		}
+	}
+	
+	public class ActivatelectnewMasterAppListener implements
+	PropertyChangeListener {
+
+		@Override
+		public void propertyChange(PropertyChangeEvent arg0) {
+			// TODO Auto-generated method stub
+		
+		}
+
 	}
 	
 }
