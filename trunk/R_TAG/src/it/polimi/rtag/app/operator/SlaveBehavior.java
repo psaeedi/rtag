@@ -1,5 +1,9 @@
 package it.polimi.rtag.app.operator;
 
+/**
+ * author Panteha Saeedi@elet.polimi.it
+ */
+
 public interface SlaveBehavior {
 
 	/**
