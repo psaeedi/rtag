@@ -24,9 +24,11 @@ public class DiscoveryProtocol extends DaemonProtocol{
 	private static final String DISCOVERY_RADIUS = "discovery_radius";
 	protected final double discoveryRadius;
 	
+	// Discovery listeners
 	private static final String UNIVERSE_PROTOCOL = "universe_protocol";
 	private final int universeProtocolId;
-	
+	private static final String GROUPING_PROTOCOL = "grouping_protocol";
+	private final int groupingProtocolId;
 	
 	
 	private ArrayList<Node> neighbors = new ArrayList<Node>();
@@ -43,6 +45,8 @@ public class DiscoveryProtocol extends DaemonProtocol{
 				prefix + "." + DISCOVERY_RADIUS, 0.1);
 		universeProtocolId = Configuration.getPid(
 				prefix + "." + UNIVERSE_PROTOCOL);
+		groupingProtocolId = Configuration.getPid(
+				prefix + "." + GROUPING_PROTOCOL);
     }
 	
 	
@@ -99,20 +103,21 @@ public class DiscoveryProtocol extends DaemonProtocol{
 
 		this.setNeighbors(newNeighbors);
 
-		UniverseProtocol universeProtocol = (UniverseProtocol) 
+		DiscoveryListener universeProtocol = (DiscoveryListener) 
 				currentNode.getProtocol(universeProtocolId);
+		DiscoveryListener groupingProtocol = (DiscoveryListener) 
+				currentNode.getProtocol(groupingProtocolId);
 		//add to the list of ur neighbors
 		if (!added.isEmpty()){
-			//we inform the current node of its neighbor
+			// Notify the higher layers that certain nodes have been discovered.
 			universeProtocol.notifyAddedNodes(currentNode, added);
-			//System.out.println("A Node " + " is added to the neighbor list of Node:" +
-					//currentNode.getID());
+			groupingProtocol.notifyAddedNodes(currentNode, added);
 		}
 		
 		if (!removed.isEmpty()){
+			// Notify the higher layers that certain nodes have been removed.
 			universeProtocol.notifyRemovedNodes(currentNode, removed);
-			//System.out.println("A Node " + " is removed from the neighbor list of Node:" +
-					//currentNode.getID());
+			groupingProtocol.notifyRemovedNodes(currentNode, removed);
 		}
 		System.out.println("Node "+currentNode.getID() + " neighbors: " + neighbors.size()); 
 	}
