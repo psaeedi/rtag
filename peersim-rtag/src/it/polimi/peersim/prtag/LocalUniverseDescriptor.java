@@ -32,6 +32,7 @@ import peersim.core.Node;
 	 * which the node is joined in 
 	 */
    private ArrayList<GroupDescriptor> groupDescriptor = new ArrayList<GroupDescriptor>();
+
 	
 	//constructor by copy
    public LocalUniverseDescriptor(LocalUniverseDescriptor oldDescriptor){

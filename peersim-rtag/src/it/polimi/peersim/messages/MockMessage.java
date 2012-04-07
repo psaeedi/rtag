@@ -8,7 +8,7 @@ import java.io.Serializable;
 import peersim.core.Node;
 
 /**
- * @author Panteha Saeedi
+ * @author Panteha Saeedi@ elet.polimi.it
  *
  * Transport message for 1-to-1 communication.
  */

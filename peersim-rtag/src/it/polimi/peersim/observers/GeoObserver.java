@@ -126,7 +126,7 @@ public class GeoObserver extends GraphObserver {
             FileOutputStream fos = new FileOutputStream(fname);
             System.out.println("Writing to file " + fname);
             PrintStream pstr = new PrintStream(fos);
-
+  
             // dump topology:
             graphToFile(g, pstr, geoPid);
            //graphToFile(g, pstr, geoPid, universeProtocolId);

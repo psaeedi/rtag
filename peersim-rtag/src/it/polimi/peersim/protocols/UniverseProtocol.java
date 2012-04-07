@@ -3,6 +3,7 @@ package it.polimi.peersim.protocols;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import peersim.cdsim.CDProtocol;
 import peersim.config.Configuration;
@@ -28,6 +29,9 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage> implem
 	private static final String FOLLOWER_THRESHOLD_RATE = "follower_thresholdrate";
 	private final int followerLeaderRate;
 	
+	private static final String GROUPING_PROTOCOL = "grouping_protocol";
+	private static int groupingProtocolId;
+	
 	// All the leaders of this Node
 	public ArrayList<Node> leaders = new ArrayList<Node>();
 	
@@ -41,6 +45,7 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage> implem
 	
 	// The local universe of the current node
 	private LocalUniverseDescriptor localUniverse;
+	private Node followerLeaders = null;
 	
 
 	public UniverseProtocol(String prefix) {
@@ -49,6 +54,8 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage> implem
 				prefix + "." + FOLLOWER_THRESHOLD, 3);
 		followerLeaderRate = Configuration.getInt(
 				prefix + "." + FOLLOWER_THRESHOLD_RATE, 2);
+		groupingProtocolId = Configuration.getPid(
+				prefix + "." + GROUPING_PROTOCOL);
 	}
 	
 	@Override
@@ -121,14 +128,21 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage> implem
 	public void notifyRemovedNodes(Node currentNode, ArrayList<Node> removed) {
 		for (Node lostNode: removed) {
 			if (lostNode.getID() == currentNode.getID()){
-				throw new RuntimeException("WARNING: node has lost itself itself.");
+				throw new RuntimeException("WARNING: node has lost itself.");
 			}
+			
+			GroupingProtocol grouping = (GroupingProtocol)
+					currentNode.getProtocol(groupingProtocolId);
+			grouping.notifyRemovedNodes(currentNode, lostNode);
+			
+			
 			handleNeighbourLost(currentNode, lostNode);
 		}
 		
 	}
 	
 	public void handleNeighbourLost(Node currentNode, Node remoteNode) {
+		
 	    if (leaders.contains(remoteNode)) {
 	    	// The lost node was one of the local universe leaders
 	    	leaders.remove(remoteNode);
@@ -173,7 +187,7 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage> implem
 	}
 	
 	private void followerToLeader(Node currentNode, Node remoteNode) {
-		System.out.println("[Node " + currentNode.getID() + 
+		System.out.println("][Node " + currentNode.getID() + 
 				"] Swapping follower " + remoteNode.getID());
 		if (!followers.contains(remoteNode)) {
 			throw new AssertionError("Node " + remoteNode.getID() + 
@@ -191,10 +205,13 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage> implem
 	private Node getLessCongestedFollower() {
 		int followersCount = Integer.MAX_VALUE;
 		Node lessCongested = null;
+		int count = 0;
 		for (Node follower: followers) {
 			LocalUniverseDescriptor descriptor = 
 					followerUniverseDescriptors.get(follower);
-			int count = descriptor.getFollowers().size();
+			if(descriptor!=null){
+			count = descriptor.getFollowers().size();
+			}
 			if (count < followersCount) {
 				followersCount = count;
 				lessCongested = follower;
@@ -203,21 +220,33 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage> implem
 		return lessCongested;
 	}
 	
-	private Node getFollowerWithOtherLeaders() {
+	private Node getFollowerWithOtherLeaders(Node currentNode) {
 		for (Node follower: followers) {
-			LocalUniverseDescriptor followerDescriptor = 
+			/*LocalUniverseDescriptor followerDescriptor = 
 					followerUniverseDescriptors.get(follower);
-			int followersCount = followerDescriptor.getFollowers().size();
-			//except me it has other leaders
-			if(followersCount > 1){
-			   return follower;
+			int followersCount = followerDescriptor.getFollowers().size();*/
+			
+			UniverseCommand command = new UniverseCommand
+					(UniverseCommand.COUNT_LEADERS, 0);
+			
+			UniverseMessage message = 
+					UniverseMessage.createUniverseCommand(
+							protocolId,
+							currentNode,
+							command);
+			pushDownMessage(currentNode, follower, message);
+			
+			if(followerLeaders!=null){
+				return followerLeaders;
 			}
+			
 		}
 		return null;
 	}
 
 	public boolean isCongested() {
-		return (followers.size() > followerThreshold) && (followers.size() / followerLeaderRate > leaders.size()); 
+		return (followers.size() > followerThreshold) && (followers.size() / 
+				followerLeaderRate > leaders.size()); 
 	}
 	
     public boolean hasNoLeader() {
@@ -240,7 +269,7 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage> implem
 	public void handleNodeNoLeader(Node currentNode) {
 		System.out.println("Starting no leader control loop.");
 		while (hasNoLeader()) {
-			Node follower = getFollowerWithOtherLeaders();
+			Node follower = getFollowerWithOtherLeaders(currentNode);
 			if (follower == null) {
 				System.out.println(
 						"handleNodeNoLeader() no follower found with other leaders." +
@@ -317,7 +346,7 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage> implem
 		if (content instanceof UniverseMessage) {
 			return (UniverseMessage) content;
 		} else {
-			return UniverseMessage.wrapMessage(
+			return UniverseMessage.createSinglecast(
 					protocolId, currentNode, (BaseMessage)content);
 		}
 	}
@@ -328,9 +357,9 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage> implem
 			UniverseMessage message) {
 		
 		String head = message.getHead();
-		System.out.println("Universe::handlePushUpMessage "+ currentNode.getID() + "<-" +
-				message.getSender().getID() + " message " + 
-				head);
+		//System.out.println("Universe::handlePushUpMessage "+ currentNode.getID() + "<-" +
+			//	message.getSender().getID() + " message " + 
+				//head);
 		
 		if (UniverseMessage.UPDATE_DESCRIPTOR.equals(head)) {
 			handleLocalUniverseDescriptorChanged(
@@ -357,31 +386,77 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage> implem
 			addFollowerAck(message.getSender());
 			return null;
 		}
+		
+		if (UniverseMessage.UNIVERSE_COMMAND.equals(message.getHead())) {
+			handleUniverseCommand(currentNode, sender, (UniverseCommand)message.getContent());
+			return null;
+		}
 		return null;
 	}
 
 
+	private void handleUniverseCommand(Node currentNode, Node sender, UniverseCommand command) {
+		// TODO Auto-generated method stub
+		String commandName = command.getCommand();
+		int content = command.getContent();
+		
+		if (UniverseCommand.COUNT_LEADERS.equals(commandName)) {
+			handleUniverseCommandCountLeader(currentNode, sender);
+			
+		} else if (UniverseCommand.COUNT_LEADERS_RESPONSE.equals(commandName)) {
+			handleUniverseCommandCountLeaderResponse(content, currentNode, sender);
+		}
+	}
+
+	private void handleUniverseCommandCountLeaderResponse(int content, Node currentNode, Node sender){ 
+		getFirstFollowerWithOtherLeader(currentNode,sender, content);
+	}
+
+	private void getFirstFollowerWithOtherLeader(Node currentNode, Node sender,  int content) {
+		if(content > 1 ){
+		followerLeaders = sender;
+		}
+		
+		return;
+	}
+
+	private void handleUniverseCommandCountLeader(Node currentNode, Node sender) {
+		int leaderCount = leaders.size();
+		UniverseCommand command = new UniverseCommand
+				(UniverseCommand.COUNT_LEADERS_RESPONSE, leaderCount);
+		
+		UniverseMessage message = 
+				UniverseMessage.createUniverseCommand(
+						protocolId,
+						currentNode,
+						command);
+		pushDownMessage(currentNode, sender, message);
+		
+	}
+
 	public void sendBroadCast(Node currentNode, BaseMessage message) {
-		System.out.println("[{Node " + currentNode.getID() + "] " + message);
+		//System.out.println("[{Node " + currentNode.getID() + "] " + message);
 		// forward the broadcast to the top protocols
 		//EDProtocol receiver = (EDProtocol)currentNode.getProtocol(message.getPid());
-		System.out.println("broadcast-content " + message.getContent());
+		//System.out.println("broadcast-content " + message.getContent());
 		
 		// We send to all the leaders
 		for (Node topLeader: leaders) {
 			UniverseMessage broadcast = 
 					UniverseMessage.createBroadcast(protocolId, currentNode, message);
-			System.out.println("********broadcast-content" + message.getContent());
+			//System.out.println("********broadcast-content" + message.getContent());
 			pushDownMessage(currentNode, topLeader, broadcast);
 		}
 		
 		// Send to all the followers which are not grandchildrens
 		ArrayList<Node> children = new ArrayList<Node>(followers);
 		for (Node follower: followers) {
-			children.removeAll(followerUniverseDescriptors.get(follower).getFollowers());
+			 if(followerUniverseDescriptors.get(follower)!= null){
+			    children.remove(followerUniverseDescriptors.get(follower).getFollowers());
+			 }
 		}
 		for (Node child: children) {
-			System.out.println("!********broadcast-content" + message.getContent());
+			//System.out.println("!********broadcast-content" + message.getContent());
 			UniverseMessage broadcast =
 					UniverseMessage.createBroadcast(protocolId, currentNode, message);
 			pushDownMessage(currentNode, child, broadcast);

@@ -4,6 +4,8 @@ import peersim.config.Configuration;
 import peersim.core.Network;
 import peersim.core.Node;
 import it.polimi.peersim.protocols.GeoLocation;
+import peersim.cdsim.CDProtocol;
+import peersim.cdsim.CDState;
 import peersim.cdsim.DaemonProtocol;
 
 /**
@@ -38,7 +40,7 @@ public class DiscoveryProtocol extends DaemonProtocol{
 		geolocationProtocolId = Configuration.getPid(
 				prefix + "." + GEOLOCATION_PROTOCOL);
 		discoveryRadius = Configuration.getDouble(
-				prefix + "." + DISCOVERY_RADIUS, 0.01);
+				prefix + "." + DISCOVERY_RADIUS, 0.1);
 		universeProtocolId = Configuration.getPid(
 				prefix + "." + UNIVERSE_PROTOCOL);
     }
@@ -54,9 +56,13 @@ public class DiscoveryProtocol extends DaemonProtocol{
              	continue;
              }
          	
-         	if (isCloseTo(n, k)) {
-         		neighbours.add(k);
-         	}
+             
+            //if(neighbours.size()<20){
+	         	if (isCloseTo(n, k)) {
+	         		//because of java heap we limit the number of neighbors to 100.
+	         		neighbours.add(k);
+	         	}
+            //}
          }
          
          updateNeighbourhood(neighbours);
@@ -76,8 +82,9 @@ public class DiscoveryProtocol extends DaemonProtocol{
 	}
 
 	public void updateNeighbourhood(ArrayList<Node> newNeighbors) {
-		
-		if (newNeighbors.isEmpty()){
+		//at the first cycle if there are nodes isolated inform us
+		//after crash isolation is ignored
+		if (newNeighbors.isEmpty() &&  CDState.getCycle() == 1){
 			throw new RuntimeException("no neighbor find-isolated node");
 		}
 	
@@ -107,21 +114,13 @@ public class DiscoveryProtocol extends DaemonProtocol{
 			//System.out.println("A Node " + " is removed from the neighbor list of Node:" +
 					//currentNode.getID());
 		}
-		
-		
 		System.out.println("Node "+currentNode.getID() + " neighbors: " + neighbors.size()); 
 	}
 
 	
 
 	public boolean isCloseTo(Node n, Node k) {
-		
-		/*if(distance(n,k)> discoveryRadius){
-			return false;
-		}*/
-		//System.out.println("DiscoveryProtocol-isclose!");
 		return (distance(n, k) < discoveryRadius);
-		//return true;
 	}
 
 	public double distance(Node n, Node k) {
