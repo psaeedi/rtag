@@ -19,9 +19,13 @@ protocol.link IdleProtocol
 protocol.discovery it.polimi.peersim.protocols.DiscoveryProtocol
 {
 	geolocation_protocol geolocation
-	discovery_radius 4
+	
 	#the larger more neighbors
+	discovery_radius 4
+	
+	# discovery listeners
 	universe_protocol universe
+	grouping_protocol grouping
 }
 
 protocol.channel it.polimi.peersim.protocols.MockChannel
@@ -41,7 +45,6 @@ protocol.universe it.polimi.peersim.protocols.UniverseProtocol
 	protocol_id universe
 	lower_protocol_id tuplespace
 	discovery_protocol discovery
-	grouping_protocol grouping
 	follower_threshold 3
 	follower_thresholdrate 2
 }
