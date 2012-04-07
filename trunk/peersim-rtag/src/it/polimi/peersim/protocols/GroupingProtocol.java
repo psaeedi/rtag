@@ -5,10 +5,12 @@ package it.polimi.peersim.protocols;
 
 import it.polimi.peersim.messages.BaseMessage;
 import it.polimi.peersim.messages.GroupingMessage;
+import it.polimi.peersim.messages.UniverseMessage;
 import it.polimi.peersim.prtag.AppGroupManager;
 import it.polimi.peersim.prtag.GroupDescriptor;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
@@ -43,6 +45,7 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage> implem
 	private HashMultimap<String, GroupDescriptor> knownGroups = 
 			HashMultimap.create();
 	
+	private ArrayList<String> myGroupNames = new ArrayList<String>();
 
 	public GroupingProtocol(String prefix) {
 		super(prefix);
@@ -56,6 +59,7 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage> implem
 		clone = (GroupingProtocol) super.clone();
 		clone.managers = new HashMap<String, AppGroupManager>(managers);
 		clone.knownGroups = HashMultimap.create(knownGroups);
+		clone.myGroupNames = new ArrayList<String>(myGroupNames);
         return clone;
 	}
 	
@@ -81,11 +85,12 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage> implem
 	
 
 	public void joinOrCreateGroup(Node currentNode, String name) {
+		
 		//immediately check u have a manager for that group
 		AppGroupManager groupManager = getOrCreateManager(currentNode, name);
-		if (groupManager.getFollowedGroup() != null) {
+		if (groupManager.getFollowedGroup() != null || groupManager.getLeadedGroup() != null) {
 			throw new AssertionError(
-					"This node is already following a group called: " + name);
+			"This node is already following a group called: " + name);
 		}
 		
 		// if no group exist with that name create a new one and
@@ -93,25 +98,34 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage> implem
 		if (knownGroups.get(name).isEmpty()) {
 			GroupDescriptor groupDescriptor = new GroupDescriptor(
 					UUID.randomUUID(), name, currentNode); 
-			groupManager.setFollowedGroup(groupDescriptor);
+			
+			knownGroups.put(name, groupDescriptor);
+			myGroupNames.add(name);
+			groupManager.setLeadedGroup(groupDescriptor);
+			System.out.println("Group::[Node " + currentNode.getID() + 
+					"] [creating group " + name+"]" + groupManager.getLeadedGroup().getFriendlyName() );
 		    broadcastGroupCreatedOrChanged(currentNode, groupDescriptor);
-		} else {
+		   
+		 } else {
 			// if a known group exist ask to join
-			Set<GroupDescriptor> descriptors = knownGroups.get(name);
+			System.out.println("Group::[Node " + currentNode.getID() + 
+					"] [joining group " + name+"]");
 			Node leader = null;
-			for(GroupDescriptor descriptor: descriptors){
-		       leader = descriptor.getLeader();
-		       // TODO (optional) use the routing protocol to find the closer leader
-		       if (leader != null) {
-		    	   break;
-		       }
-			}
-			if (leader == null) {
-				throw new AssertionError(
-						"If leader is null why we have a groupdescriptor");
-			}
-		    askLeaderToJoin(currentNode, leader, name);
-		}
+			GroupDescriptor groupdescriptor = null;
+				for(GroupDescriptor descriptors: knownGroups.get(name)){
+			       leader = descriptors.getLeader();
+			       // TODO (optional) use the routing protocol to find the closer leader
+			       if (leader != null) {
+			    	   groupdescriptor=descriptors;
+			    	   break;
+			       }
+				}
+				if (leader == null) {
+					throw new AssertionError(
+							"If leader is null why we have a groupdescriptor");
+				}
+			    askLeaderToJoin(currentNode, leader, groupdescriptor);
+		 }
 	}
 	
 	public void broadcastGroupCreatedOrChanged(Node currentNode, GroupDescriptor descriptor) {
@@ -133,20 +147,35 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage> implem
 		protocol.sendBroadCast(currentNode, message);
 	}
 	
-	public void askLeaderToJoin(Node currentNode, Node leader, String groupName) {
+	public void askLeaderToJoin(Node currentNode, Node leader, GroupDescriptor groupdescriptor) {
 		// the node ask a leader to join him
+		System.out.println("pani");
+		/*GroupingMessage message = GroupingMessage.createJoinRequest(
+				protocolId, currentNode, groupdescriptor);
+		pushDownMessage(currentNode, leader, message);*/
+		
+		GroupCommand command = new GroupCommand
+				(GroupCommand.JOIN_REQUEST, groupdescriptor);
+		
 		GroupingMessage message = GroupingMessage.createJoinRequest(
-				protocolId, currentNode, groupName);
+						protocolId,
+						currentNode,
+						command);
 		pushDownMessage(currentNode, leader, message);
+		
 	}
 	
-	public void handleJoinRequest(Node currentNode, Node follower, String groupName) {
+	public void handleJoinRequest(Node currentNode, Node follower, GroupDescriptor groupDescriptor2) {
 		// a node asked this leader to join him
 		// TODO add to the leaded group of that group and get the updated group descriptor
 		// TODO send the updated group descriptor to all the other followers
+		String groupName = groupDescriptor2.getFriendlyName();
 		AppGroupManager manager = getOrCreateManager(currentNode, groupName);
 		GroupDescriptor groupDescriptor = manager.getOrCreateLeadedGroup();
-		groupDescriptor.addFollower(currentNode);
+		System.out.println("========Group::[Node " + currentNode.getID() + 
+				"] [creating group "  + manager.getOrCreateLeadedGroup().getFriendlyName() );
+		
+		groupDescriptor.addFollower(follower);
 		
 		GroupingMessage message = GroupingMessage.createJoinRequestAck(
 				protocolId, currentNode, groupDescriptor);
@@ -168,6 +197,10 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage> implem
 		manager.setFollowedGroup(groupDescriptor);
 		String groupName = groupDescriptor.getFriendlyName();
 		knownGroups.put(groupName, groupDescriptor);
+		AppGroupManager groupManager = getOrCreateManager(currentNode, groupName);
+		managers.put(groupName, groupManager);
+		if(!myGroupNames.contains(groupName)){
+			myGroupNames.add(groupName);}
 	}
 	
 
@@ -182,12 +215,16 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage> implem
 		//does it replace it ?!
 		//update the descriptor
   		knownGroups.put(groupName, remotegroupDescriptor);
+  		if(!myGroupNames.contains(groupName)){
+			myGroupNames.add(groupName);}
   		//if there is no manager, we should create one
   		
 		
 		// If it is a groupleader update the descriptor
 		if(currentNode == groupLeader){
 			manager.setLeadedGroup(remotegroupDescriptor);
+			knownGroups.removeAll(groupName);
+			knownGroups.put(groupName, remotegroupDescriptor);
 			//leader should inform its followers of the updated groupDescriptor.
 			/*for(Node followers: groupmanager.getLeadedGroup().getFollowers()){
 				GroupingProtocol protocol = (GroupingProtocol)followers.getProtocol(groupProtocolId);
@@ -198,10 +235,13 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage> implem
 		
 		if(groupFollowers.contains(currentNode)){
 			manager.setFollowedGroup(remotegroupDescriptor);
+			knownGroups.removeAll(groupName);
 			knownGroups.put(groupName, remotegroupDescriptor);
 			System.out.println("*@*@*@*@*@ node"+currentNode.getID() );
 		} else {
 			knownGroups.put(groupName, remotegroupDescriptor);
+			if(!myGroupNames.contains(groupName)){
+				myGroupNames.add(groupName);}
 		}
 	}
 
@@ -294,11 +334,26 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage> implem
 			return null;
 		}
 		
-		if (GroupingMessage.JOIN_REQUEST.equals(head)) {
+		/*if (GroupingMessage.JOIN_REQUEST.equals(head)) {
 			//leader is the local node
+			System.out.println("66666666666666666666666666" +
+					"JOIN_REQUESTR node " + message.getSender().getID());
 			handleJoinRequest(
 					currentNode,
 					message.getSender(),
+					(GroupDescriptor) message.getContent());
+			return null;
+		}*/
+		
+		if (GroupingMessage.GROUP_COMMAND.equals(message.getHead())) {
+			handleGroupCommand(currentNode, sender, (GroupCommand)message.getContent());
+			return null;
+		}
+		
+		if (GroupingMessage.REPLACELEADER_REQUEST.equals(head)) {
+			//leader is the local node
+			handleLeaderReplacement(
+					currentNode,
 					(String) message.getContent());
 			return null;
 		}
@@ -317,6 +372,96 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage> implem
 			return (BaseMessage) message.getContent();
 		}
 		return null;
+	}
+	
+	
+	private void handleGroupCommand(Node currentNode, Node sender, GroupCommand command) {
+
+		String commandName = command.getCommand();
+		GroupDescriptor groupDescriptor = (GroupDescriptor) command.getContent();
+		
+		if (GroupCommand.JOIN_REQUEST.equals(commandName)) {
+			handleJoinRequest(currentNode, sender, groupDescriptor);
+			
+		} 
+	}
+
+	
+
+	private void handleLeaderReplacement(Node currentNode, String groupName) {
+		AppGroupManager manager = getOrCreateManager(currentNode, groupName);
+		//the current node is a follower of the groupName but now he should become
+		//the leader, since the leader is dead
+		GroupDescriptor groupDescriptor = manager.getFollowedGroup();
+		groupDescriptor.setLeader(currentNode);
+		manager.setLeadedGroup(groupDescriptor);
+		//no need to send ack, since we update the groupdescriptor!
+		broadcastGroupCreatedOrChanged(currentNode, groupDescriptor);
+	}
+
+	public void notifyRemovedNodes(Node currentNode, Node lostNode) {
+		//current node checks all its known groups for the lost node
+		//get its manager for each and check if it is following them or leading them
+		
+		for(String groups: myGroupNames){
+	        for(GroupDescriptor groupDescriptor: knownGroups.get(groups)){
+	        	//System.out.println("^^^^^^^^^^^Group::[Node " + currentNode.getID() + 
+				//		"] [check" + groups+ "leader"+groupDescriptor.getLeader().getID() );
+	        	//System.out.println("^^^^^^^^^^^Group::[lostNode " + lostNode.getID() + 
+				//		"] [check" + groups ); 	
+	        	//both are the follower
+	        	if(groupDescriptor.isFollower(lostNode) && groupDescriptor.isFollower(currentNode)){
+	        		// inform the leader of that group its follower is lost
+	        		// so he should update the groupDescriptor
+	        		Node leader = groupDescriptor.getLeader();
+	        		tellLeaderTheLostFollower(currentNode, lostNode, leader, groups);
+	        	}
+	        	
+	        	//lost node was the follower and current node the leader
+	        	if(groupDescriptor.isFollower(lostNode) && groupDescriptor.isLeader(currentNode)){
+	        		//currentNode is a leader, it should update its groupdescriptor,
+			    	// and remove the lost node from its leadedgroup 
+			 		groupDescriptor.removeFollower(lostNode);
+			 		broadcastGroupCreatedOrChanged(currentNode, groupDescriptor);
+	        	}
+	        	//lost node was the leader and current node the follower
+	        	if(groupDescriptor.isLeader(lostNode) && groupDescriptor.isFollower(currentNode)){
+	        		Node nextLeader = null;
+	        		//the follower with smallest Id
+	        		for( Node members: groupDescriptor.getFollowers()){
+	        			long smallID = -1;
+	        			if( members.getID()< smallID){
+	        				smallID = members.getID();
+	        			    nextLeader = members;
+	        			 }
+	        		  }
+	        		  //inform the newleader!
+	        		  //he should announce himself as the new leader
+	        		  //and update the groupdescriptor
+	        	      tellTheNewLeaderIsElected(currentNode, nextLeader, groups);	
+	        	}
+	        	
+	        }
+	        
+		}
+	}
+
+	private void tellTheNewLeaderIsElected(Node currentNode, Node nextLeader,
+			String groupName) {
+		    // currentNode tell the other follower that he should replace the dead leader1
+			GroupingMessage message = GroupingMessage.createLeaderReplacement(
+					protocolId, currentNode, groupName);
+			pushDownMessage(currentNode, nextLeader, message);
+		
+	}
+
+	private void tellLeaderTheLostFollower(Node currentNode , Node lostFollower,
+			Node leader, String groupName) {
+		//TODO who shall we send?
+		GroupingMessage message = GroupingMessage.createRemoveLostFollowerRequest(
+				protocolId, lostFollower, groupName);
+		pushDownMessage(currentNode, leader, message);
+		
 	}
 
 }

@@ -3,6 +3,8 @@
  */
 package it.polimi.peersim.messages;
 
+import it.polimi.peersim.protocols.GroupCommand;
+import it.polimi.peersim.protocols.UniverseCommand;
 import it.polimi.peersim.prtag.GroupDescriptor;
 
 import java.io.Serializable;
@@ -22,9 +24,12 @@ public class GroupingMessage extends BaseMessage {
 	public static String JOIN_REQUEST = "JoinRequest";
 	public static String JOIN_REQUEST_ACK = "JoinRequestAck";
 	public static String WRAP = "Wrap";
+	public static String REPLACELEADER_REQUEST = "ReplaceLeaderRequest";
+	public static String GROUP_COMMAND = "groupCommand";
 	
 	public static GroupingMessage createUpdateDescriptor(
 			int pid, Node sender, GroupDescriptor descriptor) {
+		
 		return new GroupingMessage(pid, sender, UPDATE_DESCRIPTOR, descriptor);
 	}
 	
@@ -33,10 +38,17 @@ public class GroupingMessage extends BaseMessage {
 		return new GroupingMessage(pid, sender, DELETE_DESCRIPTOR, descriptor);
 	}
 
-	public static GroupingMessage createJoinRequest(
-			int pid, Node sender, String groupName) {
-		return new GroupingMessage(pid, sender, JOIN_REQUEST, groupName);
+	/*public static GroupingMessage createJoinRequest(
+			int pid, Node sender, GroupCommand command) {
+		return new GroupingMessage(pid, sender, JOIN_REQUEST, command);
+	}*/
+	
+	public static GroupingMessage createGroupCommand(
+			int pid, Node sender, UniverseCommand command) {
+		return new GroupingMessage(pid, sender, GROUP_COMMAND, command);
 	}
+	
+
 
 	public static GroupingMessage createJoinRequestAck(
 			int pid, Node sender, GroupDescriptor descriptor) {
@@ -47,6 +59,13 @@ public class GroupingMessage extends BaseMessage {
 			int pid, Node sender, BaseMessage message) {
 		return new GroupingMessage(pid, sender, WRAP, message);
 	}
+	
+	public static GroupingMessage createLeaderReplacement(int pid,
+			Node sender, String groupName) {
+		return new GroupingMessage(pid, sender, REPLACELEADER_REQUEST, groupName);
+	}
+	
+	
 
 	private Node sender;
 	private String head;
@@ -64,5 +83,21 @@ public class GroupingMessage extends BaseMessage {
 	public Node getSender() {
 		return sender;
 	}
+
+	
+
+	public static GroupingMessage createRemoveLostFollowerRequest(
+			int protocolId, Node lostFollower, String groupName) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static GroupingMessage createJoinRequest(int protocolId,
+			Node currentNode, GroupCommand command) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	
 
 }

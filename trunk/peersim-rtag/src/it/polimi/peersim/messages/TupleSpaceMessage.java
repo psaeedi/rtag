@@ -9,7 +9,7 @@ import java.util.UUID;
 import peersim.cdsim.CDState;
 
 /**
- * @author Panteha Saeedi
+ * @author Panteha Saeedi@ elet.polimi.it
  *
  *	Represents a message which can be stored in a tuple space.
  */

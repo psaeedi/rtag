@@ -7,7 +7,7 @@ import java.io.Serializable;
 import java.util.UUID;
 
 /**
- * @author Panteha Saeedi
+ * @author Panteha Saeedi@ elet.polimi.it
  * 
  * A base message
  *
