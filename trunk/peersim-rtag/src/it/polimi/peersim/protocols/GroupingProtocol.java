@@ -5,7 +5,6 @@ package it.polimi.peersim.protocols;
 
 import it.polimi.peersim.messages.BaseMessage;
 import it.polimi.peersim.messages.GroupingMessage;
-import it.polimi.peersim.messages.UniverseMessage;
 import it.polimi.peersim.prtag.AppGroupManager;
 import it.polimi.peersim.prtag.GroupDescriptor;
 
@@ -13,7 +12,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 import com.google.common.collect.HashMultimap;
@@ -32,7 +30,8 @@ import peersim.core.Node;
  * 2 - TupleSpaceProtocol
  * 1 - MockChannel
  */
-public class GroupingProtocol extends ForwardingProtocol<GroupingMessage> implements CDProtocol {
+public class GroupingProtocol extends ForwardingProtocol<GroupingMessage> 
+		implements CDProtocol, DiscoveryListener {
 	
 	private static final String UNIVERSE_PROTOCOL = "universe_protocol";
 	private static int universeProtocolId;
@@ -84,35 +83,34 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage> implem
 	
 	
 
-	public void joinOrCreateGroup(Node currentNode, String name) {
-		
-		//immediately check u have a manager for that group
-		AppGroupManager groupManager = getOrCreateManager(currentNode, name);
+	public void joinOrCreateGroup(Node currentNode, String groupName) {
+		// Get or create a manager for that group
+		AppGroupManager groupManager = getOrCreateManager(currentNode, groupName);
 		if (groupManager.getFollowedGroup() != null || groupManager.getLeadedGroup() != null) {
 			throw new AssertionError(
-			"This node is already following a group called: " + name);
+					"This node is already following a group called: " + groupName);
 		}
 		
-		// if no group exist with that name create a new one and
+		// If no group exist with that name create a new one and
 		// broadcast to everyone
-		if (knownGroups.get(name).isEmpty()) {
+		if (knownGroups.get(groupName).isEmpty()) {
 			GroupDescriptor groupDescriptor = new GroupDescriptor(
-					UUID.randomUUID(), name, currentNode); 
+					UUID.randomUUID(), groupName, currentNode); 
 			
-			knownGroups.put(name, groupDescriptor);
-			myGroupNames.add(name);
+			knownGroups.put(groupName, groupDescriptor);
+			myGroupNames.add(groupName);
 			groupManager.setLeadedGroup(groupDescriptor);
 			System.out.println("Group::[Node " + currentNode.getID() + 
-					"] [creating group " + name+"]" + groupManager.getLeadedGroup().getFriendlyName() );
+					"] [creating group " + groupName+"]" + groupManager.getLeadedGroup().getFriendlyName() );
 		    broadcastGroupCreatedOrChanged(currentNode, groupDescriptor);
 		   
 		 } else {
 			// if a known group exist ask to join
 			System.out.println("Group::[Node " + currentNode.getID() + 
-					"] [joining group " + name+"]");
+					"] [joining group " + groupName+"]");
 			Node leader = null;
 			GroupDescriptor groupdescriptor = null;
-				for(GroupDescriptor descriptors: knownGroups.get(name)){
+				for(GroupDescriptor descriptors: knownGroups.get(groupName)){
 			       leader = descriptors.getLeader();
 			       // TODO (optional) use the routing protocol to find the closer leader
 			       if (leader != null) {
@@ -399,7 +397,7 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage> implem
 		broadcastGroupCreatedOrChanged(currentNode, groupDescriptor);
 	}
 
-	public void notifyRemovedNodes(Node currentNode, Node lostNode) {
+	public void handleNeighbourLost(Node currentNode, Node lostNode) {
 		//current node checks all its known groups for the lost node
 		//get its manager for each and check if it is following them or leading them
 		
@@ -440,7 +438,6 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage> implem
 	        		  //and update the groupdescriptor
 	        	      tellTheNewLeaderIsElected(currentNode, nextLeader, groups);	
 	        	}
-	        	
 	        }
 	        
 		}
@@ -462,6 +459,22 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage> implem
 				protocolId, lostFollower, groupName);
 		pushDownMessage(currentNode, leader, message);
 		
+	}
+
+	@Override
+	public void notifyAddedNodes(Node currentNode, ArrayList<Node> added) {
+		// TODO Notify discovered nodes of existing groups (optional)
+	}
+
+	@Override
+	public void notifyRemovedNodes(Node currentNode, ArrayList<Node> removed) {
+		// TODO Auto-generated method stub
+		for (Node lostNode: removed) {
+			if (lostNode.getID() == currentNode.getID()){
+				throw new RuntimeException("WARNING: node has lost itself.");
+			}			
+			handleNeighbourLost(currentNode, lostNode);
+		}
 	}
 
 }

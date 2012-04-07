@@ -3,7 +3,6 @@ package it.polimi.peersim.protocols;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 import peersim.cdsim.CDProtocol;
 import peersim.config.Configuration;
@@ -22,15 +21,13 @@ import it.polimi.peersim.prtag.LocalUniverseDescriptor;
  * Demon - DiscoveryProtocol
  * Demon - GeoLocation
  */
-public class UniverseProtocol extends ForwardingProtocol<UniverseMessage> implements CDProtocol { 
+public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
+		implements CDProtocol, DiscoveryListener { 
 
 	private static final String FOLLOWER_THRESHOLD = "follower_threshold";
 	private final int followerThreshold;
 	private static final String FOLLOWER_THRESHOLD_RATE = "follower_thresholdrate";
 	private final int followerLeaderRate;
-	
-	private static final String GROUPING_PROTOCOL = "grouping_protocol";
-	private static int groupingProtocolId;
 	
 	// All the leaders of this Node
 	public ArrayList<Node> leaders = new ArrayList<Node>();
@@ -46,7 +43,6 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage> implem
 	// The local universe of the current node
 	private LocalUniverseDescriptor localUniverse;
 	private Node followerLeaders = null;
-	
 
 	public UniverseProtocol(String prefix) {
 		super(prefix);
@@ -54,8 +50,6 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage> implem
 				prefix + "." + FOLLOWER_THRESHOLD, 3);
 		followerLeaderRate = Configuration.getInt(
 				prefix + "." + FOLLOWER_THRESHOLD_RATE, 2);
-		groupingProtocolId = Configuration.getPid(
-				prefix + "." + GROUPING_PROTOCOL);
 	}
 	
 	@Override
@@ -92,6 +86,10 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage> implem
 		return currentNode.getID() < remoteNode.getID();
 	}
 	
+	/* (non-Javadoc)
+	 * @see it.polimi.peersim.protocols.DiscoveryListener#notifyAddedNodes(peersim.core.Node, java.util.ArrayList)
+	 */
+	@Override
 	public void notifyAddedNodes(Node currentNode, ArrayList<Node> added) {
 		for (Node addedNode: added) {
 			if (addedNode.getID() == currentNode.getID()){
@@ -104,19 +102,26 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage> implem
 	
 	public void handleNeighbourDiscovered(Node currentNode, Node remoteNode) {
 		if (leaders.contains(remoteNode)) {
-			// TODO show a debug error message. this should not be happening
+			// TODO show a debug error message. 
+			// this should not be happening 
+			// because the discovery node was already connected
 			return;
 		}
 		
 		if (followers.contains(remoteNode)) {
-			// TODO show a debug error message. this should not be happening
+			// TODO show a debug error message. 
+			// this should not be happening 
+			// because the discovery node was already connected
 			return;
 		}
 		
 		if (shouldLead(currentNode, remoteNode)) {
 			// Nothing to be done
+			// The follower ask to join
 			return;
 		} else {
+			// This node will become the follower
+			// and will start the join process
 			UniverseMessage addfollowermessage = 
 					UniverseMessage.createAddfollower(
 							protocolId, currentNode, getLocaluniverse());
@@ -125,20 +130,17 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage> implem
 		
 	}
 	
+	/* (non-Javadoc)
+	 * @see it.polimi.peersim.protocols.DiscoveryListener#notifyRemovedNodes(peersim.core.Node, java.util.ArrayList)
+	 */
+	@Override
 	public void notifyRemovedNodes(Node currentNode, ArrayList<Node> removed) {
 		for (Node lostNode: removed) {
 			if (lostNode.getID() == currentNode.getID()){
 				throw new RuntimeException("WARNING: node has lost itself.");
-			}
-			
-			GroupingProtocol grouping = (GroupingProtocol)
-					currentNode.getProtocol(groupingProtocolId);
-			grouping.notifyRemovedNodes(currentNode, lostNode);
-			
-			
+			}			
 			handleNeighbourLost(currentNode, lostNode);
 		}
-		
 	}
 	
 	public void handleNeighbourLost(Node currentNode, Node remoteNode) {
@@ -414,16 +416,17 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage> implem
 
 	private void getFirstFollowerWithOtherLeader(Node currentNode, Node sender,  int content) {
 		if(content > 1 ){
-		followerLeaders = sender;
+			followerLeaders = sender;
 		}
-		
 		return;
 	}
 
+	/**
+	 * Sends to the caller the number of followers. 
+	 */
 	private void handleUniverseCommandCountLeader(Node currentNode, Node sender) {
-		int leaderCount = leaders.size();
 		UniverseCommand command = new UniverseCommand
-				(UniverseCommand.COUNT_LEADERS_RESPONSE, leaderCount);
+				(UniverseCommand.COUNT_LEADERS_RESPONSE, leaders.size());
 		
 		UniverseMessage message = 
 				UniverseMessage.createUniverseCommand(
@@ -431,20 +434,13 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage> implem
 						currentNode,
 						command);
 		pushDownMessage(currentNode, sender, message);
-		
 	}
 
 	public void sendBroadCast(Node currentNode, BaseMessage message) {
-		//System.out.println("[{Node " + currentNode.getID() + "] " + message);
-		// forward the broadcast to the top protocols
-		//EDProtocol receiver = (EDProtocol)currentNode.getProtocol(message.getPid());
-		//System.out.println("broadcast-content " + message.getContent());
-		
 		// We send to all the leaders
 		for (Node topLeader: leaders) {
 			UniverseMessage broadcast = 
 					UniverseMessage.createBroadcast(protocolId, currentNode, message);
-			//System.out.println("********broadcast-content" + message.getContent());
 			pushDownMessage(currentNode, topLeader, broadcast);
 		}
 		
@@ -456,7 +452,6 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage> implem
 			 }
 		}
 		for (Node child: children) {
-			//System.out.println("!********broadcast-content" + message.getContent());
 			UniverseMessage broadcast =
 					UniverseMessage.createBroadcast(protocolId, currentNode, message);
 			pushDownMessage(currentNode, child, broadcast);
