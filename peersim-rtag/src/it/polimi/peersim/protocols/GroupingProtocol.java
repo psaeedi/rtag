@@ -9,10 +9,10 @@ import it.polimi.peersim.prtag.GroupManager;
 import it.polimi.peersim.prtag.GroupDescriptor;
 import it.polimi.peersim.prtag.UndeliverableMessageException;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import com.google.common.collect.HashMultimap;
@@ -98,17 +98,30 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 					"] [joining group " + groupName+"]");
 			Node leader = null;
 			GroupDescriptor groupDescriptor = null;
-				for (GroupDescriptor descriptor: knownGroups.get(groupName)) {
-			       // TODO (optional) use the routing protocol to find the closer leader
-			       leader = descriptor.getLeader();
-			       groupDescriptor = descriptor;
-			       break;
-				}
-				if (leader == null) {
-					throw new AssertionError(
-							"If leader is null why we have a groupdescriptor");
-				}
-			    askLeaderToJoin(currentNode, leader, groupDescriptor);
+			for (GroupDescriptor descriptor: knownGroups.get(groupName)) {
+		       // TODO (optional) use the routing protocol to find the closer leader
+		       leader = descriptor.getLeader();
+		       groupDescriptor = descriptor;
+		       break;
+			}
+			if (leader == null) {
+				throw new AssertionError(
+						"If leader is null why we have a groupdescriptor");
+			}
+			// the node ask a leader to join him
+			GroupCommand command = new GroupCommand
+					(GroupCommand.JOIN_REQUEST, groupDescriptor);
+			
+			GroupingMessage message = GroupingMessage.createJoinRequest(
+							protocolId, currentNode, command);
+			try {
+				pushDownMessage(currentNode, leader, message);
+			} catch(UndeliverableMessageException ex) {
+				// The selected leader was unreachable
+				// Remove the descriptor from the list and retry
+				knownGroups.remove(groupName, groupDescriptor);
+				joinOrCreateGroup(currentNode, groupName);
+			}
 		 }
 	}
 
@@ -135,14 +148,11 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 	
 	public void askLeaderToJoin(Node currentNode, Node leader, GroupDescriptor groupdescriptor) {
 		// the node ask a leader to join him
-		System.out.println("pani");	
 		GroupCommand command = new GroupCommand
 				(GroupCommand.JOIN_REQUEST, groupdescriptor);
 		
 		GroupingMessage message = GroupingMessage.createJoinRequest(
-						protocolId,
-						currentNode,
-						command);
+						protocolId, currentNode, command);
 		try {
 			pushDownMessage(currentNode, leader, message);
 		} catch(UndeliverableMessageException ex) {
@@ -233,6 +243,50 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 			knownGroups.put(groupName, remotegroupDescriptor);
 		}
 	}
+	
+	private void handleGroupDescriptorDeleted (
+			Node currentNode, GroupDescriptor deletedDescriptor) {
+		String groupName = deletedDescriptor.getName();
+		knownGroups.remove(groupName, deletedDescriptor);
+
+		GroupManager manager = managers.get(groupName);
+		if (manager == null) {
+			return;
+		}
+		
+		if (deletedDescriptor.equals(manager.getLeadedGroup())) {
+			throw new AssertionError("The group was not deleted by its leader");
+		} else if (deletedDescriptor.equals(manager.getFollowedGroup())) {
+			findGroupToFollow(currentNode, groupName);
+		}
+	}
+
+	/**
+	 * Attempts to follow any of the other known groups
+	 */
+	private void findGroupToFollow(Node currentNode, String groupName) {
+		ArrayList<GroupDescriptor> groups = new ArrayList<GroupDescriptor>(knownGroups.get(groupName));
+		if (groups.isEmpty()) {
+			// No suitable group found
+			return;
+		}
+		// TODO select the closest group leader
+		GroupDescriptor selectedGroup = groups.get(0);
+
+		GroupCommand command = new GroupCommand
+				(GroupCommand.JOIN_REQUEST, selectedGroup);
+		
+		GroupingMessage message = GroupingMessage.createJoinRequest(
+						protocolId, currentNode, command);
+		try {
+			pushDownMessage(currentNode, selectedGroup.getLeader(), message);
+		} catch(UndeliverableMessageException ex) {
+			// The selected leader was unreachable
+			// Remove the descriptor from the list and retry
+			knownGroups.remove(groupName, selectedGroup);
+			findGroupToFollow(currentNode, groupName);
+		}
+	}
 
 	@Override
 	public void nextCycle(Node currentNode, int pid) {
@@ -271,7 +325,7 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 		}
 		
 		if (GroupingMessage.DELETE_DESCRIPTOR.equals(head)) {
-			handleGroupDescriptorChanged(
+			handleGroupDescriptorDeleted(
 					currentNode, (GroupDescriptor) message.getContent());
 			return null;
 		}
@@ -345,52 +399,46 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 			if (followedGroup != null) {
 				if (followedGroup.isFollower(lostNode)) {
 					// The leader will do
+				} else {
+					ArrayList<Node> otherFollowers = new ArrayList<Node>(followedGroup.getFollowers());
+					otherFollowers.remove(currentNode);
+					followSibling(currentNode, followedGroup, otherFollowers);
 				}
 			}
-			
-			// --------------------------
-			/*
-	        for(GroupDescriptor groupDescriptor: knownGroups.get(groups)){
-	        	//System.out.println("^^^^^^^^^^^Group::[Node " + currentNode.getID() + 
-				//		"] [check" + groups+ "leader"+groupDescriptor.getLeader().getID() );
-	        	//System.out.println("^^^^^^^^^^^Group::[lostNode " + lostNode.getID() + 
-				//		"] [check" + groups ); 	
-	        	//both are the follower
-	        	if(groupDescriptor.isFollower(lostNode) && groupDescriptor.isFollower(currentNode)){
-	        		// inform the leader of that group its follower is lost
-	        		// so he should update the groupDescriptor
-	        		Node leader = groupDescriptor.getLeader();
-	        		tellLeaderTheLostFollower(currentNode, lostNode, leader, groups);
-	        	}
-	        	
-	        	//lost node was the follower and current node the leader
-	        	if(groupDescriptor.isFollower(lostNode) && groupDescriptor.isLeader(currentNode)){
-	        		//currentNode is a leader, it should update its groupdescriptor,
-			    	// and remove the lost node from its leadedgroup 
-			 		groupDescriptor.removeFollower(lostNode);
-			 		broadcastGroupCreatedOrChanged(currentNode, groupDescriptor);
-	        	}
-	        	//lost node was the leader and current node the follower
-	        	if(groupDescriptor.isLeader(lostNode) && groupDescriptor.isFollower(currentNode)){
-	        		Node nextLeader = null;
-	        		//the follower with smallest Id
-	        		for( Node members: groupDescriptor.getFollowers()){
-	        			long smallID = -1;
-	        			if( members.getID()< smallID){
-	        				smallID = members.getID();
-	        			    nextLeader = members;
-	        			 }
-	        		  }
-	        		  //inform the newleader!
-	        		  //he should announce himself as the new leader
-	        		  //and update the groupdescriptor
-	        	      tellTheNewLeaderIsElected(currentNode, nextLeader, groups);	
-	        	}
-	        }*/
-	        
 		}
 	}
 
+	/**
+	 * Selects and join a sibling of a given group.
+	 * This is useful when a leader has collapsed.
+	 */
+    private void followSibling(Node currentNode, GroupDescriptor followedGroup,
+			List<Node> otherFollowers) {
+    	
+    	String groupName = followedGroup.getName();
+    	if (otherFollowers.isEmpty()) {
+    		knownGroups.remove(groupName, followedGroup);
+    		managers.get(groupName).setFollowedGroup(null);
+    		findGroupToFollow(currentNode, groupName);
+    	}
+		// TODO Among the various nodes selects the closet
+		Node selected = otherFollowers.get(0);
+		// the node ask a leader to join him
+		GroupCommand command = new GroupCommand
+				(GroupCommand.JOIN_REQUEST, followedGroup);
+		
+		GroupingMessage message = GroupingMessage.createJoinRequest(
+						protocolId, currentNode, command);
+		try {
+			pushDownMessage(currentNode, selected, message);
+		} catch(UndeliverableMessageException ex) {
+			// The selected leader was unreachable
+			// Remove the descriptor from the list and retry
+			knownGroups.remove(groupName, followedGroup);
+			joinOrCreateGroup(currentNode, groupName);
+		}
+	}
+	
 	/*
 	private void tellTheNewLeaderIsElected(Node currentNode, Node nextLeader,
 			String groupName) {
@@ -414,7 +462,9 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 	//==============================================================================
 	
     
-    public void askToMerge(Node remoteNode){
+
+
+	public void askToMerge(Node remoteNode){
     	//TODO ask the neighbor to Merge its sub-group with u
     	//one should remove its sub group
     	
