@@ -3,12 +3,12 @@
  */
 package it.polimi.peersim.protocols;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.UUID;
 
 import it.polimi.peersim.messages.BaseMessage;
 import it.polimi.peersim.messages.TupleSpaceMessage;
+import it.polimi.peersim.prtag.UndeliverableMessageException;
 import peersim.cdsim.CDProtocol;
 import peersim.core.Node;
 
@@ -59,7 +59,7 @@ public class TupleSpaceProtocol extends ForwardingProtocol<TupleSpaceMessage>
 
 	@Override
 	public TupleSpaceMessage handlePushDownMessage(Node currentNode,
-			Node recipient, Serializable content) {
+			Node recipient, BaseMessage content) {
 		return new TupleSpaceMessage(protocolId, content);
 	}
 
@@ -72,6 +72,27 @@ public class TupleSpaceProtocol extends ForwardingProtocol<TupleSpaceMessage>
 		}
 		messages.put(message.getInnerUuid(), message);
 		return (BaseMessage) message.getContent();
+	}
+
+	@Override
+	public void handleUnreliableRecipientException(
+			Node currentNode, 
+			UndeliverableMessageException ex)
+			throws UndeliverableMessageException {
+		// Nothing to do.
+		// This layer does not raise exceptions
+	}
+
+	@Override
+	protected void handleForwardedUnreliableRecipientException(
+			Node currentNode, 
+			UndeliverableMessageException ex)
+			throws UndeliverableMessageException {
+		TupleSpaceMessage message = (TupleSpaceMessage) ex.getBaseMessage();
+		// The message was discarded
+		messages.remove(message.getInnerUuid());
+		throw new UndeliverableMessageException(ex.getRecipient(),
+				(BaseMessage) message.getContent());
 	}
 
 }

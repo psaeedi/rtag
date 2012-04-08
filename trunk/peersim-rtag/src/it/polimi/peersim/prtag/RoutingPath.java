@@ -12,14 +12,14 @@ import peersim.core.Node;
 public class RoutingPath {
 	
 	Node destination;
-    Node source;
+    Node proxy;
     private long expiretime;
 	
 
-	public RoutingPath(Node destination, Node source) {
+	public RoutingPath(Node destination, Node proxy) {
 		super();
 		this.destination = destination;
-		this.source = source;
+		this.proxy = proxy;
 		
 		//keeping the routing table for 5 min
 		//TODO use simulation time
@@ -37,13 +37,13 @@ public class RoutingPath {
 	}
 
 
-	public Node getSource() {
-		return source;
+	public Node getProxy() {
+		return proxy;
 	}
 
 
-	public void setSource(Node source) {
-		this.source = source;
+	public void setProxy(Node source) {
+		this.proxy = source;
 	}
 	
 	public boolean isExpired(){
@@ -58,7 +58,7 @@ public class RoutingPath {
 		if (obj instanceof RoutingPath) {
 			RoutingPath path = (RoutingPath)obj;
 			return destination.equals(path.destination) &&
-					source.equals(path.source);
+					proxy.equals(path.proxy);
 		}
 		return super.equals(obj);
 	}

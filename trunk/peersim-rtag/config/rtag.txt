@@ -25,13 +25,13 @@ protocol.discovery it.polimi.peersim.protocols.DiscoveryProtocol
 	
 	# discovery listeners
 	universe_protocol universe
-	grouping_protocol grouping
 }
 
 protocol.channel it.polimi.peersim.protocols.MockChannel
 {
 	protocol_id channel
 	lower_protocol_id channel
+	discovery_protocol discovery
 }
 
 protocol.tuplespace it.polimi.peersim.protocols.TupleSpaceProtocol

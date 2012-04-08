@@ -3,10 +3,9 @@
  */
 package it.polimi.peersim.protocols;
 
-import java.io.Serializable;
-
 import it.polimi.peersim.messages.BaseMessage;
 import it.polimi.peersim.messages.MockMessage;
+import it.polimi.peersim.prtag.UndeliverableMessageException;
 import peersim.config.Configuration;
 import peersim.core.Node;
 import peersim.transport.Transport;
@@ -22,6 +21,9 @@ import peersim.transport.Transport;
  */
 public class MockChannel extends ForwardingProtocol<MockMessage> implements Transport {
 
+	private static final String DISCOVERY_PROTOCOL = "discovery_protocol";
+	private final int discoveryProtocolId;
+	
 	private static final String LATENCY = "latency";
 	private static int latency;
 	
@@ -29,6 +31,8 @@ public class MockChannel extends ForwardingProtocol<MockMessage> implements Tran
 		super(prefix);
 		latency = Configuration.getInt(
 				prefix + "." + LATENCY, 0);
+		discoveryProtocolId = Configuration.getPid(
+				prefix + "." + DISCOVERY_PROTOCOL);
 	}
 	
 	/* (non-Javadoc)
@@ -53,9 +57,20 @@ public class MockChannel extends ForwardingProtocol<MockMessage> implements Tran
 		remoteProtocol.receiveAndPushUpMessage(recipient, currentNode, (MockMessage)message);
 	}
 
+	private boolean areInCommunicationRange(Node currentNode, Node recipient) {
+		DiscoveryProtocol discoveryProtocol = (DiscoveryProtocol) 
+				currentNode.getProtocol(discoveryProtocolId);
+		return discoveryProtocol.isInCommunicationRange(currentNode, recipient);
+	}
+
 	@Override
 	public MockMessage handlePushDownMessage(Node currentNode, Node recipient,
-			Serializable content) {
+			BaseMessage content) throws UndeliverableMessageException {
+		// If the recipient is not in communication range
+		// raise an exception
+		if (!areInCommunicationRange(currentNode, recipient)) {
+			throw new UndeliverableMessageException(recipient, content);
+		}
 		MockMessage message = new MockMessage(protocolId, currentNode, recipient, content);
 		send(currentNode, recipient, message, protocolId);
 		// This never pushes down
@@ -66,6 +81,22 @@ public class MockChannel extends ForwardingProtocol<MockMessage> implements Tran
 	public BaseMessage handlePushUpMessage(Node currentNode, Node sender,
 			MockMessage message) {
 		return (BaseMessage) message.getContent();
+	}
+
+	@Override
+	public void handleUnreliableRecipientException(
+			Node currentNode, 
+			UndeliverableMessageException ex) 
+					throws UndeliverableMessageException {
+		throw new UndeliverableMessageException(
+				ex.getRecipient(), ex.getBaseMessage());
+	}
+
+	@Override
+	protected void handleForwardedUnreliableRecipientException(
+			Node currentNode, 
+			UndeliverableMessageException ex) {
+		throw new AssertionError("This protocol should be at the bottom of the stack.");
 	}
 
 }
