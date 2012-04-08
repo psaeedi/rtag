@@ -14,7 +14,6 @@ public class UniverseCommand implements Serializable {
 	private static final long serialVersionUID = -8384815517803260341L;
 
 	public static final String COUNT_LEADERS = "count_leaders";
-
 	public static final String COUNT_LEADERS_RESPONSE = "count_leaders_response";
 
 	private final String command;

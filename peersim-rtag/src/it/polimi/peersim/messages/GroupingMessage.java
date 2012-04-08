@@ -4,7 +4,6 @@
 package it.polimi.peersim.messages;
 
 import it.polimi.peersim.protocols.GroupCommand;
-import it.polimi.peersim.protocols.UniverseCommand;
 import it.polimi.peersim.prtag.GroupDescriptor;
 
 import java.io.Serializable;
@@ -19,15 +18,14 @@ public class GroupingMessage extends BaseMessage {
 	
 	private static final long serialVersionUID = -1554400393005842078L;
 	
-	public static String UPDATE_DESCRIPTOR = "UpdateDescriptor";
-	public static String DELETE_DESCRIPTOR = "DeleteDescriptor";
-	public static String WRAP = "Wrap";
+	public static final String UPDATE_DESCRIPTOR = "UpdateDescriptor";
+	public static final String DELETE_DESCRIPTOR = "DeleteDescriptor";
+	public static final String WRAP = "Wrap";
 	//public static String REPLACELEADER_REQUEST = "ReplaceLeaderRequest";
-	public static String GROUP_COMMAND = "groupCommand";
+	public static final String GROUP_COMMAND = "groupCommand";
 	
 	public static GroupingMessage createUpdateDescriptor(
 			int pid, Node sender, GroupDescriptor descriptor) {
-		
 		return new GroupingMessage(pid, sender, UPDATE_DESCRIPTOR, descriptor);
 	}
 	
@@ -36,7 +34,6 @@ public class GroupingMessage extends BaseMessage {
 		return new GroupingMessage(pid, sender, DELETE_DESCRIPTOR, descriptor);
 	}
 
-	
 	public static GroupingMessage createGroupCommand(
 			int pid, Node sender, GroupCommand command) {
 		return new GroupingMessage(pid, sender, GROUP_COMMAND, command);
@@ -53,8 +50,6 @@ public class GroupingMessage extends BaseMessage {
 		return new GroupingMessage(pid, sender, REPLACELEADER_REQUEST, groupName);
 	}*/
 	
-	
-
 	private Node sender;
 	private String head;
 	
@@ -71,21 +66,5 @@ public class GroupingMessage extends BaseMessage {
 	public Node getSender() {
 		return sender;
 	}
-
-	
-
-	public static GroupingMessage createRemoveLostFollowerRequest(
-			int protocolId, Node lostFollower, String groupName) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	public static GroupingMessage createJoinRequest(int protocolId,
-			Node currentNode, GroupCommand command) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	
 
 }
