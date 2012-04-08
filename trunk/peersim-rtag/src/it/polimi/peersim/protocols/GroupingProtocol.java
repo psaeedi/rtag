@@ -12,7 +12,6 @@ import it.polimi.peersim.prtag.UndeliverableMessageException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 import com.google.common.collect.HashMultimap;
@@ -110,9 +109,9 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 			}
 			// the node ask a leader to join him
 			GroupCommand command = new GroupCommand
-					(GroupCommand.JOIN_REQUEST, groupDescriptor);
+					(GroupCommand.JOIN_REQUEST, groupDescriptor.getName());
 			
-			GroupingMessage message = GroupingMessage.createJoinRequest(
+			GroupingMessage message = GroupingMessage.createGroupCommand(
 							protocolId, currentNode, command);
 			try {
 				pushDownMessage(currentNode, leader, message);
@@ -134,6 +133,7 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 		UniverseProtocol protocol = (UniverseProtocol)currentNode.
 				getProtocol(universeProtocolId);
 		protocol.sendBroadCast(currentNode, message);
+		System.err.println("Group created");
 	}
 	
 	
@@ -151,7 +151,7 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 		GroupCommand command = new GroupCommand
 				(GroupCommand.JOIN_REQUEST, groupdescriptor);
 		
-		GroupingMessage message = GroupingMessage.createJoinRequest(
+		GroupingMessage message = GroupingMessage.createGroupCommand(
 						protocolId, currentNode, command);
 		try {
 			pushDownMessage(currentNode, leader, message);
@@ -207,6 +207,7 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 
 	private void handleGroupDescriptorChanged (
 			Node currentNode, GroupDescriptor remotegroupDescriptor) {
+		System.err.println("handleGroupDescriptorChanged ");
 		Node groupLeader = remotegroupDescriptor.getLeader();
 		List<Node> groupFollowers = remotegroupDescriptor.getFollowers();
 		String groupName = remotegroupDescriptor.getName();
@@ -242,6 +243,11 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 		} else {
 			knownGroups.put(groupName, remotegroupDescriptor);
 		}
+		
+		// start following
+		if (manager.getFollowedGroup() == null) {
+			findGroupToFollow(currentNode, groupName);
+		}
 	}
 	
 	private void handleGroupDescriptorDeleted (
@@ -266,19 +272,25 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 	 */
 	private void findGroupToFollow(Node currentNode, String groupName) {
 		ArrayList<GroupDescriptor> groups = new ArrayList<GroupDescriptor>(knownGroups.get(groupName));
+		for (int i = groups.size() - 1; i >= 0; i--) {
+			GroupDescriptor descriptor = groups.get(0);
+			if (descriptor.getLeader().equals(currentNode)) {
+				groups.remove(i);
+			}
+		}
+		
 		if (groups.isEmpty()) {
 			// No suitable group found
 			return;
 		}
 		// TODO select the closest group leader
 		GroupDescriptor selectedGroup = groups.get(0);
-
-		GroupCommand command = new GroupCommand
-				(GroupCommand.JOIN_REQUEST, selectedGroup);
-		
-		GroupingMessage message = GroupingMessage.createJoinRequest(
-						protocolId, currentNode, command);
 		try {
+			GroupCommand command = new GroupCommand
+					(GroupCommand.JOIN_REQUEST, selectedGroup);
+			
+			GroupingMessage message = GroupingMessage.createGroupCommand(
+					protocolId, currentNode, command);		
 			pushDownMessage(currentNode, selectedGroup.getLeader(), message);
 		} catch(UndeliverableMessageException ex) {
 			// The selected leader was unreachable
@@ -292,6 +304,29 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 	public void nextCycle(Node currentNode, int pid) {
 		// TODO load balancing
 		// nodes should be connected to the ones nearby
+		
+		// DEBUG
+		for (String name: managers.keySet()) {
+			GroupManager manager = managers.get(name);
+			System.out.print("[Group " + name +" ] leaded " + currentNode.getID() + ":{");
+			GroupDescriptor leadedGroup = manager.getLeadedGroup();
+			if (leadedGroup != null) {
+				for	(Node k: leadedGroup.getFollowers()) {
+					System.out.print(k.getID() +", ");
+				}
+			}
+			System.out.print("} followers ");
+			GroupDescriptor followedGroup = manager.getFollowedGroup();
+			if (followedGroup != null) {
+				System.out.println(followedGroup.getLeader().getID() + ":{");
+				for	(Node k: followedGroup.getFollowers()) {
+					System.out.print(k.getID() +", ");
+				}
+			} else {
+				System.out.print("{");
+			}
+			System.out.println("}");
+		}
 	}
 	
 
@@ -330,8 +365,9 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 			return null;
 		}
 		
-		if (GroupingMessage.GROUP_COMMAND.equals(message.getHead())) {
-			handleGroupCommand(currentNode, sender, (GroupCommand)message.getContent());
+		if (GroupingMessage.GROUP_COMMAND.equals(head)) {
+			handleGroupCommand(currentNode, sender,
+					(GroupCommand)message.getContent());
 			return null;
 		}
 		
@@ -427,7 +463,7 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 		GroupCommand command = new GroupCommand
 				(GroupCommand.JOIN_REQUEST, followedGroup);
 		
-		GroupingMessage message = GroupingMessage.createJoinRequest(
+		GroupingMessage message = GroupingMessage.createGroupCommand(
 						protocolId, currentNode, command);
 		try {
 			pushDownMessage(currentNode, selected, message);
@@ -460,9 +496,6 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 	 */
 
 	//==============================================================================
-	
-    
-
 
 	public void askToMerge(Node remoteNode){
     	//TODO ask the neighbor to Merge its sub-group with u
@@ -514,18 +547,13 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 			UndeliverableMessageException ex)
 			throws UndeliverableMessageException {
 		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
 	protected void handleForwardedUnreliableRecipientException(
 			Node currentNode, UndeliverableMessageException ex)
 			throws UndeliverableMessageException {
-		// TODO Auto-generated method stub
-		
+		// TODO Auto-generated method stub		
 	}
-
-	
-
 
 }

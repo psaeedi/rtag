@@ -1,6 +1,5 @@
 package it.polimi.peersim.protocols;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -410,6 +409,10 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 			// forward the broadcast and send the message 
 			// to the higher layer.
 			return handleBroadCast(currentNode, (BaseMessage) message.getContent());
+		}
+		
+		if (UniverseMessage.SINGLECAST.equals(head)) {
+			return (BaseMessage) message.getContent();
 		}
 		
 		if (UniverseMessage.ADDFOLOWER.equals(head)) {

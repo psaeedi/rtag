@@ -68,9 +68,10 @@ public class MockChannel extends ForwardingProtocol<MockMessage> implements Tran
 			BaseMessage content) throws UndeliverableMessageException {
 		// If the recipient is not in communication range
 		// raise an exception
-		if (!areInCommunicationRange(currentNode, recipient)) {
-			throw new UndeliverableMessageException(recipient, content);
-		}
+		// TODO
+		//if (!areInCommunicationRange(currentNode, recipient)) {
+		//	throw new UndeliverableMessageException(recipient, content);
+		//}
 		MockMessage message = new MockMessage(protocolId, currentNode, recipient, content);
 		send(currentNode, recipient, message, protocolId);
 		// This never pushes down
