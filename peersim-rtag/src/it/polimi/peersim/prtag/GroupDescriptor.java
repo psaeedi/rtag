@@ -85,7 +85,7 @@ public class GroupDescriptor implements Serializable{
 	/**
 	 * @return the friendlyName
 	 */
-	public String getFriendlyName() {
+	public String getName() {
 		return hierarchyName;
 	}
 	/**

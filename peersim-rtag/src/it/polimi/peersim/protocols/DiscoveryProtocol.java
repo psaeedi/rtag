@@ -4,7 +4,6 @@ import peersim.config.Configuration;
 import peersim.core.Network;
 import peersim.core.Node;
 import it.polimi.peersim.protocols.GeoLocation;
-import peersim.cdsim.CDProtocol;
 import peersim.cdsim.CDState;
 import peersim.cdsim.DaemonProtocol;
 
@@ -16,7 +15,13 @@ import peersim.cdsim.DaemonProtocol;
 import java.util.*; 
 
 
-public class DiscoveryProtocol extends DaemonProtocol{
+/**
+ * @author Panteha Saeedi
+ * 
+ * Simulates the discovery device that we are using.
+ * This could be Bluetooth or RFID for example.
+ */
+public class DiscoveryProtocol extends DaemonProtocol {
 	
 	private static final String GEOLOCATION_PROTOCOL = "geolocation_protocol";
 	private final int geolocationProtocolId;
@@ -27,8 +32,6 @@ public class DiscoveryProtocol extends DaemonProtocol{
 	// Discovery listeners
 	private static final String UNIVERSE_PROTOCOL = "universe_protocol";
 	private final int universeProtocolId;
-	private static final String GROUPING_PROTOCOL = "grouping_protocol";
-	private final int groupingProtocolId;
 	
 	
 	private ArrayList<Node> neighbors = new ArrayList<Node>();
@@ -45,8 +48,6 @@ public class DiscoveryProtocol extends DaemonProtocol{
 				prefix + "." + DISCOVERY_RADIUS, 0.1);
 		universeProtocolId = Configuration.getPid(
 				prefix + "." + UNIVERSE_PROTOCOL);
-		groupingProtocolId = Configuration.getPid(
-				prefix + "." + GROUPING_PROTOCOL);
     }
 	
 	
@@ -62,7 +63,7 @@ public class DiscoveryProtocol extends DaemonProtocol{
          	
              
             //if(neighbours.size()<20){
-	         	if (isCloseTo(n, k)) {
+	         	if (isInCommunicationRange(n, k)) {
 	         		//because of java heap we limit the number of neighbors to 100.
 	         		neighbours.add(k);
 	         	}
@@ -105,26 +106,22 @@ public class DiscoveryProtocol extends DaemonProtocol{
 
 		DiscoveryListener universeProtocol = (DiscoveryListener) 
 				currentNode.getProtocol(universeProtocolId);
-		DiscoveryListener groupingProtocol = (DiscoveryListener) 
-				currentNode.getProtocol(groupingProtocolId);
 		//add to the list of ur neighbors
 		if (!added.isEmpty()){
 			// Notify the higher layers that certain nodes have been discovered.
 			universeProtocol.notifyAddedNodes(currentNode, added);
-			groupingProtocol.notifyAddedNodes(currentNode, added);
 		}
 		
 		if (!removed.isEmpty()){
 			// Notify the higher layers that certain nodes have been removed.
 			universeProtocol.notifyRemovedNodes(currentNode, removed);
-			groupingProtocol.notifyRemovedNodes(currentNode, removed);
 		}
 		System.out.println("Node "+currentNode.getID() + " neighbors: " + neighbors.size()); 
 	}
 
 	
 
-	public boolean isCloseTo(Node n, Node k) {
+	public boolean isInCommunicationRange(Node n, Node k) {
 		return (distance(n, k) < discoveryRadius);
 	}
 

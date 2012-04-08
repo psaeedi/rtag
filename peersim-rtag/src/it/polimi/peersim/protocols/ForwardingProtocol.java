@@ -6,6 +6,7 @@ package it.polimi.peersim.protocols;
 import java.io.Serializable;
 
 import it.polimi.peersim.messages.BaseMessage;
+import it.polimi.peersim.prtag.UndeliverableMessageException;
 import peersim.config.Configuration;
 import peersim.core.Node;
 import peersim.core.Protocol;
@@ -41,19 +42,51 @@ public abstract class ForwardingProtocol<K extends BaseMessage> implements Proto
         return clone;
 	}
 	
-	public void pushDownMessage(Node currentNode, Node recipient, Serializable content) {
-		K message = handlePushDownMessage(currentNode, recipient, content);
-		if (message != null) {
-			ForwardingProtocol<?> lowerProtocol = (ForwardingProtocol<?>)
-					recipient.getProtocol(lowerProtocolID);
-			if (this.getClass().equals(lowerProtocol.getClass())) {
-				throw new AssertionError("Loop: " + this);
+	public void pushDownMessage(Node currentNode, Node recipient, BaseMessage content)
+			throws UndeliverableMessageException {
+		K message;
+		try {
+			message = handlePushDownMessage(currentNode, recipient, content);
+		} catch(UndeliverableMessageException ex) {
+			handleUnreliableRecipientException(currentNode, ex);
+			return;
+		}
+		
+		try {
+			if (message != null) {
+				ForwardingProtocol<?> lowerProtocol = (ForwardingProtocol<?>)
+						recipient.getProtocol(lowerProtocolID);
+				if (this.getClass().equals(lowerProtocol.getClass())) {
+					throw new AssertionError("Loop: " + this);
+				}
+				lowerProtocol.pushDownMessage(currentNode, recipient, message);
 			}
-			lowerProtocol.pushDownMessage(currentNode, recipient, message);
+		} catch(UndeliverableMessageException ex) {
+			handleForwardedUnreliableRecipientException(currentNode, ex);
+			return;
 		}
 	}
 
-	public abstract K handlePushDownMessage(Node currentNode, Node recipient, Serializable content);
+	protected abstract void handleUnreliableRecipientException(
+			Node currentNode, UndeliverableMessageException ex)
+					throws UndeliverableMessageException;
+ 
+	protected abstract void handleForwardedUnreliableRecipientException(
+			Node currentNode, UndeliverableMessageException ex)
+					throws UndeliverableMessageException;
+
+	
+	/**
+	 * @param currentNode
+	 * @param recipient
+	 * @param content
+	 * @return A wrapped BaseMessage or <code>null</code> if the message has 
+	 * 		not to be propagated, e.g. if the message was intended for this
+	 * 		layer.
+	 * @throws UndeliverableMessageException if the message cannot be propagated.
+	 */
+	public abstract K handlePushDownMessage(Node currentNode, Node recipient, BaseMessage content)
+			throws UndeliverableMessageException;
 	
 	public void receiveAndPushUpMessage(Node currentNode, Node sender, K message) {
 		BaseMessage content = handlePushUpMessage(currentNode, sender, message);

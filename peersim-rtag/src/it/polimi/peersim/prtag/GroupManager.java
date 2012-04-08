@@ -11,21 +11,21 @@ import peersim.core.Node;
  * @author Panteha Saeedi@ elet.polimi.it
  *
  */
-public class AppGroupManager {
+public class GroupManager {
 
 	private String name;
 	private Node ownerNode;
 	private GroupDescriptor followedGroup;
 	private GroupDescriptor leadedGroup;
 	
-	public AppGroupManager(String name, Node ownerNode) {
+	public GroupManager(String name, Node ownerNode) {
 		super();
 		this.name = name;
 		this.ownerNode = ownerNode;
 		
 	}
 
-	public AppGroupManager(AppGroupManager oldgroupmanager) {
+	public GroupManager(GroupManager oldgroupmanager) {
 		this.name = oldgroupmanager.name;
 		this.ownerNode = oldgroupmanager.ownerNode;
 	}
