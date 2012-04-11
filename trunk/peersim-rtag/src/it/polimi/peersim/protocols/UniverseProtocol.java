@@ -4,9 +4,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import peersim.cdsim.CDProtocol;
+import peersim.cdsim.CDState;
 import peersim.config.Configuration;
+import peersim.core.Network;
 import peersim.core.Node;
+import it.polimi.peersim.initializers.ProtocolStackInitializer;
 import it.polimi.peersim.messages.BaseMessage;
+import it.polimi.peersim.messages.MessageCounting;
 import it.polimi.peersim.messages.UniverseMessage;
 import it.polimi.peersim.prtag.LocalUniverseDescriptor;
 import it.polimi.peersim.prtag.UndeliverableMessageException;
@@ -28,6 +32,8 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 	private final int followerThreshold;
 	private static final String FOLLOWER_THRESHOLD_RATE = "follower_thresholdrate";
 	private final int followerLeaderRate;
+	
+	ProtocolStackInitializer initializer ;
 		
 	// All the leaders of this Node
 	public ArrayList<Node> leaders = new ArrayList<Node>();
@@ -87,7 +93,8 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 	}
 	
 	/* (non-Javadoc)
-	 * @see it.polimi.peersim.protocols.DiscoveryListener#notifyAddedNodes(peersim.core.Node, java.util.ArrayList)
+	 * @see it.polimi.peersim.protocols.DiscoveryListener#notifyAddedNodes(peersim.core.Node, 
+	 * java.util.ArrayList)
 	 */
 	@Override
 	public void notifyAddedNodes(Node currentNode, ArrayList<Node> added) {
@@ -176,6 +183,7 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 	    				UniverseMessage.createUpdateDescriptor(
 	    						protocolId, currentNode, getLocaluniverse());
 	    		try {
+	    			MessageCounting.universeMessages(1);
 	    			pushDownMessage(currentNode, topLeader, updateMsg);
 	    		} catch(UndeliverableMessageException ex) {
 	    			// The leader was unreachable
@@ -202,9 +210,10 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 	}
 	
 	private void followerToLeader(Node currentNode, Node remoteNode) {
-		System.out.println("][Node " + currentNode.getID() + 
-				"] Swapping follower " + remoteNode.getID());
+		//System.out.println("][Node " + currentNode.getID() + 
+				//"] Swapping follower " + remoteNode.getID());
 		if (!followers.contains(remoteNode)) {
+			
 			throw new AssertionError("Node " + remoteNode.getID() + 
 					" was not a follower");
 		}
@@ -280,28 +289,30 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 	}
 
 	public void handleCongestion(Node currentNode) {
-		System.out.println("Starting congestion control loop.");
+		//System.out.println("Starting congestion control loop.");
 		while (isCongested()) {
 			Node follower = getLessCongestedFollower();
 			if (follower == null) {
-				System.out.println("handleCongestion() no folllower found.");
+				//System.out.println("handleCongestion() no folllower found.");
 				return;
 			}
-			followerToLeader(currentNode, follower);
+			if(follower.isUp()){
+			followerToLeader(currentNode, follower);}
 		}
 	}
 
 	public void handleNodeNoLeader(Node currentNode) {
-		System.out.println("Starting no leader control loop.");
+		//System.out.println("Starting no leader control loop.");
 		while (hasNoLeader()) {
 			Node follower = getFollowerWithOtherLeaders(currentNode);
 			if (follower == null) {
-				System.out.println(
+				/*System.out.println(
 						"handleNodeNoLeader() no follower found with other leaders." +
-								currentNode.getID());
+								currentNode.getID());*/
 				return;
 			}
-			followerToLeader(currentNode, follower);
+			if(follower.isUp()){
+			followerToLeader(currentNode, follower);}
 		}
 	}
 
@@ -368,6 +379,7 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 
 	@Override
 	public void nextCycle(Node currentNode, int pid) {
+		
         if (hasNoLeader()) {
         	handleNodeNoLeader(currentNode);
         } else if (isCongested()) {
@@ -479,7 +491,7 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 			// The follower was unreachable
 			// TODO shall we remove the follower from the list
 			// 		or shall we simply wait the discovery protocol
-			// 		update the neighbour list.
+			// 		update the neighbor list.
 		}
 	}
 
@@ -494,7 +506,7 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 				// The leader was unreachable
 				// TODO shall we remove the leader from the list
 				// 		or shall we simply wait the discovery protocol
-				// 		update the neighbour list.
+				// 		update the neighbor list.
 			}
 		}
 		
@@ -514,7 +526,7 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 				// The follower was unreachable
 				// TODO shall we remove the follower from the list
 				// 		or shall we simply wait the discovery protocol
-				// 		update the neighbour list.
+				// 		update the neighbor list.
 			}
 		}
 	}

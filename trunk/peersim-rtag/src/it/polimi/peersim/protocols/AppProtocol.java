@@ -30,7 +30,7 @@ public class AppProtocol implements CDProtocol {
 		groupingProtocolId = Configuration.getPid(
 				prefix + "." + GROUPING_PROTOCOL);
 		startGroupCycle = Configuration.getInt(
-				prefix + "." + START_GROUP_CYCLE,1);
+				prefix + "." + START_GROUP_CYCLE, 10);
     }
 	
 	@Override
@@ -50,6 +50,8 @@ public class AppProtocol implements CDProtocol {
 					currentNode.getProtocol(groupingProtocolId);
 			grouping.joinOrCreateGroup(currentNode, friendlyName);
 		}
+		
+		
 	}
 
 	

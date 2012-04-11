@@ -6,6 +6,7 @@ package it.polimi.peersim.protocols;
 import java.io.Serializable;
 
 import it.polimi.peersim.messages.BaseMessage;
+import it.polimi.peersim.messages.MessageCounting;
 import it.polimi.peersim.prtag.UndeliverableMessageException;
 import peersim.config.Configuration;
 import peersim.core.Node;
