@@ -32,10 +32,12 @@ public class CrashControl extends DynamicNetwork  {
 	@Override
 	protected void remove(int n) {
 		if(CDState.getCycle() == crashCycle){
+			System.out.println("---------------------------------------------------------------------------------------" +
+					"-crashhhhhhhhhhhhhh"+CDState.getCycleT()); 
 			for (int i = 0; i < n; ++i) {
 	            Network.remove(CommonState.r.nextInt(Network.size()));
-	         }
-			return;
+			}
+			
 			}
 		return;
 		
@@ -45,7 +47,7 @@ public class CrashControl extends DynamicNetwork  {
 		
 		super(prefix);
 		crashCycle = Configuration.getInt(
-				prefix + "." + CRASH_CYCLE,2);
+				prefix + "." + CRASH_CYCLE,5);
 	}
 
 

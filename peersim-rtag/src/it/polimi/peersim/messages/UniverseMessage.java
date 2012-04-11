@@ -31,6 +31,7 @@ public class UniverseMessage extends BaseMessage {
 	
 	public static UniverseMessage createUpdateDescriptor(
 			int pid, Node sender, LocalUniverseDescriptor descriptor) {
+		
 		return new UniverseMessage(pid, sender, UPDATE_DESCRIPTOR, descriptor);
 	}
 	

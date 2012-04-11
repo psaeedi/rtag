@@ -4,6 +4,7 @@ import it.polimi.peersim.protocols.GroupingProtocol;
 import it.polimi.peersim.protocols.DiscoveryProtocol;
 import it.polimi.peersim.protocols.GeoLocation;
 import it.polimi.peersim.protocols.UniverseProtocol;
+import peersim.cdsim.CDState;
 import peersim.config.Configuration;
 import peersim.core.CommonState;
 import peersim.core.Control;
@@ -45,6 +46,7 @@ public class ProtocolStackInitializer implements Control {
 		
 		GeoLocation location;
 		
+	
 		for (int i = 0; i < Network.size(); i++) {
 			
 			Node n = Network.get(i);

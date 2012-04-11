@@ -52,7 +52,7 @@ public class DiscoveryProtocol extends DaemonProtocol {
 	
 	
 	public void nextCycle(Node n, int protocolID ) {
-		//if( CDState.getCycleT() != 0 ) return;
+		if( CDState.getCycle() %10  != 0 ) return;
 		 ArrayList<Node> neighbours = new ArrayList<Node>();
          // TODO explore only the top matrix
          for (int j = 0; j < Network.size(); j++) {
@@ -60,8 +60,6 @@ public class DiscoveryProtocol extends DaemonProtocol {
              if (n.getID() == k.getID()) {
              	continue;
              }
-         	
-             
             //if(neighbours.size()<20){
 	         	if (isInCommunicationRange(n, k)) {
 	         		//because of java heap we limit the number of neighbors to 100.
@@ -90,7 +88,7 @@ public class DiscoveryProtocol extends DaemonProtocol {
 		//at the first cycle if there are nodes isolated inform us
 		//after crash isolation is ignored
 		if (newNeighbors.isEmpty() &&  CDState.getCycle() == 1){
-			throw new RuntimeException("no neighbor find-isolated node");
+			throw new RuntimeException("no neighbor found-isolated node");
 		}
 	
 		ArrayList<Node> added = new ArrayList<Node>(newNeighbors);
@@ -159,5 +157,7 @@ public class DiscoveryProtocol extends DaemonProtocol {
 	public void setNeighbors(ArrayList<Node> neighbors) {
 		this.neighbors = neighbors;
 	}
+	
+	
 	
 }

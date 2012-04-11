@@ -5,10 +5,10 @@ random.seed 1234567890
 network.node.appgroup_protocol group
 network.node.universe_protocol universe
 
-CYCLES 5
-SIZE 10
-CYCLELENGTH 500
-CRASH 0.5
+CYCLES 12
+SIZE 50
+CYCLELENGTH 0
+CRASH 0.2
 
 #####################################Protocol#################################
 
@@ -21,7 +21,7 @@ protocol.discovery it.polimi.peersim.protocols.DiscoveryProtocol
 	geolocation_protocol geolocation
 	
 	#the larger more neighbors
-	discovery_radius 4
+	discovery_radius 1
 	
 	# discovery listeners
 	universe_protocol universe
@@ -66,7 +66,7 @@ protocol.grouping it.polimi.peersim.protocols.GroupingProtocol
 protocol.app it.polimi.peersim.protocols.AppProtocol
 {
 	grouping_protocol grouping
-	START_GROUP_CYCLE 2
+	START_GROUP_CYCLE 100
 }
 
 
@@ -102,7 +102,7 @@ control.implementedcrash it.polimi.peersim.controls.CrashControl
 {
  RandNI
   add -CRASH*SIZE
-  CRASH_CYCLE 4
+  CRASH_CYCLE 5
   #We keep a minimum number of nodes for our network
   #minsize 5+(SIZE*0.1)
   
@@ -122,6 +122,8 @@ control.io it.polimi.peersim.observers.GeoObserver
 	file_base graph
 	include degree
 }
+
+control.countmessage it.polimi.peersim.messages.MessageCounting
 
 
 
