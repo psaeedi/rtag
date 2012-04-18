@@ -6,8 +6,8 @@ package it.polimi.peersim.protocols;
 import java.io.Serializable;
 
 import it.polimi.peersim.messages.BaseMessage;
-import it.polimi.peersim.messages.MessageCounting;
 import it.polimi.peersim.prtag.UndeliverableMessageException;
+import peersim.cdsim.CDState;
 import peersim.config.Configuration;
 import peersim.core.Node;
 import peersim.core.Protocol;
@@ -45,6 +45,7 @@ public abstract class ForwardingProtocol<K extends BaseMessage> implements Proto
 	
 	public void pushDownMessage(Node currentNode, Node recipient, BaseMessage content)
 			throws UndeliverableMessageException {
+		
 		K message;
 		try {
 			message = handlePushDownMessage(currentNode, recipient, content);
@@ -67,6 +68,9 @@ public abstract class ForwardingProtocol<K extends BaseMessage> implements Proto
 			return;
 		}
 	}
+	
+
+	
 
 	protected abstract void handleUnreliableRecipientException(
 			Node currentNode, UndeliverableMessageException ex)

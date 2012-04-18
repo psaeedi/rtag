@@ -3,9 +3,12 @@
  */
 package it.polimi.peersim.protocols;
 
+import java.util.ArrayList;
+
 import it.polimi.peersim.messages.BaseMessage;
 import it.polimi.peersim.messages.MockMessage;
 import it.polimi.peersim.prtag.UndeliverableMessageException;
+import peersim.cdsim.CDProtocol;
 import peersim.config.Configuration;
 import peersim.core.Node;
 import peersim.transport.Transport;
@@ -19,7 +22,7 @@ import peersim.transport.Transport;
  * This should be the only protocol communicating to a remote node.
  * This represents the lower layer in the protocol stack.
  */
-public class MockChannel extends ForwardingProtocol<MockMessage> implements Transport {
+public class MockChannel extends ForwardingProtocol<MockMessage> implements Transport, CDProtocol {
 
 	private static final String DISCOVERY_PROTOCOL = "discovery_protocol";
 	private final int discoveryProtocolId;
@@ -27,8 +30,11 @@ public class MockChannel extends ForwardingProtocol<MockMessage> implements Tran
 	private static final String LATENCY = "latency";
 	private static int latency;
 	
+	private ArrayList<MockMessage> channelMessageQueue;
+	
 	public MockChannel(String prefix) {
 		super(prefix);
+		channelMessageQueue = new ArrayList<MockMessage>();
 		latency = Configuration.getInt(
 				prefix + "." + LATENCY, 0);
 		discoveryProtocolId = Configuration.getPid(
@@ -73,11 +79,20 @@ public class MockChannel extends ForwardingProtocol<MockMessage> implements Tran
 		//	throw new UndeliverableMessageException(recipient, content);
 		//}
 		MockMessage message = new MockMessage(protocolId, currentNode, recipient, content);
-		send(currentNode, recipient, message, protocolId);
+		//send(currentNode, recipient, message, protocolId);
+		channelMessageQueue.add(message);
 		// This never pushes down
 		return null;
 	}
 
+	private void sendAllMessageInQueue(Node currentNode) {
+		ArrayList<MockMessage> messagesToSend = channelMessageQueue;
+		channelMessageQueue = new ArrayList<MockMessage>();
+		for (MockMessage message: messagesToSend) {
+			send(currentNode, message.getReceiver(), message, protocolId);
+		}	
+	}
+	
 	@Override
 	public BaseMessage handlePushUpMessage(Node currentNode, Node sender,
 			MockMessage message) {
@@ -98,6 +113,19 @@ public class MockChannel extends ForwardingProtocol<MockMessage> implements Tran
 			Node currentNode, 
 			UndeliverableMessageException ex) {
 		throw new AssertionError("This protocol should be at the bottom of the stack.");
+	}
+
+	@Override
+	public void nextCycle(Node currentNode, int pid) {
+		sendAllMessageInQueue(currentNode);
+	}
+	
+	@Override
+	public Object clone() {
+		MockChannel clone = null;
+		clone = (MockChannel) super.clone();
+		clone.channelMessageQueue = new ArrayList<MockMessage>(channelMessageQueue);
+        return clone;
 	}
 
 }

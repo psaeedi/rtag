@@ -149,7 +149,7 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 	public void askLeaderToJoin(Node currentNode, Node leader, GroupDescriptor groupdescriptor) {
 		// the node ask a leader to join him
 		GroupCommand command = new GroupCommand
-				(GroupCommand.JOIN_REQUEST, groupdescriptor);
+				(GroupCommand.JOIN_REQUEST, groupdescriptor.getName());
 		
 		GroupingMessage message = GroupingMessage.createGroupCommand(
 						protocolId, currentNode, command);
@@ -239,7 +239,7 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 			manager.setFollowedGroup(remotegroupDescriptor);
 			knownGroups.removeAll(groupName);
 			knownGroups.put(groupName, remotegroupDescriptor);
-			System.out.println("*@*@*@*@*@ node"+currentNode.getID() );
+			//System.out.println("*@*@*@*@*@ node"+currentNode.getID() );
 		} else {
 			knownGroups.put(groupName, remotegroupDescriptor);
 		}
@@ -287,7 +287,7 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 		GroupDescriptor selectedGroup = groups.get(0);
 		try {
 			GroupCommand command = new GroupCommand
-					(GroupCommand.JOIN_REQUEST, selectedGroup);
+					(GroupCommand.JOIN_REQUEST, selectedGroup.getName());
 			
 			GroupingMessage message = GroupingMessage.createGroupCommand(
 					protocolId, currentNode, command);		

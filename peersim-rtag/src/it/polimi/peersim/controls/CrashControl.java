@@ -1,6 +1,8 @@
 package it.polimi.peersim.controls;
 
 
+import it.polimi.peersim.protocols.DiscoveryListener;
+import it.polimi.peersim.protocols.DiscoveryProtocol;
 import peersim.cdsim.CDState;
 import peersim.config.Configuration;
 import peersim.core.CommonState;
@@ -12,42 +14,39 @@ public class CrashControl extends DynamicNetwork  {
 	
 	private static final String CRASH_CYCLE = "crash_cycle";
 	protected final int crashCycle;
-
-	@Override
-	protected void add(int n) {
-	    if(CDState.getCycle() == crashCycle){
-			for (int i = 0; i < n; ++i) {
-	            Node newnode = (Node) Network.prototype.clone();
-	            for (int j = 0; j < inits.length; ++j) {
-	                    inits[j].initialize(newnode);
-	            }
-	            Network.add(newnode);
-	         }
-			return;
-		}
-	    return;
 	
-	}
+	
+	private static final String DISCOVERY_PROTOCOL = "discovery_protocol";
+	private final int discoveryProtocolId;
+	
+	private Node currentNode;
+	
 
 	@Override
 	protected void remove(int n) {
 		if(CDState.getCycle() == crashCycle){
 			System.out.println("---------------------------------------------------------------------------------------" +
-					"-crashhhhhhhhhhhhhh"+CDState.getCycleT()); 
+					"-crashhhhhhhhhhhhhh" + CDState.getCycle()); 
 			for (int i = 0; i < n; ++i) {
 	            Network.remove(CommonState.r.nextInt(Network.size()));
 			}
 			
-			}
-		return;
+		}
 		
+	}
+	
+	
+	public void initialize(Node currentNode) {
+		this.currentNode = currentNode;
 	}
 
 	public CrashControl(String prefix) {
 		
 		super(prefix);
 		crashCycle = Configuration.getInt(
-				prefix + "." + CRASH_CYCLE,5);
+				prefix + "." + CRASH_CYCLE, 4);
+		discoveryProtocolId = Configuration.getPid(
+				prefix + "." + DISCOVERY_PROTOCOL);
 	}
 
 

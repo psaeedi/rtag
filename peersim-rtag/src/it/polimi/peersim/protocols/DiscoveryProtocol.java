@@ -52,7 +52,7 @@ public class DiscoveryProtocol extends DaemonProtocol {
 	
 	
 	public void nextCycle(Node n, int protocolID ) {
-		if( CDState.getCycle() %10  != 0 ) return;
+		if( CDState.getCycle() % 10 != 0 ) return;
 		 ArrayList<Node> neighbours = new ArrayList<Node>();
          // TODO explore only the top matrix
          for (int j = 0; j < Network.size(); j++) {
@@ -67,7 +67,7 @@ public class DiscoveryProtocol extends DaemonProtocol {
 	         	}
             //}
          }
-         
+         System.out.println("--------------------------CYCLE"+CDState.getCycle());
          updateNeighbourhood(neighbours);
 	}
 	
@@ -104,6 +104,8 @@ public class DiscoveryProtocol extends DaemonProtocol {
 
 		DiscoveryListener universeProtocol = (DiscoveryListener) 
 				currentNode.getProtocol(universeProtocolId);
+		
+		System.out.println("+++++++++++++++++++++++++++++++++++++removed"+removed.size());
 		//add to the list of ur neighbors
 		if (!added.isEmpty()){
 			// Notify the higher layers that certain nodes have been discovered.
