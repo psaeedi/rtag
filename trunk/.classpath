@@ -7,5 +7,6 @@
 	<classpathentry kind="lib" path="peersim-rtag/libs/extras.jar"/>
 	<classpathentry kind="lib" path="peersim-rtag/libs/jep-2.3.0.jar"/>
 	<classpathentry kind="lib" path="peersim-rtag/libs/peersim-1.0.5.jar"/>
+	<classpathentry kind="lib" path="R_TAG/lib/guava-r09.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

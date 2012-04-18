@@ -10,9 +10,9 @@ import peersim.core.Network;
 import peersim.core.Node;
 import it.polimi.peersim.initializers.ProtocolStackInitializer;
 import it.polimi.peersim.messages.BaseMessage;
-import it.polimi.peersim.messages.MessageCounting;
 import it.polimi.peersim.messages.UniverseMessage;
 import it.polimi.peersim.prtag.LocalUniverseDescriptor;
+import it.polimi.peersim.prtag.MessageCounter;
 import it.polimi.peersim.prtag.UndeliverableMessageException;
 
 /**
@@ -28,6 +28,8 @@ import it.polimi.peersim.prtag.UndeliverableMessageException;
 public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 		implements CDProtocol, DiscoveryListener { 
 
+	MessageCounter messageCounter = MessageCounter.createInstance();
+	
 	private static final String FOLLOWER_THRESHOLD = "follower_threshold";
 	private final int followerThreshold;
 	private static final String FOLLOWER_THRESHOLD_RATE = "follower_thresholdrate";
@@ -148,6 +150,8 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 	 */
 	@Override
 	public void notifyRemovedNodes(Node currentNode, ArrayList<Node> removed) {
+		
+		
 		for (Node lostNode: removed) {
 			if (lostNode.getID() == currentNode.getID()){
 				throw new RuntimeException("WARNING: node has lost itself.");
@@ -183,7 +187,6 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 	    				UniverseMessage.createUpdateDescriptor(
 	    						protocolId, currentNode, getLocaluniverse());
 	    		try {
-	    			MessageCounting.universeMessages(1);
 	    			pushDownMessage(currentNode, topLeader, updateMsg);
 	    		} catch(UndeliverableMessageException ex) {
 	    			// The leader was unreachable
@@ -212,6 +215,8 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 	private void followerToLeader(Node currentNode, Node remoteNode) {
 		//System.out.println("][Node " + currentNode.getID() + 
 				//"] Swapping follower " + remoteNode.getID());
+		
+		
 		if (!followers.contains(remoteNode)) {
 			
 			throw new AssertionError("Node " + remoteNode.getID() + 
@@ -224,6 +229,7 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 							protocolId,
 							currentNode,
 							getLocaluniverse());
+		
 			pushDownMessage(currentNode, remoteNode, addfollowermessage);
 		} catch(UndeliverableMessageException ex) {
 			// The leader was unreachable
@@ -290,14 +296,15 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 
 	public void handleCongestion(Node currentNode) {
 		//System.out.println("Starting congestion control loop.");
-		while (isCongested()) {
+		if (isCongested()) {
 			Node follower = getLessCongestedFollower();
 			if (follower == null) {
 				//System.out.println("handleCongestion() no folllower found.");
 				return;
 			}
-			if(follower.isUp()){
-			followerToLeader(currentNode, follower);}
+			//if(follower.isUp()){
+			followerToLeader(currentNode, follower);
+			//}
 		}
 	}
 
@@ -311,8 +318,9 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 								currentNode.getID());*/
 				return;
 			}
-			if(follower.isUp()){
-			followerToLeader(currentNode, follower);}
+			//if(follower.isUp()){
+			followerToLeader(currentNode, follower);
+			//}
 		}
 	}
 
@@ -324,7 +332,7 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 			pushDownMessage(currentNode, follower, addfollowermessageAck);
 			// TODO What happens if this message is lost?
 		} catch(UndeliverableMessageException ex) {
-			// It was impossible to reache the follower.
+			// It was impossible to reach the follower.
 			// Aborting
 			return;
 		}
@@ -345,7 +353,7 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 				// The leader was unreachable
 				// TODO shall we remove the leader from the list
 				// 		or shall we simply wait the discovery protocol
-				// 		update the neighbour list.
+				// 		update the neighbor list.
 			}
 		}
 	}
@@ -381,34 +389,42 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 	public void nextCycle(Node currentNode, int pid) {
 		
         if (hasNoLeader()) {
+        	System.out.println("NEXTCYCLE_PROTOCOL_CYCLE+++"+CDState.getCycle()+"NOLEADER");
         	handleNodeNoLeader(currentNode);
         } else if (isCongested()) {
+        	System.out.println("NEXTCYCLE_PROTOCOL_CYCLE+++"+CDState.getCycle()+"ISCONGESTED");
         	handleCongestion(currentNode);
-        	
         }
+        if (currentNode.getID() == 0) {
+        	messageCounter.count(null);
+        	messageCounter.printAll();
+        }
+        
 	}
 
 
 	@Override
 	public UniverseMessage handlePushDownMessage(
 			Node currentNode, Node recipient, BaseMessage content) {
+		
+		//System.out.println("+++++++++CYCLE+++"+CDState.getCycle());
+		UniverseMessage message = null;
 		if (content instanceof UniverseMessage) {
-			return (UniverseMessage) content;
+			message = (UniverseMessage) content;
 		} else {
-			return UniverseMessage.createSinglecast(
+			message = UniverseMessage.createSinglecast(
 					protocolId, currentNode, (BaseMessage)content);
 		}
+		//System.out.println("+++++++++CYCLE+++"+CDState.getCycle());
+		messageCounter.count(message);
+		return message;
 	}
 
 
 	@Override
 	public BaseMessage handlePushUpMessage(Node currentNode, Node sender,
 			UniverseMessage message) {
-		
 		String head = message.getHead();
-		//System.out.println("Universe::handlePushUpMessage "+ currentNode.getID() + "<-" +
-			//	message.getSender().getID() + " message " + 
-				//head);
 		
 		if (UniverseMessage.UPDATE_DESCRIPTOR.equals(head)) {
 			handleLocalUniverseDescriptorChanged(

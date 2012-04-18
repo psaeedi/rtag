@@ -16,7 +16,7 @@ import peersim.core.Node;
 	/**
 	 * The group leader.
 	 * Each node is leader of at most of its own universe and is 
-	 * following multple other universes (Can have multiple leaders and multiple followers).
+	 * following multiple other universes (Can have multiple leaders and multiple followers).
 	 */
   private Node leader;
 	

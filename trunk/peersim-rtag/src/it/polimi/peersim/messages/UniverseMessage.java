@@ -19,8 +19,7 @@ public class UniverseMessage extends BaseMessage {
 	
 	private static final long serialVersionUID = -6818627867498834594L;
 
-	public static String UNIVERSE_COMMAND = "universeCommand";
-	public static String UNIVERSE_RESPONSE = "universeResponse";
+	public static String UNIVERSE_COMMAND = "UniverseCommand";
 	public static String UPDATE_DESCRIPTOR = "UpdateDescriptor";
 	public static String BROADCAST = "Broadcast";
 	public static String ADDFOLOWER = "Addfollower";
@@ -58,14 +57,6 @@ public class UniverseMessage extends BaseMessage {
 			int pid, Node sender, UniverseCommand command) {
 		return new UniverseMessage(pid, sender, UNIVERSE_COMMAND, command);
 	}
-	
-	/*
-	public static UniverseMessage createUniverseResponse(
-			int pid, Node sender, Serializable command) {
-		return new UniverseMessage(pid, sender, UNIVERSE_RESPONSE, command);
-	}*/
-	
-	
 	
 	private String head;
 	
