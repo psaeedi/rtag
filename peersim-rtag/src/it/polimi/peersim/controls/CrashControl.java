@@ -1,8 +1,5 @@
 package it.polimi.peersim.controls;
 
-
-import it.polimi.peersim.protocols.DiscoveryListener;
-import it.polimi.peersim.protocols.DiscoveryProtocol;
 import peersim.cdsim.CDState;
 import peersim.config.Configuration;
 import peersim.core.CommonState;
@@ -20,8 +17,6 @@ public class CrashControl extends DynamicNetwork  {
 	
 	private static final String DISCOVERY_PROTOCOL = "discovery_protocol";
 	private final int discoveryProtocolId;
-	
-	private Node currentNode;
 	
 
 	@Override
@@ -41,7 +36,6 @@ public class CrashControl extends DynamicNetwork  {
 	
 	
 	public void initialize(Node currentNode) {
-		this.currentNode = currentNode;
 	}
 
 	public CrashControl(String prefix) {

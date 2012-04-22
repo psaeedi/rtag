@@ -6,10 +6,10 @@ network.node.appgroup_protocol group
 network.node.universe_protocol universe
 
 CYCLES CrashCycle+80
-SIZE 1500
+SIZE 150
 CYCLELENGTH 0
 CRASH 0.2
-CrashCycle 210
+CrashCycle 80
 
 #####################################Protocol#################################
 
@@ -23,7 +23,7 @@ protocol.discovery it.polimi.peersim.protocols.DiscoveryProtocol
 	crash_cycle CrashCycle
 	
 	#the larger more neighbors
-	discovery_radius 0.4
+	discovery_radius 0.6
 	
 	# discovery listeners
 	universe_protocol universe
@@ -128,5 +128,6 @@ control.io it.polimi.peersim.observers.GeoObserver
 	include degree
 }
 
+control.messageCounter it.polimi.peersim.controls.MessageCountingControl
 
 #order.control congestion crash io
