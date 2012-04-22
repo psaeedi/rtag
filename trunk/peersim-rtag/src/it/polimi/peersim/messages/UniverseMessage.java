@@ -5,7 +5,6 @@ package it.polimi.peersim.messages;
 
 
 import it.polimi.peersim.protocols.UniverseCommand;
-import it.polimi.peersim.prtag.LocalUniverseDescriptor;
 
 import java.io.Serializable;
 
@@ -20,19 +19,11 @@ public class UniverseMessage extends BaseMessage {
 	private static final long serialVersionUID = -6818627867498834594L;
 
 	public static String UNIVERSE_COMMAND = "UniverseCommand";
-	public static String UPDATE_DESCRIPTOR = "UpdateDescriptor";
 	public static String BROADCAST = "Broadcast";
-	public static String ADDFOLOWER = "Addfollower";
-	public static String ADDFOLOWER_ACK = "Addfollower_ack";
 	public static String SINGLECAST = "Singlecast";
 	
 	private Node sender;
 	
-	public static UniverseMessage createUpdateDescriptor(
-			int pid, Node sender, LocalUniverseDescriptor descriptor) {
-		
-		return new UniverseMessage(pid, sender, UPDATE_DESCRIPTOR, descriptor);
-	}
 	
 	public static UniverseMessage createBroadcast(
 			int pid, Node sender, BaseMessage body) {
@@ -43,16 +34,7 @@ public class UniverseMessage extends BaseMessage {
 			int pid, Node sender, BaseMessage message) {
 		return new UniverseMessage(pid, sender, SINGLECAST, message);
 	}
-	
-	public static UniverseMessage createAddfollower(
-			int pid, Node sender, LocalUniverseDescriptor descriptor) {
-		return new UniverseMessage(pid, sender, ADDFOLOWER, descriptor);
-	}
-	
-	public static UniverseMessage createAddfollowerAck(int pid, Node sender) {
-		return new UniverseMessage(pid, sender, ADDFOLOWER_ACK, null);
-	}
-	
+		
 	public static UniverseMessage createUniverseCommand(
 			int pid, Node sender, UniverseCommand command) {
 		return new UniverseMessage(pid, sender, UNIVERSE_COMMAND, command);

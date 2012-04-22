@@ -34,11 +34,10 @@ public class MockChannel extends ForwardingProtocol<MockMessage> implements Tran
 	private static final String THROUGHPUT = "throughput";
 	private static int throughput;
 	
-	private ArrayList<MockMessage> channelMessageQueue;
+	private ArrayList<MockMessage> channelMessageQueue = new ArrayList<MockMessage>();
 	
 	public MockChannel(String prefix) {
 		super(prefix);
-		channelMessageQueue = new ArrayList<MockMessage>();
 		latency = Configuration.getInt(
 				prefix + "." + LATENCY, 5);
 		throughput = Configuration.getInt(
@@ -65,9 +64,13 @@ public class MockChannel extends ForwardingProtocol<MockMessage> implements Tran
 					"A MockChannel can only send messages to " +
 					"another MockChannel on a remote node.");
 		}
-		MockChannel remoteProtocol = (MockChannel) recipient.getProtocol(protocolId);
-		remoteProtocol.receiveAndPushUpMessage(recipient, currentNode, (MockMessage)message);
-		
+		if (currentNode.getID() != ((MockMessage)message).getSender().getID()) {
+			throw new AssertionError("Sending someonelse messages?????");
+		}
+		//
+		channelMessageQueue.add((MockMessage)message);
+		//MockChannel remoteProtocol = (MockChannel) recipient.getProtocol(protocolId);
+		//remoteProtocol.receiveAndPushUpMessage(recipient, currentNode, (MockMessage)message);
 	}
 
 	private boolean areInCommunicationRange(Node currentNode, Node recipient) {
@@ -86,8 +89,13 @@ public class MockChannel extends ForwardingProtocol<MockMessage> implements Tran
 		//	throw new UndeliverableMessageException(recipient, content);
 		//}
 		MockMessage message = new MockMessage(protocolId, currentNode, recipient, content);
-		//send(currentNode, recipient, message, protocolId);
-		channelMessageQueue.add(message);
+		
+		if (currentNode.getID() != message.getSender().getID()) {
+			throw new AssertionError("Creating message for someone else?");
+		}
+		
+		//
+		send(currentNode, recipient, message, protocolId);
 		// This never pushes down
 		return null;
 	}
@@ -103,12 +111,11 @@ public class MockChannel extends ForwardingProtocol<MockMessage> implements Tran
 		}
 
 		for (MockMessage message: messagesToSend) {
-			//System.out.println("+++++++++++++++++++++++++++++++++++++latency"+latency+
-				//	"num-que"+NUM_MESSAGE_QUEUE+"_________node:"+currentNode.getID());
-			//if(latency> NUM_MESSAGE_QUEUE){
-			send(currentNode, message.getReceiver(), message, protocolId);
-			//NUM_MESSAGE_QUEUE++;
-			//}
+			if (currentNode.getID() != ((MockMessage)message).getReceiver().getID()) {
+				throw new AssertionError("Receiving someonelse messages?????");
+			}
+			MockChannel remoteProtocol = (MockChannel) currentNode.getProtocol(protocolId);
+			remoteProtocol.receiveAndPushUpMessage(currentNode, message.getSender(), message);
 		}	
 	}
 	

@@ -1,12 +1,11 @@
 package it.polimi.peersim.protocols;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 
 import peersim.cdsim.CDProtocol;
-import peersim.cdsim.CDState;
 import peersim.config.Configuration;
-import peersim.core.Network;
 import peersim.core.Node;
 import it.polimi.peersim.initializers.ProtocolStackInitializer;
 import it.polimi.peersim.messages.BaseMessage;
@@ -50,7 +49,6 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 	
 	// The local universe of the current node
 	private LocalUniverseDescriptor localUniverse;
-	private Node followerLeaders = null;
 
 	public UniverseProtocol(String prefix) {
 		super(prefix);
@@ -110,6 +108,10 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 	}
 	
 	public void handleNeighbourDiscovered(Node currentNode, Node remoteNode) {
+		if (currentNode.getID() == remoteNode.getID()) {
+			throw new AssertionError("Node " + currentNode.getID() + " discovered itself.");
+		}
+		
 		if (leaders.contains(remoteNode)) {
 			System.err.println("WARNING:the discovered node " + 
 					remoteNode.getID() + " was already discovered and stored in the leader list!! " );
@@ -136,8 +138,8 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 			// and will start the join process
 			try {
 				UniverseMessage addfollowermessage = 
-						UniverseMessage.createAddfollower(
-								protocolId, currentNode, getLocaluniverse());
+						UniverseMessage.createUniverseCommand(protocolId, currentNode,
+								UniverseCommand.createAddfollower(getLocaluniverse()));
 				pushDownMessage(currentNode, remoteNode, addfollowermessage);
 			} catch(UndeliverableMessageException ex) {
 				// It was impossible to connect to the new discovered node
@@ -187,8 +189,8 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 	    	// Notify the leaders that this local universe has changed.
 	    	for (Node topLeader: leaders) {
 	    		UniverseMessage updateMsg =
-	    				UniverseMessage.createUpdateDescriptor(
-	    						protocolId, currentNode, getLocaluniverse());
+	    				UniverseMessage.createUniverseCommand(protocolId, currentNode,
+	    						UniverseCommand.createUpdateDescriptor(getLocaluniverse()));
 	    		try {
 	    			pushDownMessage(currentNode, topLeader, updateMsg);
 	    		} catch(UndeliverableMessageException ex) {
@@ -226,10 +228,8 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 		
 		try {
 			UniverseMessage addfollowermessage = 
-					UniverseMessage.createAddfollower(
-							protocolId,
-							currentNode,
-							getLocaluniverse());
+					UniverseMessage.createUniverseCommand(protocolId, currentNode,
+							UniverseCommand.createAddfollower(getLocaluniverse()));
 		
 			pushDownMessage(currentNode, remoteNode, addfollowermessage);
 		} catch(UndeliverableMessageException ex) {
@@ -257,33 +257,6 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 		}
 		return lessCongested;
 	}
-	
-	/*private Node getFollowerWithOtherLeaders(Node currentNode) {
-		for (Node follower: followers) {
-			try {
-				UniverseCommand command = new UniverseCommand
-						(UniverseCommand.COUNT_LEADERS, 0);
-				
-				UniverseMessage message = 
-						UniverseMessage.createUniverseCommand(
-								protocolId,
-								currentNode,
-								command);
-				pushDownMessage(currentNode, follower, message);
-			} catch(UndeliverableMessageException ex) {
-				// The follower was unreachable
-    			// TODO shall we remove the follower from the list
-    			// 		or shall we simply wait the discovery protocol
-    			// 		update the neighbour list.
-			}
-			
-			if (followerLeaders != null){
-				return followerLeaders;
-			}
-			
-		}
-		return null;
-	}*/
 
 	public boolean isCongested() {
 		return (followers.size() > followerThreshold) && (followers.size() / 
@@ -303,33 +276,17 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 				//System.out.println("handleCongestion() no folllower found.");
 				return;
 			}
-			//if(follower.isUp()){
 			followerToLeader(currentNode, follower);
-			//}
 		}
 	}
 
-	public void handleNodeNoLeader(Node currentNode) {
-		//System.out.println("Starting no leader control loop.");
-			//Node follower = getFollowerWithOtherLeaders(currentNode);
-		   Node nextLeader = null;
-			for (Node follower: followers) {
-			    int min = -1;
-				if(follower.getID() > min){
-					nextLeader = follower;
-				}
-			}
-			if (nextLeader == null) {
-				return;
-			}
-			followerToLeader(currentNode, nextLeader);
-	}
-
 	private void addFollower(Node currentNode, Node follower,
-			LocalUniverseDescriptor remoteUniverse) {		
+			LocalUniverseDescriptor remoteUniverse) {	
 		try {
-			UniverseMessage addfollowermessageAck =
-					UniverseMessage.createAddfollowerAck(protocolId, currentNode);
+			UniverseMessage addfollowermessageAck = 
+					UniverseMessage.createUniverseCommand(protocolId, currentNode,
+							UniverseCommand.createAddfollowerAck());
+			
 			pushDownMessage(currentNode, follower, addfollowermessageAck);
 			// TODO What happens if this message is lost?
 		} catch(UndeliverableMessageException ex) {
@@ -349,8 +306,11 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 		// TODO update its leaders by sending them the updated descriptor
 		for (Node topLeader: leaders) {
     		try {
-        		UniverseMessage updateMsg = UniverseMessage.createUpdateDescriptor(
-        				protocolId, currentNode, getLocaluniverse());
+    			
+    			
+        		UniverseMessage updateMsg = UniverseMessage.createUniverseCommand(
+        				protocolId, currentNode, 
+        				UniverseCommand.createUpdateDescriptor(getLocaluniverse()));
 				pushDownMessage(currentNode, topLeader, updateMsg);
 			} catch (UndeliverableMessageException e) {
 				// The leader was unreachable
@@ -394,34 +354,21 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 
 	@Override
 	public void nextCycle(Node currentNode, int pid) {
-        if (hasNoLeader()) {
-        	//System.out.println("NEXTCYCLE_PROTOCOL_CYCLE+++"+CDState.getCycle()+"NOLEADER");
-        	// TODO
-        handleNodeNoLeader(currentNode);
-        } else if (isCongested()) {
+        if (isCongested() || hasNoLeader()) {
         	//System.out.println("NEXTCYCLE_PROTOCOL_CYCLE+++"+CDState.getCycle()+"ISCONGESTED");
         	handleCongestion(currentNode);
         }
-        
-        if (currentNode.getID() == 0) {
-        	messageCounter.count(null);
-        	messageCounter.printAll();
-        }
-        else if (currentNode.getID() == 2) {
-        	messageCounter.count(null);
-        	messageCounter.printAll();
-        }
-        else if (currentNode.getID() == 4) {
-        	messageCounter.count(null);
-        	messageCounter.printAll();
-        }
-        
 	}
 
 
 	@Override
 	public UniverseMessage handlePushDownMessage(
 			Node currentNode, Node recipient, BaseMessage content) {
+		
+		if (currentNode.getID() == recipient.getID()) {
+			throw new AssertionError("Node " + currentNode.getID() + 
+					" is sending a message to itself.");
+		}
 		
 		//System.out.println("+++++++++CYCLE+++"+CDState.getCycle());
 		UniverseMessage message = null;
@@ -440,14 +387,13 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 	@Override
 	public BaseMessage handlePushUpMessage(Node currentNode, Node sender,
 			UniverseMessage message) {
-		String head = message.getHead();
 		
-		if (UniverseMessage.UPDATE_DESCRIPTOR.equals(head)) {
-			handleLocalUniverseDescriptorChanged(
-					(LocalUniverseDescriptor)message.getContent());
-			// this message is for this protocol
-			return null;
+		if (currentNode.getID() == sender.getID()) {
+			throw new AssertionError("Node " + currentNode.getID() + 
+					" has received a message from itself.");
 		}
+		
+		String head = message.getHead();
 		
 		if (UniverseMessage.BROADCAST.equals(head)) {
 			// forward the broadcast and send the message 
@@ -459,19 +405,6 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 			return (BaseMessage) message.getContent();
 		}
 		
-		if (UniverseMessage.ADDFOLOWER.equals(head)) {
-			addFollower(
-					currentNode,
-					message.getSender(), 
-					(LocalUniverseDescriptor)message.getContent());
-			return null;
-		}
-		
-		if (UniverseMessage.ADDFOLOWER_ACK.equals(message.getHead())) {
-			addFollowerAck(message.getSender());
-			return null;
-		}
-		
 		if (UniverseMessage.UNIVERSE_COMMAND.equals(message.getHead())) {
 			handleUniverseCommand(currentNode, sender, (UniverseCommand)message.getContent());
 			return null;
@@ -481,49 +414,16 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 
 
 	private void handleUniverseCommand(Node currentNode, Node sender, UniverseCommand command) {
-		// TODO Auto-generated method stub
 		String commandName = command.getCommand();
-		int content = command.getContent();
+		Serializable content = command.getContent();
 		
-		if (UniverseCommand.COUNT_LEADERS.equals(commandName)) {
-			handleUniverseCommandCountLeader(currentNode, sender);
-			
-		} else if (UniverseCommand.COUNT_LEADERS_RESPONSE.equals(commandName)) {
-			handleUniverseCommandCountLeaderResponse(content, currentNode, sender);
-		}
-	}
-
-	private void handleUniverseCommandCountLeaderResponse(int content, Node currentNode, Node sender){ 
-		getFirstFollowerWithOtherLeader(currentNode,sender, content);
-	}
-
-	private void getFirstFollowerWithOtherLeader(Node currentNode, Node sender,  int content) {
-		if (content > 1 ){
-			followerLeaders = sender;
-		}
-		return;
-	}
-
-	/**
-	 * Sends to the caller the number of followers. 
-	 */
-	private void handleUniverseCommandCountLeader(Node currentNode, Node sender) {
-		try {
-			UniverseCommand command = new UniverseCommand
-					(UniverseCommand.COUNT_LEADERS_RESPONSE, leaders.size());
-			
-			UniverseMessage message = 
-					UniverseMessage.createUniverseCommand(
-							protocolId,
-							currentNode,
-							command);
-			
-			pushDownMessage(currentNode, sender, message);
-		} catch (UndeliverableMessageException e) {
-			// The follower was unreachable
-			// TODO shall we remove the follower from the list
-			// 		or shall we simply wait the discovery protocol
-			// 		update the neighbor list.
+		if (UniverseCommand.ADDFOLOWER.equals(commandName)) {
+			addFollower(currentNode, sender, 
+					(LocalUniverseDescriptor)content);
+		} else if (UniverseCommand.ADDFOLOWER_ACK.equals(commandName)) {
+			addFollowerAck(sender);
+		} else if (UniverseCommand.UPDATE_DESCRIPTOR.equals(commandName)) {
+			handleLocalUniverseDescriptorChanged((LocalUniverseDescriptor)content);
 		}
 	}
 

@@ -39,12 +39,18 @@ public abstract class ForwardingProtocol<K extends BaseMessage> implements Proto
         try {
         	clone = (ForwardingProtocol<K>) super.clone();
         } catch (CloneNotSupportedException e) {
+        	e.printStackTrace();
         } // never happens
         return clone;
 	}
 	
 	public void pushDownMessage(Node currentNode, Node recipient, BaseMessage content)
 			throws UndeliverableMessageException {
+		
+		if (currentNode.getID() == recipient.getID()) {
+			throw new AssertionError("Node " + currentNode.getID() + 
+					" is sending a message to itself.");
+		}
 		
 		K message;
 		try {
@@ -94,6 +100,11 @@ public abstract class ForwardingProtocol<K extends BaseMessage> implements Proto
 			throws UndeliverableMessageException;
 	
 	public void receiveAndPushUpMessage(Node currentNode, Node sender, K message) {
+		if (currentNode.getID() == sender.getID()) {
+			throw new AssertionError("Node " + currentNode.getID() + 
+					" has received a message from itself.");
+		}
+		
 		BaseMessage content = handlePushUpMessage(currentNode, sender, message);
 		if (content != null) {
 			ForwardingProtocol wrappedProtocol = (ForwardingProtocol)

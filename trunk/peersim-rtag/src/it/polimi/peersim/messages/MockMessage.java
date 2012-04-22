@@ -14,8 +14,7 @@ import peersim.core.Node;
  */
 public class MockMessage extends BaseMessage {
 	
-	private static final long serialVersionUID = -1471858591774512342L;
-	
+	private static final long serialVersionUID = 4844188023821045727L;
 	private final Node sender;
 	private final Node receiver;
 	
@@ -26,6 +25,9 @@ public class MockMessage extends BaseMessage {
 	 */
 	public MockMessage(int pid, Node sender, Node receiver, Serializable content) {
 		super(pid, content);
+		if (sender.getID() == receiver.getID()) {
+			throw new AssertionError("Sender and receiver cannot be the same node");
+		}
 		this.sender = sender;
 		this.receiver = receiver;
 	}
