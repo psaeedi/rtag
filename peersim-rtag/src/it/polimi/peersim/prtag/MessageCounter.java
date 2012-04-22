@@ -18,7 +18,8 @@ public class MessageCounter {
 	
 	private static MessageCounter singleton = null;
 	
-	private HashMap<Integer, HashMap<String, Integer>> messageByCycle = new  HashMap<Integer, HashMap<String, Integer>>();
+	private HashMap<Integer, HashMap<String, Integer>> messageByCycle = 
+			new  HashMap<Integer, HashMap<String, Integer>>();
 	private HashMap<String, Integer> currentCycleCount = null; 
 	private int currentCycle = -1;
 	
@@ -61,7 +62,7 @@ public class MessageCounter {
 	
 	public void printAll() {
 		System.out.println("Counting messages-------------------- ");
-		System.out.println("Cmessagecycle size"+messageByCycle.size());
+		//System.out.println("Cmessagecycle size"+messageByCycle.size());
 		for (int cycle: messageByCycle.keySet()) {
 			System.out.println("Cycle " + cycle);
 			HashMap<String, Integer> map = messageByCycle.get(cycle);

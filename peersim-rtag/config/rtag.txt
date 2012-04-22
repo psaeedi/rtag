@@ -5,10 +5,11 @@ random.seed 1234567890
 network.node.appgroup_protocol group
 network.node.universe_protocol universe
 
-CYCLES 80
-SIZE 100
+CYCLES CrashCycle+80
+SIZE 1500
 CYCLELENGTH 0
 CRASH 0.2
+CrashCycle 210
 
 #####################################Protocol#################################
 
@@ -19,9 +20,10 @@ protocol.link IdleProtocol
 protocol.discovery it.polimi.peersim.protocols.DiscoveryProtocol
 {
 	geolocation_protocol geolocation
+	crash_cycle CrashCycle
 	
 	#the larger more neighbors
-	discovery_radius 3
+	discovery_radius 0.4
 	
 	# discovery listeners
 	universe_protocol universe
@@ -32,6 +34,8 @@ protocol.channel it.polimi.peersim.protocols.MockChannel
 	protocol_id channel
 	lower_protocol_id channel
 	discovery_protocol discovery
+	latency 5
+	throughput 20
 }
 
 protocol.tuplespace it.polimi.peersim.protocols.TupleSpaceProtocol
@@ -66,7 +70,7 @@ protocol.grouping it.polimi.peersim.protocols.GroupingProtocol
 protocol.app it.polimi.peersim.protocols.AppProtocol
 {
 	grouping_protocol grouping
-	start_group_cycle 500
+	start_group_cycle 700
 }
 
 
@@ -100,15 +104,15 @@ init.protocolinit it.polimi.peersim.initializers.ProtocolStackInitializer
 
 control.implementedcrash it.polimi.peersim.controls.CrashControl
 {
- RandNI
+  RandNI
   add -CRASH*SIZE
-  crash_cycle 40
+  crash_cycle CrashCycle
   #We keep a minimum number of nodes for our network
   #minsize 5+(SIZE*0.1)
   
   #ONLY FOR THE FIRST CYCLE REMOVE THE NODES(cycle 0)
   #minsize SIZE-(SIZE*CRASH)
-   minsize 5
+   minsize 20
    discovery_protocol discovery
 }
 
