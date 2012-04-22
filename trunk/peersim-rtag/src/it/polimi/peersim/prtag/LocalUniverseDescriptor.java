@@ -10,8 +10,9 @@ import peersim.core.Node;
  * @author Panteha Saeedi@ elet.polimi.it
  *
  */
+public class LocalUniverseDescriptor implements Serializable{
 
-  public class LocalUniverseDescriptor implements Serializable{
+	private static final long serialVersionUID = -1470467886372372191L;
 
 	/**
 	 * The group leader.
@@ -25,13 +26,6 @@ import peersim.core.Node;
 	 * We do not keep trace of the leader's leaders.
 	 */
    private ArrayList<Node> followers = new ArrayList<Node>();
-	
-	
-	/**
-	 * All the application groups,
-	 * which the node is joined in 
-	 */
-   private ArrayList<GroupDescriptor> groupDescriptor = new ArrayList<GroupDescriptor>();
 
 	
 	//constructor by copy
@@ -113,8 +107,8 @@ import peersim.core.Node;
 		}
 		
 		if (followers.contains(remoteNode)) {
-			throw new RuntimeException("Attempting to add the same follower twice. Node " + 
-					remoteNode.getID() + " group: " + this);
+			System.err.println("Attempting to add the same follower twice. Node " + 
+					remoteNode.getID() + " group: " + this.getFollowers().size());
 		}
 		followers.add(remoteNode);
 	}

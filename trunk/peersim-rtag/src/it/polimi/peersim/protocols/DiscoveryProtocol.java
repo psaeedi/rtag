@@ -33,6 +33,9 @@ public class DiscoveryProtocol extends DaemonProtocol {
 	private static final String UNIVERSE_PROTOCOL = "universe_protocol";
 	private final int universeProtocolId;
 	
+	private static final String CRASH_CYCLE = "crash_cycle";
+	protected final int crashCycle;
+	
 	
 	private ArrayList<Node> neighbors = new ArrayList<Node>();
 	
@@ -48,10 +51,13 @@ public class DiscoveryProtocol extends DaemonProtocol {
 				prefix + "." + DISCOVERY_RADIUS, 0.1);
 		universeProtocolId = Configuration.getPid(
 				prefix + "." + UNIVERSE_PROTOCOL);
+		crashCycle = Configuration.getInt(
+				prefix + "." + CRASH_CYCLE, 4);
     }
 	
 	
 	public void nextCycle(Node n, int protocolID ) {
+		
 		if( CDState.getCycle() % 10 != 0 ) return;
 		 ArrayList<Node> neighbours = new ArrayList<Node>();
          // TODO explore only the top matrix
@@ -63,11 +69,12 @@ public class DiscoveryProtocol extends DaemonProtocol {
             //if(neighbours.size()<20){
 	         	if (isInCommunicationRange(n, k)) {
 	         		//because of java heap we limit the number of neighbors to 100.
+	         		 
 	         		neighbours.add(k);
 	         	}
             //}
          }
-         System.out.println("--------------------------CYCLE"+CDState.getCycle());
+         //System.out.println("--------------------------CYCLE"+CDState.getCycle());
          updateNeighbourhood(neighbours);
 	}
 	
@@ -85,9 +92,9 @@ public class DiscoveryProtocol extends DaemonProtocol {
 	}
 
 	public void updateNeighbourhood(ArrayList<Node> newNeighbors) {
-		//at the first cycle if there are nodes isolated inform us
+		//before the crash cycle if there are nodes isolated inform us
 		//after crash isolation is ignored
-		if (newNeighbors.isEmpty() &&  CDState.getCycle() == 1){
+		if (newNeighbors.isEmpty() &&  CDState.getCycle() < crashCycle ){
 			throw new RuntimeException("no neighbor found-isolated node");
 		}
 	
@@ -105,18 +112,19 @@ public class DiscoveryProtocol extends DaemonProtocol {
 		DiscoveryListener universeProtocol = (DiscoveryListener) 
 				currentNode.getProtocol(universeProtocolId);
 		
-		System.out.println("+++++++++++++++++++++++++++++++++++++removed"+removed.size());
 		//add to the list of ur neighbors
 		if (!added.isEmpty()){
 			// Notify the higher layers that certain nodes have been discovered.
+			//System.out.println("cadded"+ CDState.getCycle() +",Node: "+currentNode.getID());
 			universeProtocol.notifyAddedNodes(currentNode, added);
 		}
 		
 		if (!removed.isEmpty()){
 			// Notify the higher layers that certain nodes have been removed.
+			//System.out.println("cremoved"+ CDState.getCycle() +",Node: "+currentNode.getID());
 			universeProtocol.notifyRemovedNodes(currentNode, removed);
 		}
-		System.out.println("Node "+currentNode.getID() + " neighbors: " + neighbors.size()); 
+		//System.out.println("Node "+currentNode.getID() + " neighbors: " + neighbors.size()); 
 	}
 
 	

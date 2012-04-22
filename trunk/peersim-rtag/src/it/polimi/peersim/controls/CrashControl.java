@@ -15,6 +15,8 @@ public class CrashControl extends DynamicNetwork  {
 	private static final String CRASH_CYCLE = "crash_cycle";
 	protected final int crashCycle;
 	
+	private static final String SECOND_CRASH_CYCLE = "second_crash_cycle";
+	protected final int secondCrashCycle;
 	
 	private static final String DISCOVERY_PROTOCOL = "discovery_protocol";
 	private final int discoveryProtocolId;
@@ -24,8 +26,10 @@ public class CrashControl extends DynamicNetwork  {
 
 	@Override
 	protected void remove(int n) {
-		if(CDState.getCycle() == crashCycle){
-			System.out.println("---------------------------------------------------------------------------------------" +
+		if(CDState.getCycle() == crashCycle || CDState.getCycle() == 30+crashCycle
+				|| CDState.getCycle() == 60+crashCycle){
+			System.out.println("--------------------------------------------------" +
+					"-------------------------------------" +
 					"-crashhhhhhhhhhhhhh" + CDState.getCycle()); 
 			for (int i = 0; i < n; ++i) {
 	            Network.remove(CommonState.r.nextInt(Network.size()));
@@ -44,7 +48,9 @@ public class CrashControl extends DynamicNetwork  {
 		
 		super(prefix);
 		crashCycle = Configuration.getInt(
-				prefix + "." + CRASH_CYCLE, 4);
+				prefix + "." + CRASH_CYCLE, 40);
+		secondCrashCycle = Configuration.getInt(
+				prefix + "." + SECOND_CRASH_CYCLE, 80);
 		discoveryProtocolId = Configuration.getPid(
 				prefix + "." + DISCOVERY_PROTOCOL);
 	}

@@ -111,14 +111,17 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 	
 	public void handleNeighbourDiscovered(Node currentNode, Node remoteNode) {
 		if (leaders.contains(remoteNode)) {
-			// TODO show a debug error message. 
+			System.err.println("WARNING:the discovered node " + 
+					remoteNode.getID() + " was already discovered and stored in the leader list!! " );
 			// this should not be happening 
 			// because the discovery node was already connected
+			
 			return;
 		}
 		
 		if (followers.contains(remoteNode)) {
-			// TODO show a debug error message. 
+			System.err.println("WARNING:the discovered node " + 
+					remoteNode.getID() + " was already discovered and stored in the followers list!! " );
 			// this should not be happening 
 			// because the discovery node was already connected
 			return;
@@ -215,12 +218,10 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 	private void followerToLeader(Node currentNode, Node remoteNode) {
 		//System.out.println("][Node " + currentNode.getID() + 
 				//"] Swapping follower " + remoteNode.getID());
-		
-		
 		if (!followers.contains(remoteNode)) {
-			
-			throw new AssertionError("Node " + remoteNode.getID() + 
+			System.err.println("Node " + remoteNode.getID() + 
 					" was not a follower");
+			
 		}
 		
 		try {
@@ -257,7 +258,7 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 		return lessCongested;
 	}
 	
-	private Node getFollowerWithOtherLeaders(Node currentNode) {
+	/*private Node getFollowerWithOtherLeaders(Node currentNode) {
 		for (Node follower: followers) {
 			try {
 				UniverseCommand command = new UniverseCommand
@@ -276,13 +277,13 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
     			// 		update the neighbour list.
 			}
 			
-			if(followerLeaders!=null){
+			if (followerLeaders != null){
 				return followerLeaders;
 			}
 			
 		}
 		return null;
-	}
+	}*/
 
 	public boolean isCongested() {
 		return (followers.size() > followerThreshold) && (followers.size() / 
@@ -310,18 +311,18 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 
 	public void handleNodeNoLeader(Node currentNode) {
 		//System.out.println("Starting no leader control loop.");
-		while (hasNoLeader()) {
-			Node follower = getFollowerWithOtherLeaders(currentNode);
-			if (follower == null) {
-				/*System.out.println(
-						"handleNodeNoLeader() no follower found with other leaders." +
-								currentNode.getID());*/
+			//Node follower = getFollowerWithOtherLeaders(currentNode);
+		   Node nextLeader = null;
+			for (Node follower: followers) {
+			    int min = -1;
+				if(follower.getID() > min){
+					nextLeader = follower;
+				}
+			}
+			if (nextLeader == null) {
 				return;
 			}
-			//if(follower.isUp()){
-			followerToLeader(currentNode, follower);
-			//}
-		}
+			followerToLeader(currentNode, nextLeader);
 	}
 
 	private void addFollower(Node currentNode, Node follower,
@@ -338,9 +339,11 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 		}
 
 	    leaders.remove(follower);
+	    if(!followers.contains(follower)){
 		followers.add(follower);
 		followerUniverseDescriptors.put(follower, remoteUniverse);
 		localUniverse.addFollower(follower);
+	    }
 
 		
 		// TODO update its leaders by sending them the updated descriptor
@@ -364,12 +367,16 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 	 */
 	private void addFollowerAck(Node leader) {
 		// If the new leader was previously a follower
-		followers.remove(leader);
-		followerUniverseDescriptors.remove(leader);
-		localUniverse.removeFollower(leader); 
+		if(followers.contains(leader)){
+			followers.remove(leader);
+			followerUniverseDescriptors.remove(leader);
+			localUniverse.removeFollower(leader); 
+		}
 		
 		// Add it as a new leader
-		leaders.add(leader);
+		if(!leaders.contains(leader)){
+		   leaders.add(leader);
+		}
 	}
 	
 	/**
@@ -387,15 +394,24 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 
 	@Override
 	public void nextCycle(Node currentNode, int pid) {
-		
         if (hasNoLeader()) {
-        	System.out.println("NEXTCYCLE_PROTOCOL_CYCLE+++"+CDState.getCycle()+"NOLEADER");
-        	handleNodeNoLeader(currentNode);
+        	//System.out.println("NEXTCYCLE_PROTOCOL_CYCLE+++"+CDState.getCycle()+"NOLEADER");
+        	// TODO
+        handleNodeNoLeader(currentNode);
         } else if (isCongested()) {
-        	System.out.println("NEXTCYCLE_PROTOCOL_CYCLE+++"+CDState.getCycle()+"ISCONGESTED");
+        	//System.out.println("NEXTCYCLE_PROTOCOL_CYCLE+++"+CDState.getCycle()+"ISCONGESTED");
         	handleCongestion(currentNode);
         }
+        
         if (currentNode.getID() == 0) {
+        	messageCounter.count(null);
+        	messageCounter.printAll();
+        }
+        else if (currentNode.getID() == 2) {
+        	messageCounter.count(null);
+        	messageCounter.printAll();
+        }
+        else if (currentNode.getID() == 4) {
         	messageCounter.count(null);
         	messageCounter.printAll();
         }
@@ -482,7 +498,7 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 	}
 
 	private void getFirstFollowerWithOtherLeader(Node currentNode, Node sender,  int content) {
-		if(content > 1 ){
+		if (content > 1 ){
 			followerLeaders = sender;
 		}
 		return;

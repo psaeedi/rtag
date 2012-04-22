@@ -30,13 +30,19 @@ public class MockChannel extends ForwardingProtocol<MockMessage> implements Tran
 	private static final String LATENCY = "latency";
 	private static int latency;
 	
+	// TODO fix the name
+	private static final String THROUGHPUT = "throughput";
+	private static int throughput;
+	
 	private ArrayList<MockMessage> channelMessageQueue;
 	
 	public MockChannel(String prefix) {
 		super(prefix);
 		channelMessageQueue = new ArrayList<MockMessage>();
 		latency = Configuration.getInt(
-				prefix + "." + LATENCY, 0);
+				prefix + "." + LATENCY, 5);
+		throughput = Configuration.getInt(
+				prefix + "." + THROUGHPUT, 1);
 		discoveryProtocolId = Configuration.getPid(
 				prefix + "." + DISCOVERY_PROTOCOL);
 	}
@@ -61,6 +67,7 @@ public class MockChannel extends ForwardingProtocol<MockMessage> implements Tran
 		}
 		MockChannel remoteProtocol = (MockChannel) recipient.getProtocol(protocolId);
 		remoteProtocol.receiveAndPushUpMessage(recipient, currentNode, (MockMessage)message);
+		
 	}
 
 	private boolean areInCommunicationRange(Node currentNode, Node recipient) {
@@ -86,10 +93,22 @@ public class MockChannel extends ForwardingProtocol<MockMessage> implements Tran
 	}
 
 	private void sendAllMessageInQueue(Node currentNode) {
-		ArrayList<MockMessage> messagesToSend = channelMessageQueue;
-		channelMessageQueue = new ArrayList<MockMessage>();
+		ArrayList<MockMessage> messagesToSend = new ArrayList<MockMessage>();
+		for (int i = 0; i < throughput; i++) {
+			if (channelMessageQueue.size() == 0) {
+				break;
+			}
+			MockMessage message = channelMessageQueue.remove(0);
+			messagesToSend.add(message);
+		}
+
 		for (MockMessage message: messagesToSend) {
+			//System.out.println("+++++++++++++++++++++++++++++++++++++latency"+latency+
+				//	"num-que"+NUM_MESSAGE_QUEUE+"_________node:"+currentNode.getID());
+			//if(latency> NUM_MESSAGE_QUEUE){
 			send(currentNode, message.getReceiver(), message, protocolId);
+			//NUM_MESSAGE_QUEUE++;
+			//}
 		}	
 	}
 	

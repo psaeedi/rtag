@@ -195,15 +195,15 @@ public class GeoObserver extends GraphObserver {
 	        	continue;
 	        }
 	       
-			System.out.print("[Node " + n.getID() +" ] leaders {");
+			//System.out.print("[Node " + n.getID() +" ] leaders {");
 			for	(Node k: universeProtocol.leaders) {
-				System.out.print(k.getID() +", ");
+				//System.out.print(k.getID() +", ");
 			}
-		    System.out.print("} followers {");
+		    //System.out.print("} followers {");
 			for	(Node k:  universeProtocol.followers) {
-				System.out.print(k.getID() +", ");
+				//System.out.print(k.getID() +", ");
 			}
-			System.out.println("}");
+			//System.out.println("}");
 			
 			for	(Node k: groupDescriptor.getFollowers()) {
 				 double x_from = ((GeoLocation) k
