@@ -5,11 +5,13 @@ random.seed 1234567890
 network.node.appgroup_protocol group
 network.node.universe_protocol universe
 
-CYCLES CrashCycle+80
-SIZE 150
+CYCLES 38
+SIZE 10
 CYCLELENGTH 0
 CRASH 0.2
-CrashCycle 80
+CrashCycle 100
+StartGrouping 25
+LoadBalnceUniverse 15
 
 #####################################Protocol#################################
 
@@ -23,7 +25,7 @@ protocol.discovery it.polimi.peersim.protocols.DiscoveryProtocol
 	crash_cycle CrashCycle
 	
 	#the larger more neighbors
-	discovery_radius 0.6
+	discovery_radius 4
 	
 	# discovery listeners
 	universe_protocol universe
@@ -51,6 +53,7 @@ protocol.universe it.polimi.peersim.protocols.UniverseProtocol
 	discovery_protocol discovery
 	follower_threshold 3
 	follower_thresholdrate 2
+	load_balance_cycle LoadBalnceUniverse
 }
 
 protocol.routing it.polimi.peersim.protocols.RoutingProtocol
@@ -70,7 +73,8 @@ protocol.grouping it.polimi.peersim.protocols.GroupingProtocol
 protocol.app it.polimi.peersim.protocols.AppProtocol
 {
 	grouping_protocol grouping
-	start_group_cycle 700
+	start_group_cycle StartGrouping
+	network_size SIZE
 }
 
 
@@ -127,7 +131,5 @@ control.io it.polimi.peersim.observers.GeoObserver
 	file_base graph
 	include degree
 }
-
-control.messageCounter it.polimi.peersim.controls.MessageCountingControl
 
 #order.control congestion crash io

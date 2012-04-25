@@ -211,8 +211,9 @@ public class GroupDescriptor implements Serializable{
 			throw new RuntimeException("Cannot add leader as follower: " + descriptor);
 		}
 		if (followers.contains(descriptor)) {
-			throw new RuntimeException("Attempting to add the same follower twice. Node " + 
-					descriptor + " group: " + this);
+			System.err.println("WARNING:Attempting to add the same follower twice. Node " + 
+					descriptor.getID() );
+			return false;
 		}
 		return followers.add(descriptor);
 	}
