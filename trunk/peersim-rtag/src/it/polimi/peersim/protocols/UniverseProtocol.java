@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import peersim.cdsim.CDProtocol;
+import peersim.cdsim.CDState;
 import peersim.config.Configuration;
 import peersim.core.Node;
 import it.polimi.peersim.initializers.ProtocolStackInitializer;
@@ -34,6 +35,10 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 	private static final String FOLLOWER_THRESHOLD_RATE = "follower_thresholdrate";
 	private final int followerLeaderRate;
 	
+	
+	private static final String LOAD_BALANCE_CYCLE = "load_balance_cycle";
+	protected final int loadBalanceCycle;
+	
 	ProtocolStackInitializer initializer ;
 		
 	// All the leaders of this Node
@@ -56,6 +61,8 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 				prefix + "." + FOLLOWER_THRESHOLD, 3);
 		followerLeaderRate = Configuration.getInt(
 				prefix + "." + FOLLOWER_THRESHOLD_RATE, 2);
+		loadBalanceCycle = Configuration.getInt(
+				prefix + "." +  LOAD_BALANCE_CYCLE, 50);
 	}
 	
 	@Override
@@ -354,10 +361,13 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 
 	@Override
 	public void nextCycle(Node currentNode, int pid) {
-        if (isCongested() || hasNoLeader()) {
-        	//System.out.println("NEXTCYCLE_PROTOCOL_CYCLE+++"+CDState.getCycle()+"ISCONGESTED");
-        	handleCongestion(currentNode);
-        }
+		
+		if(CDState.getCycle() > loadBalanceCycle){
+	        if (isCongested() || hasNoLeader()) {
+	        	//System.out.println("NEXTCYCLE_PROTOCOL_CYCLE+++"+CDState.getCycle()+"ISCONGESTED");
+	        	handleCongestion(currentNode);
+	        }
+		}
 	}
 
 

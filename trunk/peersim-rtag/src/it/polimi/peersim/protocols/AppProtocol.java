@@ -23,6 +23,9 @@ public class AppProtocol implements CDProtocol {
 	private static final String START_GROUP_CYCLE = "start_group_cycle";
 	protected final int startGroupCycle;
 	
+	private static final String NETWORK_SIZE = "netwrok_size";
+	protected final int networkSize;
+	
 	private static final String RED = "Red";
 	private static final String GREEN = "Green";
 	
@@ -31,6 +34,8 @@ public class AppProtocol implements CDProtocol {
 				prefix + "." + GROUPING_PROTOCOL);
 		startGroupCycle = Configuration.getInt(
 				prefix + "." + START_GROUP_CYCLE, 1);
+		networkSize = Configuration.getInt(
+				prefix + "." + NETWORK_SIZE, 5);
     }
 	
 	@Override
@@ -44,15 +49,45 @@ public class AppProtocol implements CDProtocol {
 	}
 	
 	public void nextCycle(Node currentNode, int protocolID ) {
-		if(CDState.getCycle() == startGroupCycle) {
+		
+		if(CDState.getCycle() == startGroupCycle ){
 			String friendlyName = (currentNode.getID() % 2 == 0) ? RED : GREEN;			
 			GroupingProtocol grouping = (GroupingProtocol)
 					currentNode.getProtocol(groupingProtocolId);
 			grouping.joinOrCreateGroup(currentNode, friendlyName);
 		}
-		
-		
-	}
+		/*if(CDState.getCycle() >= startGroupCycle && 
+				CDState.getCycle() <= (startGroupCycle+(networkSize/5))){
+					if(currentNode.getID()<= networkSize/4) {
+						String friendlyName = (currentNode.getID() % 2 == 0) ? RED : GREEN;			
+						GroupingProtocol grouping = (GroupingProtocol)
+								currentNode.getProtocol(groupingProtocolId);
+						grouping.joinOrCreateGroup(currentNode, friendlyName);
+					    }
+					
+					else if(currentNode.getID()<= 2*networkSize/4 && currentNode.getID()>networkSize/4) {
+						String friendlyName = (currentNode.getID() % 2 == 0) ? RED : GREEN;			
+						GroupingProtocol grouping = (GroupingProtocol)
+								currentNode.getProtocol(groupingProtocolId);
+						grouping.joinOrCreateGroup(currentNode, friendlyName);
+					    }
+					
+					else if(currentNode.getID()<= 3*networkSize/4 && currentNode.getID()>2*networkSize/4  ) {
+						String friendlyName = (currentNode.getID() % 2 == 0) ? RED : GREEN;			
+						GroupingProtocol grouping = (GroupingProtocol)
+								currentNode.getProtocol(groupingProtocolId);
+						grouping.joinOrCreateGroup(currentNode, friendlyName);
+					    }
+					else if(currentNode.getID()<= networkSize && currentNode.getID()>3*networkSize/4) {
+						String friendlyName = (currentNode.getID() % 2 == 0) ? RED : GREEN;			
+						GroupingProtocol grouping = (GroupingProtocol)
+								currentNode.getProtocol(groupingProtocolId);
+						grouping.joinOrCreateGroup(currentNode, friendlyName);
+					    }
+				
+			
+			}*/
+		}
 
 	
 

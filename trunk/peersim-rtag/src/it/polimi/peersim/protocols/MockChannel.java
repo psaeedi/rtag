@@ -7,6 +7,7 @@ import java.util.ArrayList;
 
 import it.polimi.peersim.messages.BaseMessage;
 import it.polimi.peersim.messages.MockMessage;
+import it.polimi.peersim.prtag.MessageCounter;
 import it.polimi.peersim.prtag.UndeliverableMessageException;
 import peersim.cdsim.CDProtocol;
 import peersim.config.Configuration;
@@ -23,6 +24,8 @@ import peersim.transport.Transport;
  * This represents the lower layer in the protocol stack.
  */
 public class MockChannel extends ForwardingProtocol<MockMessage> implements Transport, CDProtocol {
+	
+	MessageCounter messageCounter = MessageCounter.createInstance();
 
 	private static final String DISCOVERY_PROTOCOL = "discovery_protocol";
 	private final int discoveryProtocolId;
@@ -144,6 +147,8 @@ public class MockChannel extends ForwardingProtocol<MockMessage> implements Tran
 	@Override
 	public void nextCycle(Node currentNode, int pid) {
 		sendAllMessageInQueue(currentNode);
+		if(currentNode.getID()== 2){
+		messageCounter.printAll();}
 	}
 	
 	@Override

@@ -68,8 +68,6 @@ public class DiscoveryProtocol extends DaemonProtocol {
              }
             //if(neighbours.size()<20){
 	         	if (isInCommunicationRange(n, k)) {
-	         		//because of java heap we limit the number of neighbors to 100.
-	         		 
 	         		neighbours.add(k);
 	         	}
             //}
