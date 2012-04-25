@@ -1,7 +1,8 @@
 /**
  * 
  */
-package it.polimi.peersim.prtag;
+package it.polimi.peersim.protocols.grouping;
+
 
 import java.util.UUID;
 
@@ -17,6 +18,9 @@ public class GroupManager {
 	private Node ownerNode;
 	private GroupDescriptor followedGroup;
 	private GroupDescriptor leadedGroup;
+	
+	private Node leaderBeingJoined;
+	private int leaderBeingJoinedCycle = -1;
 	
 	public GroupManager(String name, Node ownerNode) {
 		super();
@@ -52,6 +56,19 @@ public class GroupManager {
 	
 	public void setLeadedGroup(GroupDescriptor leadedGroup) {
 		this.leadedGroup = leadedGroup;
+	}
+
+	public Node getLeaderBeingJoined() {
+		return leaderBeingJoined;
+	}
+
+	public void setLeaderBeingJoined(Node leaderBeingJoined, int cycle) {
+		this.leaderBeingJoined = leaderBeingJoined;
+		this.leaderBeingJoinedCycle = cycle;
+	}
+
+	public int getLeaderBeingJoinedCycle() {
+		return leaderBeingJoinedCycle;
 	}
 	
 	
