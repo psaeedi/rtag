@@ -7,7 +7,7 @@ import java.util.ArrayList;
 
 import it.polimi.peersim.messages.BaseMessage;
 import it.polimi.peersim.messages.MockMessage;
-import it.polimi.peersim.prtag.MessageCounter;
+import it.polimi.peersim.prtag.UniverseMessageCounter;
 import it.polimi.peersim.prtag.UndeliverableMessageException;
 import peersim.cdsim.CDProtocol;
 import peersim.config.Configuration;
@@ -25,7 +25,7 @@ import peersim.transport.Transport;
  */
 public class MockChannel extends ForwardingProtocol<MockMessage> implements Transport, CDProtocol {
 	
-	MessageCounter messageCounter = MessageCounter.createInstance();
+	UniverseMessageCounter messageCounter = UniverseMessageCounter.createInstance();
 
 	private static final String DISCOVERY_PROTOCOL = "discovery_protocol";
 	private final int discoveryProtocolId;
@@ -147,8 +147,6 @@ public class MockChannel extends ForwardingProtocol<MockMessage> implements Tran
 	@Override
 	public void nextCycle(Node currentNode, int pid) {
 		sendAllMessageInQueue(currentNode);
-		if(currentNode.getID()== 2){
-		messageCounter.printAll();}
 	}
 	
 	@Override

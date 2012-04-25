@@ -4,8 +4,8 @@
 package it.polimi.peersim.prtag;
 
 import it.polimi.peersim.messages.UniverseMessage;
+import it.polimi.peersim.protocols.UniverseCommand;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 
 import peersim.cdsim.CDState;
@@ -14,36 +14,35 @@ import peersim.cdsim.CDState;
  * @author pani
  *
  */
-public class MessageCounter {
+public class UniverseMessageCounter {
 	
-	private static MessageCounter singleton = null;
+	private static UniverseMessageCounter singleton = null;
 	
 	private HashMap<Integer, HashMap<String, Integer>> messageByCycle = 
 			new  HashMap<Integer, HashMap<String, Integer>>();
 	private HashMap<String, Integer> currentCycleCount = null; 
 	private int currentCycle = -1;
 	
-	public static MessageCounter createInstance() {
+	public static UniverseMessageCounter createInstance() {
 		if (singleton == null) {
-			singleton = new MessageCounter();
+			singleton = new UniverseMessageCounter();
 		}
 		return singleton;
 	}
 	
-	private MessageCounter() {}
+	private UniverseMessageCounter() {}
 
 	public void count(UniverseMessage message) {
-		int cycle = CDState.getCycle();
-		if (cycle > currentCycle) {
-			nextCycle();
-			currentCycle = cycle;
-		}
-		
+		nextCycle();
 		if (message == null) {
 			return;
 		}
 		
 		String head = message.getHead();
+		if (UniverseMessage.UNIVERSE_COMMAND.equals(head)) {
+			head = head + "-" +((UniverseCommand)message.getContent()).getCommand();
+		}
+		
 		if (currentCycleCount.containsKey(head)) {
 			int count = currentCycleCount.get(head);
 			count ++;
@@ -53,11 +52,15 @@ public class MessageCounter {
 		}
 	}
 	
-	private void nextCycle() {
-		if (currentCycle > -1) {
-			messageByCycle.put(currentCycle, currentCycleCount);
-		}
-		currentCycleCount = new HashMap<String, Integer>();
+	public void nextCycle() {
+		int cycle = CDState.getCycle();
+		if (cycle > currentCycle) {
+			if (currentCycle > -1) {
+				messageByCycle.put(currentCycle, currentCycleCount);
+			}
+			currentCycleCount = new HashMap<String, Integer>();
+			currentCycle = cycle;
+		}	
 	}
 	
 	public void printAll() {
