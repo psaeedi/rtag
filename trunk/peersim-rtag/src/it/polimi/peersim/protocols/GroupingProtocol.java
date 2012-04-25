@@ -266,7 +266,7 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 		if(currentNode != groupLeader){
 			
 				//1- it receives the broadcast of the new created group,
-				//1-1 however it already created a same group, thought it didn't exist
+				//1-1 however it already created a same group,
 				if(knownGroups.containsKey(groupName) && manager.getLeadedGroup()!=null){
 						if(!manager.getLeadedGroup().getFollowers().isEmpty()){
 							//it has followers
@@ -300,7 +300,7 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 								knownGroups.put(groupName, remotegroupDescriptor);
 								//ask to join
 								joinOrCreateGroup(currentNode, groupName); 
-							}
+							 }
 						}
 				}
 				
@@ -327,7 +327,7 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 				//knownGroups.removeAll(groupName);
 				knownGroups.remove(groupName, manager.getLeadedGroup());
 				knownGroups.put(groupName, remotegroupDescriptor);
-			}
+         }
 		
     }
 	
