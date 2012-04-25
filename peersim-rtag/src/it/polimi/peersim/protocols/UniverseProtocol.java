@@ -12,7 +12,7 @@ import it.polimi.peersim.initializers.ProtocolStackInitializer;
 import it.polimi.peersim.messages.BaseMessage;
 import it.polimi.peersim.messages.UniverseMessage;
 import it.polimi.peersim.prtag.LocalUniverseDescriptor;
-import it.polimi.peersim.prtag.MessageCounter;
+import it.polimi.peersim.prtag.UniverseMessageCounter;
 import it.polimi.peersim.prtag.UndeliverableMessageException;
 
 /**
@@ -28,7 +28,7 @@ import it.polimi.peersim.prtag.UndeliverableMessageException;
 public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 		implements CDProtocol, DiscoveryListener { 
 
-	MessageCounter messageCounter = MessageCounter.createInstance();
+	UniverseMessageCounter messageCounter = UniverseMessageCounter.createInstance();
 	
 	private static final String FOLLOWER_THRESHOLD = "follower_threshold";
 	private final int followerThreshold;
@@ -361,10 +361,9 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 
 	@Override
 	public void nextCycle(Node currentNode, int pid) {
-		
-		if(CDState.getCycle() > loadBalanceCycle){
+		// Every loadBalanceCycle cyles the universe is load-balanced
+		if (CDState.getCycle() % loadBalanceCycle == 0){
 	        if (isCongested() || hasNoLeader()) {
-	        	//System.out.println("NEXTCYCLE_PROTOCOL_CYCLE+++"+CDState.getCycle()+"ISCONGESTED");
 	        	handleCongestion(currentNode);
 	        }
 		}
@@ -380,7 +379,6 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 					" is sending a message to itself.");
 		}
 		
-		//System.out.println("+++++++++CYCLE+++"+CDState.getCycle());
 		UniverseMessage message = null;
 		if (content instanceof UniverseMessage) {
 			message = (UniverseMessage) content;
@@ -388,7 +386,6 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 			message = UniverseMessage.createSinglecast(
 					protocolId, currentNode, (BaseMessage)content);
 		}
-		//System.out.println("+++++++++CYCLE+++"+CDState.getCycle());
 		messageCounter.count(message);
 		return message;
 	}
