@@ -1,10 +1,9 @@
 /**
  * 
  */
-package it.polimi.peersim.messages;
+package it.polimi.peersim.protocols.grouping;
 
-import it.polimi.peersim.protocols.GroupCommand;
-import it.polimi.peersim.prtag.GroupDescriptor;
+import it.polimi.peersim.messages.BaseMessage;
 
 import java.io.Serializable;
 
@@ -18,22 +17,9 @@ public class GroupingMessage extends BaseMessage {
 	
 	private static final long serialVersionUID = -1554400393005842078L;
 	
-	public static final String UPDATE_DESCRIPTOR = "UpdateDescriptor";
-	public static final String DELETE_DESCRIPTOR = "DeleteDescriptor";
 	public static final String WRAP = "Wrap";
-	//public static String REPLACELEADER_REQUEST = "ReplaceLeaderRequest";
 	public static final String GROUP_COMMAND = "groupCommand";
 	
-	public static GroupingMessage createUpdateDescriptor(
-			int pid, Node sender, GroupDescriptor descriptor) {
-		return new GroupingMessage(pid, sender, UPDATE_DESCRIPTOR, descriptor);
-	}
-	
-	public static GroupingMessage createDeleteDescriptor(
-			int pid, Node sender, GroupDescriptor descriptor) {
-		return new GroupingMessage(pid, sender, DELETE_DESCRIPTOR, descriptor);
-	}
-
 	public static GroupingMessage createGroupCommand(
 			int pid, Node sender, GroupCommand command) {
 		return new GroupingMessage(pid, sender, GROUP_COMMAND, command);
@@ -43,12 +29,6 @@ public class GroupingMessage extends BaseMessage {
 			int pid, Node sender, BaseMessage message) {
 		return new GroupingMessage(pid, sender, WRAP, message);
 	}
-	
-	/*
-	public static GroupingMessage createLeaderReplacement(int pid,
-			Node sender, String groupName) {
-		return new GroupingMessage(pid, sender, REPLACELEADER_REQUEST, groupName);
-	}*/
 	
 	private Node sender;
 	private String head;

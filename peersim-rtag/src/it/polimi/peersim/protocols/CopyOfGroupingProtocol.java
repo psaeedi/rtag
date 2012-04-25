@@ -4,9 +4,10 @@
 package it.polimi.peersim.protocols;
 
 import it.polimi.peersim.messages.BaseMessage;
-import it.polimi.peersim.messages.GroupingMessage;
-import it.polimi.peersim.prtag.GroupManager;
-import it.polimi.peersim.prtag.GroupDescriptor;
+import it.polimi.peersim.protocols.grouping.GroupCommand;
+import it.polimi.peersim.protocols.grouping.GroupDescriptor;
+import it.polimi.peersim.protocols.grouping.GroupManager;
+import it.polimi.peersim.protocols.grouping.GroupingMessage;
 import it.polimi.peersim.prtag.UndeliverableMessageException;
 
 import java.util.ArrayList;
@@ -31,7 +32,7 @@ import peersim.core.Node;
  * 2 - TupleSpaceProtocol
  * 1 - MockChannel
  */
-public class GroupingProtocol extends ForwardingProtocol<GroupingMessage> 
+public class CopyOfGroupingProtocol extends ForwardingProtocol<GroupingMessage> 
 		implements CDProtocol {
 	
 	private static final String UNIVERSE_PROTOCOL = "universe_protocol";
@@ -45,7 +46,7 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 	private HashMultimap<String, GroupDescriptor> knownGroups = 
 			HashMultimap.create();
 	
-	public GroupingProtocol(String prefix) {
+	public CopyOfGroupingProtocol(String prefix) {
 		super(prefix);
 		universeProtocolId = Configuration.getPid(
 				prefix + "." + UNIVERSE_PROTOCOL);
@@ -53,8 +54,8 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 	
 	@Override
 	public Object clone() {
-		GroupingProtocol clone = null;
-		clone = (GroupingProtocol) super.clone();
+		CopyOfGroupingProtocol clone = null;
+		clone = (CopyOfGroupingProtocol) super.clone();
 		clone.managers = new HashMap<String, GroupManager>(managers);
 		clone.knownGroups = HashMultimap.create(knownGroups);
 		return clone;

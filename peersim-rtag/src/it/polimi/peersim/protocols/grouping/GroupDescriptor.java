@@ -1,7 +1,7 @@
 /**
  * 
  */
-package it.polimi.peersim.prtag;
+package it.polimi.peersim.protocols.grouping;
 
 import java.io.Serializable;
 import java.util.ArrayList;

@@ -1,9 +1,9 @@
 package it.polimi.peersim.initializers;
 
-import it.polimi.peersim.protocols.GroupingProtocol;
 import it.polimi.peersim.protocols.DiscoveryProtocol;
 import it.polimi.peersim.protocols.GeoLocation;
 import it.polimi.peersim.protocols.UniverseProtocol;
+import it.polimi.peersim.protocols.grouping.GroupingProtocol;
 import peersim.cdsim.CDState;
 import peersim.config.Configuration;
 import peersim.core.CommonState;

@@ -1,5 +1,6 @@
 package it.polimi.peersim.protocols;
 
+import it.polimi.peersim.protocols.grouping.GroupingProtocol;
 import peersim.cdsim.CDProtocol;
 import peersim.cdsim.CDState;
 import peersim.config.Configuration;
