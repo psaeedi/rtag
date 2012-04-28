@@ -5,6 +5,7 @@ package it.polimi.peersim.prtag;
 
 import it.polimi.peersim.messages.UniverseMessage;
 import it.polimi.peersim.protocols.UniverseCommand;
+import it.polimi.peersim.protocols.grouping.GroupingMessage;
 
 import java.util.HashMap;
 
@@ -41,6 +42,10 @@ public class UniverseMessageCounter {
 		String head = message.getHead();
 		if (UniverseMessage.UNIVERSE_COMMAND.equals(head)) {
 			head = head + "-" +((UniverseCommand)message.getContent()).getCommand();
+		} else if (UniverseMessage.BROADCAST.equals(head)) {
+			if (message.getContent() instanceof GroupingMessage) {
+				head = head + "-" + ((GroupingMessage)message.getContent()).getHead();
+			}
 		}
 		
 		if (currentCycleCount.containsKey(head)) {
@@ -71,6 +76,7 @@ public class UniverseMessageCounter {
 			HashMap<String, Integer> map = messageByCycle.get(cycle);
 			for (String key: map.keySet()) {
 				System.out.println(key + ": " + map.get(key));
+
 			}
 		}
 		System.out.println("-------------------------------------------- ");

@@ -24,19 +24,23 @@ public class AppProtocol implements CDProtocol {
 	private static final String START_GROUP_CYCLE = "start_group_cycle";
 	protected final int startGroupCycle;
 	
-	private static final String NETWORK_SIZE = "netwrok_size";
-	protected final int networkSize;
+	//private static final String NETWORK_SIZE = "netwrok_size";
+	//protected final int networkSize;
 	
 	private static final String RED = "Red";
 	private static final String GREEN = "Green";
+	private static final String BLUE = "blue";
+	private static final String YELLOW = "yellow";
+	private static final String ORANGE = "orange";
+	
 	
 	public AppProtocol(String prefix) {
 		groupingProtocolId = Configuration.getPid(
 				prefix + "." + GROUPING_PROTOCOL);
 		startGroupCycle = Configuration.getInt(
 				prefix + "." + START_GROUP_CYCLE, 1);
-		networkSize = Configuration.getInt(
-				prefix + "." + NETWORK_SIZE, 5);
+		//networkSize = Configuration.getInt(
+			//	prefix + "." + NETWORK_SIZE, 5);
     }
 	
 	@Override
@@ -52,7 +56,18 @@ public class AppProtocol implements CDProtocol {
 	public void nextCycle(Node currentNode, int protocolID ) {
 		
 		if(CDState.getCycle() == startGroupCycle ){
-			String friendlyName = (currentNode.getID() % 2 == 0) ? RED : GREEN;			
+			String friendlyName = null;
+					if(currentNode.getID() % 7 == 0)
+						friendlyName = RED ;	
+				    else if (currentNode.getID() % 5 == 0)	
+				    	friendlyName = GREEN ;
+				    else if (currentNode.getID() % 3 == 0)	
+				    	friendlyName = BLUE ;
+				    else if (currentNode.getID() % 2 == 0)	
+				    	friendlyName = YELLOW ;
+				    else 
+				    	friendlyName = ORANGE ;
+			//String friendlyName = (currentNode.getID() % 2 == 0) ? RED : GREEN;	
 			GroupingProtocol grouping = (GroupingProtocol)
 					currentNode.getProtocol(groupingProtocolId);
 			grouping.joinOrCreateGroup(currentNode, friendlyName);

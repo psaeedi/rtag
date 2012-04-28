@@ -206,16 +206,16 @@ public class GroupDescriptor implements Serializable{
 	 * @return
 	 * @see java.util.HashSet#add(java.lang.Object)
 	 */
-	public boolean addFollower(Node descriptor) {
-		if (leader != null && leader.equals(descriptor)) {
-			throw new RuntimeException("Cannot add leader as follower: " + descriptor);
+	public boolean addFollower(Node node) {
+		if (leader != null && leader.equals(node)) {
+			throw new RuntimeException("Cannot add leader as follower: " + node.getID());
 		}
-		if (followers.contains(descriptor)) {
+		if (followers.contains(node)) {
 			System.err.println("WARNING:Attempting to add the same follower twice. Node " + 
-					descriptor.getID() );
+					node.getID() );
 			return false;
 		}
-		return followers.add(descriptor);
+		return followers.add(node);
 	}
 	
 	/**
