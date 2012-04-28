@@ -434,7 +434,7 @@ public class CopyOfGroupingProtocol extends ForwardingProtocol<GroupingMessage>
 				message.getSender().getID() + 
 				" message " + head);
 		
-		if (GroupingMessage.UPDATE_DESCRIPTOR.equals(head)) {
+		/*if (GroupingMessage.UPDATE_DESCRIPTOR.equals(head)) {
 			System.out.println("UPDATE_DESCRIPTOR node " + message.getSender().getID());
 			handleGroupDescriptorChanged(
 					currentNode, (GroupDescriptor) message.getContent());
@@ -445,7 +445,7 @@ public class CopyOfGroupingProtocol extends ForwardingProtocol<GroupingMessage>
 			handleGroupDescriptorDeleted(
 					currentNode, (GroupDescriptor) message.getContent());
 			return null;
-		}
+		}*/
 		
 		if (GroupingMessage.GROUP_COMMAND.equals(head)) {
 			handleGroupCommand(currentNode, sender,

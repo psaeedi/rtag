@@ -39,6 +39,9 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 	private static final String LOAD_BALANCE_CYCLE = "load_balance_cycle";
 	protected final int loadBalanceCycle;
 	
+	private static final String BROADCAST_SIZE = "broadcast_size";
+	protected final int broadcastSize;
+	
 	ProtocolStackInitializer initializer ;
 		
 	// All the leaders of this Node
@@ -63,6 +66,8 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 				prefix + "." + FOLLOWER_THRESHOLD_RATE, 2);
 		loadBalanceCycle = Configuration.getInt(
 				prefix + "." +  LOAD_BALANCE_CYCLE, 50);
+		broadcastSize = Configuration.getInt(
+				prefix + "." +  BROADCAST_SIZE, 50);
 	}
 	
 	@Override
@@ -436,10 +441,15 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 
 	public void sendBroadCast(Node currentNode, BaseMessage message) {
 		// We send to all the leaders
+		int i=0;
 		for (Node topLeader: leaders) {
+			if(i> broadcastSize){
+				break;
+			}
 			UniverseMessage broadcast = 
 					UniverseMessage.createBroadcast(protocolId, currentNode, message);
 			try {
+				i++;
 				pushDownMessage(currentNode, topLeader, broadcast);
 			} catch (UndeliverableMessageException e) {
 				// The leader was unreachable

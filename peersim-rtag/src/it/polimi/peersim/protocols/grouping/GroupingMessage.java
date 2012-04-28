@@ -18,13 +18,21 @@ public class GroupingMessage extends BaseMessage {
 	private static final long serialVersionUID = -1554400393005842078L;
 	
 	public static final String WRAP = "Wrap";
+	
 	public static final String GROUP_COMMAND = "groupCommand";
+
+	//public static final String DELETE_DESCRIPTOR = "deleteDescriptor";
+
+	//public static final String UPDATE_DESCRIPTOR = "updateDescriptor";
+	
 	
 	public static GroupingMessage createGroupCommand(
 			int pid, Node sender, GroupCommand command) {
 		return new GroupingMessage(pid, sender, GROUP_COMMAND, command);
 	}
-		
+	
+	
+	
 	public static GroupingMessage wrapMessage(
 			int pid, Node sender, BaseMessage message) {
 		return new GroupingMessage(pid, sender, WRAP, message);
@@ -45,6 +53,18 @@ public class GroupingMessage extends BaseMessage {
 
 	public Node getSender() {
 		return sender;
+	}
+
+	public static GroupingMessage createUpdateDescriptor(int protocolId,
+			Node currentNode, GroupDescriptor descriptor) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static GroupingMessage createDeleteDescriptor(int protocolId,
+			Node currentNode, GroupDescriptor descriptor) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }
