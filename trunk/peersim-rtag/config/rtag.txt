@@ -11,7 +11,8 @@ CRASH 0.2
 CrashCycle 400
 StartGrouping 40
 LoadBalanceUniverse 5
-MAXGROUPSIZE 2
+MAXGROUPSIZE 10
+MINGROUPSIZE 5
 BeaconBroadcast StartGrouping*2
 
 #####################################Protocol#################################
@@ -72,9 +73,9 @@ protocol.grouping it.polimi.peersim.protocols.grouping.GroupingProtocol
 	broadcast_beacon BeaconBroadcast
 	#print the groups in the last cycle
 	last_cycle CYCLES-1
+	group_min_size MINGROUPSIZE
 	group_max_size MAXGROUPSIZE
 	load_balance_cycle StartGrouping+10
-	
 }
 
 
