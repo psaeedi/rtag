@@ -4,11 +4,8 @@
 package it.polimi.peersim.protocols.grouping;
 
 import it.polimi.peersim.messages.BaseMessage;
-import it.polimi.peersim.messages.UniverseMessage;
 import it.polimi.peersim.protocols.ForwardingProtocol;
-import it.polimi.peersim.protocols.UniverseCommand;
 import it.polimi.peersim.protocols.UniverseProtocol;
-import it.polimi.peersim.prtag.LocalUniverseDescriptor;
 import it.polimi.peersim.prtag.UndeliverableMessageException;
 
 import java.util.ArrayList;
@@ -48,6 +45,8 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 	
 	private static final String GROUP_MAX_SIZE = "group_max_size";
 	protected final int groupMaxSize;
+	private static final String GROUP_MIN_SIZE = "group_min_size";
+	protected final int groupMinSize;
 	
 	private static final String LOAD_BALANCE_CYCLE = "load_balance_cycle";
 	protected final int loadBalanceCycle;
@@ -69,7 +68,9 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 		lastCycle = Configuration.getInt(
 				prefix + "." + LAST_CYCLE, 10);
 		groupMaxSize = Configuration.getInt(
-				prefix + "." + GROUP_MAX_SIZE, 2);
+				prefix + "." + GROUP_MAX_SIZE, 10);
+		groupMinSize = Configuration.getInt(
+				prefix + "." + GROUP_MIN_SIZE, 5);
 		loadBalanceCycle = Configuration.getInt(
 				prefix + "." +  LOAD_BALANCE_CYCLE, 50);
     }
@@ -142,8 +143,10 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 		cleanExpiredJoinRequests();
 		
 		if (currentCycle % 10 == 0){
-			handleCondestedLeaders(currentNode);
+			handleCongestedLeaders(currentNode);
+			handleUnderpopulatedGroups(currentNode);
 		}
+		
 		
 		// Just for debug
 		if(currentCycle == lastCycle){
@@ -172,9 +175,47 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 	}
 	 
 	/**
+	 * For each group check if it is underpopulated. 
+	 */
+	private void handleUnderpopulatedGroups(Node currentNode) {
+		for (String groupName: managers.keySet()) {
+			GroupManager manager = managers.get(groupName);
+			if (manager.getLeaderBeingJoined() != null) {
+				// already joining a new leader
+				continue;
+			}
+			GroupDescriptor followedGroup = manager.getFollowedGroup();
+			if (followedGroup == null) {
+				continue;
+			}
+			if (followedGroup.getFollowers().size() < groupMinSize) {
+				handleUnderpopulatedGroup(currentNode, followedGroup);
+			}
+		}
+	}
+	
+	
+	private void handleUnderpopulatedGroup(Node currentNode,
+			GroupDescriptor followedGroup) {
+		Node parentLeader = followedGroup.getParentLeader();
+		if (parentLeader == null) {
+			return;
+		}
+		try {
+			System.out.println("handleUnderpopulatedGroup: " + currentNode.getID() +
+					" from: " + followedGroup.getLeader().getID() +
+					" to: " + parentLeader.getID());
+			pushJoinRequest(currentNode, parentLeader, followedGroup.getName());
+		} catch (UndeliverableMessageException e) {
+			// TODO Shall we retry?
+			e.printStackTrace();
+		}
+	}
+
+	/**
 	 * For each group check if the leader is congested. 
 	 */
-	private void handleCondestedLeaders(Node currentNode) {
+	private void handleCongestedLeaders(Node currentNode) {
 		for (String groupName: managers.keySet()) {
 			GroupManager manager = managers.get(groupName);
 			if (manager.getLeaderBeingJoined() != null) {
