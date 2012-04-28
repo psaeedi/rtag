@@ -101,10 +101,6 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 			GroupingMessage message) {
 		
 		String head = message.getHead();
-		System.out.println("GROUP:: " + currentNode.getID() + " <- " + 
-				message.getSender().getID() + 
-				" message " + head);
-		
 		if (GroupingMessage.GROUP_COMMAND.equals(head)) {
 			handleGroupCommand(currentNode, sender,
 					(GroupCommand)message.getContent());
@@ -137,18 +133,20 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 
 	@Override
 	public void nextCycle(Node currentNode, int pid) {
+		int currentCycle = CDState.getCycle();
+		
 		cleanExpiredBeacons();
-		broadcastBeacons(currentNode);
+		if (currentCycle % broadcastBeacon == 0) {
+			broadcastBeacons(currentNode);
+		}
 		cleanExpiredJoinRequests();
 		
-		if (CDState.getCycle() % 10 == 0){
-			String groupName = isCongested(currentNode);
-	        if (groupName != null) {
-	        	handleGroupCongestion(currentNode, groupName);
-	        }
+		if (currentCycle % 10 == 0){
+			handleCondestedLeaders(currentNode);
 		}
 		
-		if(CDState.getCycle() == lastCycle){
+		// Just for debug
+		if(currentCycle == lastCycle){
 			for (String name: managers.keySet()) {
 				GroupManager manager = managers.get(name);
 				System.out.print("[Group " + name +" ] Node = " + currentNode.getID() + " is  a leader of  :{");
@@ -172,32 +170,70 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 			}
 		}
 	}
-	
-	private boolean isInGroup(String groupName) {
+	 
+	/**
+	 * For each group check if the leader is congested. 
+	 */
+	private void handleCondestedLeaders(Node currentNode) {
+		for (String groupName: managers.keySet()) {
+			GroupManager manager = managers.get(groupName);
+			if (manager.getLeaderBeingJoined() != null) {
+				// already joining a new leader
+				continue;
+			}
+			GroupDescriptor followedGroup = manager.getFollowedGroup();
+			if (followedGroup == null) {
+				continue;
+			}
+			if (followedGroup.getFollowers().size() > groupMaxSize) {
+				handleCongestedLeader(currentNode, followedGroup);
+			}
+		}
+	}
+
+	private void handleCongestedLeader(Node currentNode,
+			GroupDescriptor followedGroup) {
+		int nodePositionInGroup = followedGroup.getFollowers().indexOf(currentNode);
+		if (nodePositionInGroup < 0) {
+			throw new AssertionError("Node not in group?");
+		}
+		if (nodePositionInGroup < groupMaxSize) {
+			return;
+		}
+		// Equally distribute the exceeding nodes between the ones who will stay
+		Node newLeader = followedGroup.getFollowers().get(nodePositionInGroup % groupMaxSize);
+		try {
+			System.out.println("handleCongestedLeader: " + currentNode.getID() +
+					" from: " + followedGroup.getLeader().getID() +
+					" to: " + newLeader.getID());
+			pushJoinRequest(currentNode, newLeader, followedGroup.getName());
+		} catch (UndeliverableMessageException e) {
+			// TODO Shall we retry?
+			e.printStackTrace();
+		}
+	}
+
+	public boolean isInGroup(String groupName) {
 		return managers.containsKey(groupName);
 	}
 	
 	private void cleanExpiredJoinRequests() {
-		// Check all the group manager for pending join requests which have not ben answered.
-		
+		// Check all the group manager for pending join requests which have not been answered.
 		System.err.println(
 				"GroupingProtocol.cleanExpiredJoinRequests " +
 				"not implemented yet.");
 	}
 
 	private void broadcastBeacons(Node currentNode) {
-		//e.g. every 10 cycles
-		if(CDState.getCycle() % broadcastBeacon == 0){
-			for (String groupName: managers.keySet()) {
-				GroupManager manager = managers.get(groupName);
-				GroupDescriptor leadedGroup = manager.getLeadedGroup();
-				if (leadedGroup == null) {
-					continue;
-				}
-				GroupBeacon beacon = new GroupBeacon(groupName, currentNode, CDState.getCycle() + broadcastBeacon);
-				broadcastBeacon(currentNode, beacon);
+		for (String groupName: managers.keySet()) {
+			GroupManager manager = managers.get(groupName);
+			GroupDescriptor leadedGroup = manager.getLeadedGroup();
+			if (leadedGroup == null) {
+				continue;
 			}
-		}	
+			GroupBeacon beacon = new GroupBeacon(groupName, currentNode, CDState.getCycle() + broadcastBeacon);
+			broadcastBeacon(currentNode, beacon);
+		}
 	}
 
 	private void cleanExpiredBeacons() {
@@ -304,105 +340,23 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 		}  else if (GroupCommand.JOIN_RESPONSE_NO.equals(commandName)) {
 			handleJoinResponseNo(currentNode, sender,
 					(String)command.getContent());				
-		}  else if (GroupCommand.ADOPT_REQUEST.equals(commandName)) {
-			handleAdoptRequest(currentNode, sender,
-					(GroupDescriptor)command.getContent());			
-		}  else if (GroupCommand.CHANGE_LEADER_RQUEST.equals(commandName)) {
-			handleChangeLeaderRequest(currentNode, sender,
-					(GroupDescriptor)command.getContent());			
-		}else if (GroupCommand.FOLLOWER_LEFT.equals(commandName)) {
-			handleFollowerLeft(currentNode, sender,
+		}  else if (GroupCommand.NOTIFY_LEAVE.equals(commandName)) {
+			handleNotifyLeave(currentNode, sender,
 					(String)command.getContent());			
 		}
 		
 	}
 	
-	private void handleFollowerLeft(Node currentNode, Node sender, String groupName) {
-		GroupManager manager = getOrCreateManager(currentNode, groupName);
-		if(manager.getLeadedGroup()!=null){
-			GroupDescriptor leadedGroup =  manager.getLeadedGroup();
-			leadedGroup.removeFollower(sender);
-			System.err.println(
-					"follower" + sender.getID() + "left the group because I:" +currentNode.getID()+
-					" was congested" + "my size is "+ leadedGroup.getFollowers().size());
-			pushUpdatedDescriptorToFollowers(currentNode, leadedGroup);
-			
-		}
-	}
 
-	private void handleChangeLeaderRequest(Node currentNode, Node sender,
-			GroupDescriptor descriptor) {
-		GroupManager manager = getOrCreateManager(currentNode, descriptor.getName());
-		if (manager.getFollowedGroup() == null) {
-			throw new AssertionError(
-					"it is not a follower! ");
+	private void handleNotifyLeave(Node currentNode, Node sender, String groupName) {
+		GroupManager manager = managers.get(groupName);
+		if (manager == null) {
+			System.err.println("handleNotifyLeave -> Manager null for group: " + groupName);
+			return;
 		}
-		Node leader = manager.getFollowedGroup().getLeader();
-		manager.setFollowedGroup(descriptor);
-		manager.getFollowedGroup().setLeader(sender);
-		
-		GroupingMessage message = GroupingMessage.createGroupCommand(
-				protocolId, currentNode,
-				GroupCommand.createLeftLeader(descriptor.getName()));
-		try {
-			 pushDownMessage(currentNode, leader, message);
-			 pushJoinRequest(currentNode, sender, descriptor.getName());
-		} catch (UndeliverableMessageException e) {
-			// Nothing to be done
-		}
-	}
-
-	private void handleAdoptRequest(Node currentNode, Node sender,
-			GroupDescriptor descriptor) {
-		String groupName = descriptor.getName();
-		GroupDescriptor leadedGroup = managers.get(groupName).getLeadedGroup();
-		GroupDescriptor followedGroup = managers.get(groupName).getFollowedGroup();
-		Node adoptedFollower =null;
-		
-		//if the follower is not already a leader 
-		if(leadedGroup == null){
-			GroupDescriptor groupDescriptor = new GroupDescriptor(
-					UUID.randomUUID(), groupName, currentNode); 	
-			GroupBeacon beacon = new GroupBeacon(groupName, currentNode, CDState.getCycle());
-			beacons.put(groupName, beacon);
-			GroupManager groupManager = getOrCreateManager(currentNode, groupName);
-			groupManager.setLeadedGroup(groupDescriptor);
-			System.out.println("*!*!*!*!the follower is creating its own group to adopt::[Node " + currentNode.getID() + 
-					"] [creating group " + groupName+"]"+"setleaded group"+ groupManager.
-					getLeadedGroup().getLeader().getID());
-		    broadcastBeacon(currentNode, beacon);
-	     	}
-		
-		if(followedGroup!=null){
-			for(Node follower:followedGroup.getFollowers()){
-				follower = getFollowerWithNoLeadedGroup(currentNode, groupName);
-				//leadedGroup.addFollower(follower);
-				if(follower==null){
-					throw new AssertionError("no follower found");	
-				}
-				if(follower==currentNode){
-					throw new AssertionError("wants to adopyt itself?");
-				}
-				//TODO the follower has already the leader of the same group here
-				//we cannot add the follower, we should wait for the follower to change its leader
-				//otherwise throw runtime exception, 
-	            //leadedGroup.addFollower(follower);
-				GroupingMessage message = GroupingMessage.createGroupCommand(
-						protocolId, currentNode,
-						GroupCommand.createYouAreAdopted(leadedGroup));
-				try {
-					 pushDownMessage(currentNode, follower, message);
-					 leadedGroup.setParentLeader(descriptor.getLeader());
-					 pushUpdatedDescriptorToFollowers(currentNode, leadedGroup);
-				} catch (UndeliverableMessageException e) {
-					// Nothing to be done
-				}
-			}
-		}
-			
-		else {
-		      throw new AssertionError("why is it congested then if it is the only follower");
-			}
+		GroupDescriptor leadedGroup = manager.getLeadedGroup();
+		leadedGroup.removeFollower(sender);
+		pushUpdatedDescriptorToFollowers(currentNode, leadedGroup);
 	}
 
 	private Node getFollowerWithNoLeadedGroup(Node currentNode, String groupName) {
@@ -429,7 +383,7 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 
 	private void handleJoinResponseNo(Node currentNode, Node sender, String groupName) {
 		GroupManager manager = managers.get(groupName);
-		manager.setLeaderBeingJoined(null, -1);
+		manager.resetLeaderBeingJoinedCycle();
 		if (manager.getFollowedGroup() != null) {
 			return;
 		}
@@ -454,10 +408,20 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 			GroupDescriptor descriptor) {
 		GroupManager manager = getOrCreateManager(currentNode, descriptor.getName());
 		if (manager.getFollowedGroup() != null) {
-			throw new AssertionError(
-					"Followed group should be null when asking to join: " +
-					manager.getFollowedGroup());
+			Node formerLeader = manager.getFollowedGroup().getLeader();
+			// Already following a group.
+			// The node must notify that it is leaving
+			GroupingMessage message = GroupingMessage.createGroupCommand(
+					protocolId, currentNode,
+					GroupCommand.createLeaveNotify(descriptor.getName()));
+			try {
+				pushDownMessage(currentNode, formerLeader, message);
+			} catch (UndeliverableMessageException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
+		manager.resetLeaderBeingJoinedCycle();
 		manager.setFollowedGroup(descriptor);
 		GroupDescriptor leadedGroup = manager.getLeadedGroup();
 		if (leadedGroup != null) {
@@ -502,7 +466,7 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 	private void pushUpdatedDescriptorToFollowers(
 			Node currentNode, GroupDescriptor leadedGroup) {
 		
-		for(Node followers: leadedGroup.getFollowers()){
+		for (Node followers: leadedGroup.getFollowers()) {
 			GroupingMessage updateDescriptorMsg =
 					GroupingMessage.createGroupCommand(protocolId, currentNode,
     						GroupCommand.createUpdateDescriptor(leadedGroup));
@@ -537,6 +501,9 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 			GroupDescriptor followedGroup = manager.getFollowedGroup();
 			if (followedGroup == null && leadedGroup != null
 					&& !leadedGroup.isFollower(remoteLeader)) {
+				if (manager.getLeaderBeingJoined() != null) {
+					return;
+				}
 				try {
 					pushJoinRequest(currentNode, remoteLeader, groupName);
 				} catch (UndeliverableMessageException e) {
@@ -551,10 +518,15 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 		GroupManager manager = managers.get(groupName);
 		if (manager.getLeaderBeingJoined() != null) {
 			// already joining a leader
-			return;
+			throw new AssertionError("asd");
+			/*System.err.println("pushJoinRequest -> " + currentNode.getID() + 
+					" already joining leader: " + manager.getLeaderBeingJoined().getID() +
+					" for group: " + groupName);
+			return;*/
 		}
 		
-		GroupingMessage message = GroupingMessage.createGroupCommand(protocolId, currentNode,
+		GroupingMessage message = GroupingMessage.createGroupCommand(
+				protocolId, currentNode,
 				GroupCommand.createJoinRequest(groupName));
 		pushDownMessage(currentNode, remoteLeader, message);
 		manager.setLeaderBeingJoined(remoteLeader, CDState.getCycle());
@@ -564,41 +536,8 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 			Node currentNode, GroupBeacon beacon) {
 		beacons.remove(beacon.getGroupName(), beacon);
 	}
-	
-	
-	public void handleGroupCongestion(Node currentNode, String groupName) {
-		GroupManager manager = null;
-		GroupDescriptor leadedGroup = null;
-		Node follower = null;
-		
-		if (groupName != null) {
-			follower = getFollowerWithLeadedGroup(currentNode, groupName);
-			if (follower == null) {
-				//there was no follower
-				throw new RuntimeException("WARNING:no follower so why is it congested !!");
-			}
-		}
-		
-		if(managers.get(groupName)!=null){
-			manager = managers.get(groupName);
-			manager.getLeadedGroup();
-			leadedGroup = manager.getLeadedGroup();
-		
-			// ask a follower to adopt another follower
-			GroupingMessage message = GroupingMessage.createGroupCommand(protocolId, currentNode,
-					GroupCommand.createAdoptRequest(leadedGroup));
-			try {
-				pushDownMessage(currentNode, follower, message);
-			} catch (UndeliverableMessageException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-		else{
-			throw new RuntimeException("WARNING:no follower so why is it congested !!");}
-		
-	}
 
+	/*
 	private Node getFollowerWithLeadedGroup(Node currentNode, String groupName) {
 		Node followerWithNoLeadedGroup = null;
 		GroupManager manager = managers.get(groupName);
@@ -616,21 +555,21 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 		
 	}
 	
-
-	private String isCongested(Node currentNode) {
-		
+	private void handleCondestedLeader(Node currentNode) {
 		for(String groupName: managers.keySet()){
 			GroupManager manager = managers.get(groupName);
-			if(manager.getLeadedGroup()!=null && 
-					manager.getLeadedGroup().getFollowers().size() > groupMaxSize){
+			GroupDescriptor leadedGroup = manager.getLeadedGroup();
+			if (leadedGroup == null) {
+				continue;
+			}
+			if (leadedGroup.getFollowers().size() > groupMaxSize){
 				// so it consider as congested leader
-				System.out.println("---+++++++++----follower size:" + manager.getLeadedGroup().getFollowers().size() +
-						"mazsize" + groupMaxSize + "node" + currentNode.getID() );
+				System.out.println("---+++++++++----follower\n\tsize: " + leadedGroup.getFollowers().size() +
+						"max\n\tsize: " + groupMaxSize + "\n\tnode: " + currentNode.getID() );
 						
-				return groupName;
+				handleGroupCongestion(currentNode, leadedGroup);
 			}
 		}
-		return null;
-	}
+	}*/
 
 }

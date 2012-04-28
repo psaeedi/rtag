@@ -71,5 +71,10 @@ public class GroupManager {
 		return leaderBeingJoinedCycle;
 	}
 	
+	public void resetLeaderBeingJoinedCycle() {
+		this.leaderBeingJoined = null;
+		this.leaderBeingJoinedCycle = -1;
+	}
+	
 	
 }
