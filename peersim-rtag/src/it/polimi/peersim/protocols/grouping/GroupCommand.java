@@ -12,20 +12,13 @@ public class GroupCommand implements Serializable {
 	public static final String PREMATURALY_DISCARD_BEACON = "PrematuralyDiscardBeacon";
 	
 	public static final String JOIN_REQUEST = "JoinRequest";
-	public static final String JOIN_RESPONSE_YES = "JoinResponse";
-	public static final String JOIN_RESPONSE_NO = "JoinResponse";
-    public static final String JOIN_REQUEST_RESPONSE = "join_request_response";
+	public static final String JOIN_RESPONSE_YES = "JoinResponseYes";
+	public static final String JOIN_RESPONSE_NO = "JoinResponseNo";
     
     public static final String UPDATE_DESCRIPTOR = "updateDescriptor";
     public static final String DELETE_DESCRIPTOR = "deleteDescriptor";
     
-    public static final String ADOPT_FOLLOWER = "adoptfollower";
-
-	public static final String ADOPT_REQUEST = "adoptrequest";
-	
-	public static final String CHANGE_LEADER_RQUEST = "changeleaderrequest";
-	
-	public static final String FOLLOWER_LEFT = "followerleft";
+    public static final String NOTIFY_LEAVE = "notifyLeave";
 
 	
 	public static GroupCommand createAddOrUpdateBeacon(GroupBeacon beacon) {
@@ -38,10 +31,6 @@ public class GroupCommand implements Serializable {
 	
 	public static GroupCommand createJoinRequest(String groupName) {
 		return new GroupCommand(JOIN_REQUEST, groupName);
-	}
-	
-	public static GroupCommand createJoinRequestResponse (String groupName) {
-		return new GroupCommand(JOIN_REQUEST_RESPONSE, groupName);
 	}
 	
 	public static GroupCommand createJoinResponseYes(GroupDescriptor descriptor) {
@@ -60,16 +49,8 @@ public class GroupCommand implements Serializable {
 		return new GroupCommand(DELETE_DESCRIPTOR, descriptor);
 	}
 	
-	public static GroupCommand createAdoptRequest(GroupDescriptor descriptor) {
-		return new GroupCommand(ADOPT_REQUEST, descriptor);
-	}
-	
-	public static GroupCommand createYouAreAdopted(GroupDescriptor descriptor) {
-		return new GroupCommand(CHANGE_LEADER_RQUEST, descriptor);
-	}
-	
-	public static GroupCommand createLeftLeader(String groupName) {
-		return new GroupCommand(FOLLOWER_LEFT, groupName);
+	public static GroupCommand createLeaveNotify(String groupName) {
+		return new GroupCommand(NOTIFY_LEAVE, groupName);
 	}
 	
 	private final String command;
@@ -88,8 +69,5 @@ public class GroupCommand implements Serializable {
 	public Serializable getContent() {
 		return content;
 	}
-
-	
-	
 	
 }

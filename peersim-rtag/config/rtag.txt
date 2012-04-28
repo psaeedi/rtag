@@ -5,7 +5,7 @@ random.seed 1234567890
 network.node.appgroup_protocol group
 network.node.universe_protocol universe
 
-CYCLES 500
+CYCLES 201
 SIZE 60
 CRASH 0.2
 CrashCycle 400
@@ -69,7 +69,7 @@ protocol.grouping it.polimi.peersim.protocols.grouping.GroupingProtocol
 	protocol_id grouping
 	lower_protocol_id routing
 	universe_protocol universe
-	beacon_broadcast BeaconBroadcast
+	broadcast_beacon BeaconBroadcast
 	#print the groups in the last cycle
 	last_cycle CYCLES-1
 	group_max_size MAXGROUPSIZE
