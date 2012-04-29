@@ -181,7 +181,7 @@ public class GroupDescriptor implements Serializable{
 	 */
 	public void setParentLeader(Node parentLeader) {
 		if (followers.contains(parentLeader)) {
-			throw new RuntimeException("Attempting to set a follower as a parent leader.");
+			System.err.println("Setting a follower as a parent leader.");
 		}
 		this.parentLeader = parentLeader;
 	}

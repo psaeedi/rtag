@@ -48,6 +48,9 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 	private static final String GROUP_MIN_SIZE = "group_min_size";
 	protected final int groupMinSize;
 	
+	private static final String JOIN_TIMEOUT = "group_min_size";
+	protected final int joinTimeout;
+	
 	private static final String LOAD_BALANCE_CYCLE = "load_balance_cycle";
 	protected final int loadBalanceCycle;
 	
@@ -71,6 +74,8 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 				prefix + "." + GROUP_MAX_SIZE, 10);
 		groupMinSize = Configuration.getInt(
 				prefix + "." + GROUP_MIN_SIZE, 5);
+		joinTimeout = Configuration.getInt(
+				prefix + "." + JOIN_TIMEOUT, 30);
 		loadBalanceCycle = Configuration.getInt(
 				prefix + "." +  LOAD_BALANCE_CYCLE, 50);
     }
@@ -137,6 +142,8 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 		int currentCycle = CDState.getCycle();
 		
 		cleanExpiredBeacons();
+		followGroupsIfNotFollowing(currentNode);
+		
 		if (currentCycle % broadcastBeacon == 0) {
 			broadcastBeacons(currentNode);
 		}
@@ -243,10 +250,18 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 	}
 	
 	private void cleanExpiredJoinRequests() {
-		// Check all the group manager for pending join requests which have not been answered.
-		System.err.println(
-				"GroupingProtocol.cleanExpiredJoinRequests " +
-				"not implemented yet.");
+		// Check all the group manager for pending join
+		// requests which have not been answered.		
+		int currentCycle = CDState.getCycle();
+		for (String groupName: managers.keySet()) {
+			GroupManager manager = managers.get(groupName);
+			if (manager.getLeaderBeingJoined() == null) {
+				return;
+			}
+			if (manager.getLeaderBeingJoinedCycle() + joinTimeout < currentCycle) {
+				manager.resetLeaderBeingJoinedCycle();
+			}
+		}
 	}
 
 	private void broadcastBeacons(Node currentNode) {
@@ -368,10 +383,54 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 		}  else if (GroupCommand.NOTIFY_LEAVE.equals(commandName)) {
 			handleNotifyLeave(currentNode, sender,
 					(String)command.getContent());			
+		} else if (GroupCommand.UPDATE_DESCRIPTOR.equals(commandName)) {
+			handleUpdateDescriptor(currentNode,
+					(GroupDescriptor)command.getContent());
+		} else if (GroupCommand.DELETE_DESCRIPTOR.equals(commandName)) {
+			handleDeleteDescriptor(currentNode,
+					(GroupDescriptor)command.getContent());
 		}
 		
 	}
 	
+
+	private void handleDeleteDescriptor(Node currentNode,
+			GroupDescriptor descriptor) {
+		GroupManager manager = managers.get(descriptor.getName());
+		Node remoteLeader = descriptor.getLeader();
+		
+		if (manager.getFollowedGroup().getLeader().getID() != remoteLeader.getID()) {
+			System.err.println("Wrong follower leader!");
+			return;
+		}
+		
+		manager.setFollowedGroup(null);
+	}
+
+	private void handleUpdateDescriptor(Node currentNode,
+			GroupDescriptor descriptor) {
+		GroupManager manager = managers.get(descriptor.getName());
+		Node remoteLeader = descriptor.getLeader();
+		
+		if (manager.getFollowedGroup() == null) {
+			System.err.println(currentNode.getID() + 
+					" not following: " + descriptor);
+			return;
+		}
+		if (manager.getFollowedGroup().getLeader().getID() != remoteLeader.getID()) {
+			System.err.println(currentNode.getID() + 
+					" wrong follower leader for update: " + descriptor);
+			return;
+		}
+		
+		manager.setFollowedGroup(descriptor);
+		Node parentLeader = descriptor.getParentLeader();
+		if (parentLeader != null && currentNode.getID() == parentLeader.getID()) {
+			// The current node is both follower and parent leader.
+			pushLeaveNotify(currentNode, descriptor.getLeader(), descriptor.getName());
+			manager.setFollowedGroup(null);
+		}
+	}
 
 	private void handleNotifyLeave(Node currentNode, Node sender, String groupName) {
 		GroupManager manager = managers.get(groupName);
@@ -380,6 +439,10 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 			return;
 		}
 		GroupDescriptor leadedGroup = manager.getLeadedGroup();
+		if (leadedGroup == null) {
+			System.err.println("handleNotifyLeave: leaded group is null");
+			return;
+		}
 		leadedGroup.removeFollower(sender);
 		if (!leadedGroup.getFollowers().isEmpty()) {
 			pushUpdatedDescriptorToFollowers(currentNode, leadedGroup);
@@ -391,6 +454,7 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 		}
 	}
 
+	@Deprecated
 	private Node getFollowerWithNoLeadedGroup(Node currentNode, String groupName) {
 		Node followerWithLeadedGroup = null;
 		GroupManager manager = managers.get(groupName);
@@ -436,22 +500,36 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 		} while (iterator.hasNext());
 	}
 
+	private void pushLeaveNotify(Node currentNode, Node leader,
+			String groupName) {
+		GroupingMessage message = GroupingMessage.createGroupCommand(
+				protocolId, currentNode,
+				GroupCommand.createLeaveNotify(groupName));
+		try {
+			pushDownMessage(currentNode, leader, message);
+		} catch (UndeliverableMessageException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
 	private void handleJoinResponseYes(Node currentNode, Node sender,
 			GroupDescriptor descriptor) {
 		GroupManager manager = getOrCreateManager(currentNode, descriptor.getName());
+		// If the request was timedout (the joined leader is different than the sender)
+		// we must send a leave notice.
+		Node leaderBeingJoined = manager.getLeaderBeingJoined();
+		if (leaderBeingJoined != null && leaderBeingJoined.getID() != sender.getID()) {
+			pushLeaveNotify(currentNode, sender, descriptor.getName());
+			return;
+		}
+		
+		// If the node was already following a group
 		if (manager.getFollowedGroup() != null) {
 			Node formerLeader = manager.getFollowedGroup().getLeader();
 			// Already following a group.
 			// The node must notify that it is leaving
-			GroupingMessage message = GroupingMessage.createGroupCommand(
-					protocolId, currentNode,
-					GroupCommand.createLeaveNotify(descriptor.getName()));
-			try {
-				pushDownMessage(currentNode, formerLeader, message);
-			} catch (UndeliverableMessageException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			pushLeaveNotify(currentNode, formerLeader, descriptor.getName());
 		}
 		manager.resetLeaderBeingJoinedCycle();
 		manager.setFollowedGroup(descriptor);
@@ -527,10 +605,11 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 		
 		beacons.put(beacon.getGroupName(), beacon);
 		
+
+		/*
 		if (currentNode.getID() < remoteLeader.getID()) {
 			return;
 		}
-		
 		GroupManager manager = managers.get(groupName);
 		if (manager != null) {
 			GroupDescriptor leadedGroup = manager.getLeadedGroup();
@@ -545,6 +624,41 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 				} catch (UndeliverableMessageException e) {
 					manager.resetLeaderBeingJoinedCycle();
 					// Nothing to be done
+				}
+			}
+		}*/
+	}
+	
+	private void followGroupsIfNotFollowing(Node currentNode) {
+		for (String groupName: managers.keySet()) {
+			GroupManager manager = managers.get(groupName);
+			GroupDescriptor leadedGroup = manager.getLeadedGroup();
+			if (manager.getLeaderBeingJoined() != null) {
+				continue;
+			}
+			if (manager.getFollowedGroup() != null) {
+				continue;
+			}
+			for (GroupBeacon beacon: beacons.get(groupName)) {
+				Node remoteLeader = beacon.getLeader();
+				/*if (currentNode.getID() > remoteLeader.getID()) {
+					return;
+				}*/
+				if (remoteLeader.getID() == currentNode.getID()) {
+					continue;
+				}
+				if (leadedGroup != null
+						&& leadedGroup.isFollower(remoteLeader)) {
+					continue;
+				}
+				
+				try {
+					pushJoinRequest(currentNode, beacon.getLeader(), groupName);
+					break;
+				} catch (UndeliverableMessageException e) {
+					manager.resetLeaderBeingJoinedCycle();
+					// Nothing to be done
+					continue;
 				}
 			}
 		}
