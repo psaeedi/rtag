@@ -48,7 +48,7 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 	private static final String GROUP_MIN_SIZE = "group_min_size";
 	protected final int groupMinSize;
 	
-	private static final String JOIN_TIMEOUT = "group_min_size";
+	private static final String JOIN_TIMEOUT = "join_time_out";
 	protected final int joinTimeout;
 	
 	private static final String LOAD_BALANCE_CYCLE = "load_balance_cycle";
@@ -149,7 +149,7 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 		}
 		cleanExpiredJoinRequests();
 		
-		if (currentCycle % 10 == 0){
+		if (currentCycle % 15 == 0){
 			handleCongestedLeaders(currentNode);
 			handleUnderpopulatedGroups(currentNode);
 		}
@@ -179,7 +179,9 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 			if (followedGroup == null) {
 				continue;
 			}
-			if (followedGroup.getFollowers().size() < groupMinSize) {
+			else if (followedGroup.getFollowers().size() < groupMinSize) {
+				System.err.println ("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ Node " + currentNode.getID() 
+						+ " UNDER POPULATED");
 				handleUnderpopulatedGroup(currentNode, followedGroup);
 			}
 		}
@@ -196,7 +198,16 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 			System.out.println("handleUnderpopulatedGroup: " + currentNode.getID() +
 					" from: " + followedGroup.getLeader().getID() +
 					" to: " + parentLeader.getID());
+			if(parentLeader.getID()==currentNode.getID()){
+				System.err.println ("££££££££££££££££££££££££££££££££Node " + currentNode.getID() 
+						+ " is follower and parent leader");
+				// The current node is both follower and parent leader.
+				pushLeaveNotify(currentNode, followedGroup.getLeader(), followedGroup.getName());
+				GroupManager manager = managers.get(followedGroup.getName());
+				manager.setFollowedGroup(null);
+			}
 			pushJoinRequest(currentNode, parentLeader, followedGroup.getName());
+			//}
 		} catch (UndeliverableMessageException e) {
 			// TODO Shall we retry?
 			e.printStackTrace();
@@ -678,8 +689,10 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 		GroupingMessage message = GroupingMessage.createGroupCommand(
 				protocolId, currentNode,
 				GroupCommand.createJoinRequest(groupName));
+		//if(currentNode.getID()!=remoteLeader.getID()){
 		pushDownMessage(currentNode, remoteLeader, message);
 		manager.setLeaderBeingJoined(remoteLeader, CDState.getCycle());
+		//}
 	}
 
 	private void handlePrematurelyDiscardedBeacon(

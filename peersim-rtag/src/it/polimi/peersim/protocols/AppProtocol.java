@@ -74,38 +74,7 @@ public class AppProtocol implements CDProtocol {
 			friendlyName = RED;	
 			grouping.joinOrCreateGroup(currentNode, friendlyName);
 		}
-		/*if(CDState.getCycle() >= startGroupCycle && 
-				CDState.getCycle() <= (startGroupCycle+(networkSize/5))){
-					if(currentNode.getID()<= networkSize/4) {
-						String friendlyName = (currentNode.getID() % 2 == 0) ? RED : GREEN;			
-						GroupingProtocol grouping = (GroupingProtocol)
-								currentNode.getProtocol(groupingProtocolId);
-						grouping.joinOrCreateGroup(currentNode, friendlyName);
-					    }
-					
-					else if(currentNode.getID()<= 2*networkSize/4 && currentNode.getID()>networkSize/4) {
-						String friendlyName = (currentNode.getID() % 2 == 0) ? RED : GREEN;			
-						GroupingProtocol grouping = (GroupingProtocol)
-								currentNode.getProtocol(groupingProtocolId);
-						grouping.joinOrCreateGroup(currentNode, friendlyName);
-					    }
-					
-					else if(currentNode.getID()<= 3*networkSize/4 && currentNode.getID()>2*networkSize/4  ) {
-						String friendlyName = (currentNode.getID() % 2 == 0) ? RED : GREEN;			
-						GroupingProtocol grouping = (GroupingProtocol)
-								currentNode.getProtocol(groupingProtocolId);
-						grouping.joinOrCreateGroup(currentNode, friendlyName);
-					    }
-					else if(currentNode.getID()<= networkSize && currentNode.getID()>3*networkSize/4) {
-						String friendlyName = (currentNode.getID() % 2 == 0) ? RED : GREEN;			
-						GroupingProtocol grouping = (GroupingProtocol)
-								currentNode.getProtocol(groupingProtocolId);
-						grouping.joinOrCreateGroup(currentNode, friendlyName);
-					    }
-				
-			
-			}*/
-		}
+	}
 
 	
 
