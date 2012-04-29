@@ -55,21 +55,23 @@ public class AppProtocol implements CDProtocol {
 	
 	public void nextCycle(Node currentNode, int protocolID ) {
 		
-		if(CDState.getCycle() == startGroupCycle ){
-			String friendlyName = null;
-					if(currentNode.getID() % 7 == 0)
-						friendlyName = RED ;	
-				    else if (currentNode.getID() % 5 == 0)	
-				    	friendlyName = GREEN ;
-				    else if (currentNode.getID() % 3 == 0)	
-				    	friendlyName = BLUE ;
-				    else if (currentNode.getID() % 2 == 0)	
-				    	friendlyName = YELLOW ;
-				    else 
-				    	friendlyName = ORANGE ;
-			//String friendlyName = (currentNode.getID() % 2 == 0) ? RED : GREEN;	
+		if(CDState.getCycle() == startGroupCycle ) {
 			GroupingProtocol grouping = (GroupingProtocol)
 					currentNode.getProtocol(groupingProtocolId);
+			String friendlyName = null;
+			/*
+			if(currentNode.getID() % 7 == 0)
+				friendlyName = RED ;	
+		    else if (currentNode.getID() % 5 == 0)	
+		    	friendlyName = GREEN;
+		    else if (currentNode.getID() % 3 == 0)	
+		    	friendlyName = BLUE ;
+		    else if (currentNode.getID() % 2 == 0)	
+		    	friendlyName = YELLOW;
+		    else 
+		    	friendlyName = ORANGE;
+		    	*/
+			friendlyName = RED;	
 			grouping.joinOrCreateGroup(currentNode, friendlyName);
 		}
 		/*if(CDState.getCycle() >= startGroupCycle && 
