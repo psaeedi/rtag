@@ -5,14 +5,14 @@ random.seed 1234567890
 network.node.appgroup_protocol group
 network.node.universe_protocol universe
 
-CYCLES 201
-SIZE 60
-CRASH 0.2
+CYCLES 501
+SIZE 100
+CRASH 0
 CrashCycle 400
-StartGrouping 40
-LoadBalanceUniverse 5
-MAXGROUPSIZE 10
-MINGROUPSIZE 5
+StartGrouping 41
+LoadBalanceUniverse 8
+MAXGROUPSIZE 6
+MINGROUPSIZE 1
 BeaconBroadcast StartGrouping*2
 
 #####################################Protocol#################################
