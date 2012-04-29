@@ -152,24 +152,8 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 		if(currentCycle == lastCycle){
 			for (String name: managers.keySet()) {
 				GroupManager manager = managers.get(name);
-				System.out.print("[Group " + name +" ] Node = " + currentNode.getID() + " is  a leader of  :{");
-				GroupDescriptor leadedGroup = manager.getLeadedGroup();
-				if (leadedGroup != null) {
-					for	(Node k: leadedGroup.getFollowers()) {
-						System.out.print(k.getID() +", ");
-					}
-				}
-				System.out.print("}");
-				GroupDescriptor followedGroup = manager.getFollowedGroup();
-				if (followedGroup != null) {
-					System.out.println("Node = " + followedGroup.getLeader().getID() + " is his leader and the followers are :{");
-					for	(Node k: followedGroup.getFollowers()) {
-						System.out.print(k.getID() +", ");
-					}
-				} else {
-					System.out.print("{");
-				}
-				System.out.println("}");
+				System.out.println("Node " + currentNode.getID() + " L " + manager.getLeadedGroup());
+				System.out.println("Node " + currentNode.getID() + " F " + manager.getFollowedGroup());
 			}
 		}
 	}
@@ -397,7 +381,14 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 		}
 		GroupDescriptor leadedGroup = manager.getLeadedGroup();
 		leadedGroup.removeFollower(sender);
-		pushUpdatedDescriptorToFollowers(currentNode, leadedGroup);
+		if (!leadedGroup.getFollowers().isEmpty()) {
+			pushUpdatedDescriptorToFollowers(currentNode, leadedGroup);
+		} else {
+			// become a pure follower
+			if (manager.getFollowedGroup() != null) {
+				manager.setLeadedGroup(null);
+			}
+		}
 	}
 
 	private Node getFollowerWithNoLeadedGroup(Node currentNode, String groupName) {
@@ -466,8 +457,12 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 		manager.setFollowedGroup(descriptor);
 		GroupDescriptor leadedGroup = manager.getLeadedGroup();
 		if (leadedGroup != null) {
-			leadedGroup.setParentLeader(descriptor.getLeader());
-			pushUpdatedDescriptorToFollowers(currentNode, leadedGroup);
+			if (leadedGroup.getFollowers().isEmpty()) {
+				manager.setLeadedGroup(null);
+			} else {
+				leadedGroup.setParentLeader(descriptor.getLeader());
+				pushUpdatedDescriptorToFollowers(currentNode, leadedGroup);
+			}
 		}
 	}
 
@@ -548,6 +543,7 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 				try {
 					pushJoinRequest(currentNode, remoteLeader, groupName);
 				} catch (UndeliverableMessageException e) {
+					manager.resetLeaderBeingJoinedCycle();
 					// Nothing to be done
 				}
 			}

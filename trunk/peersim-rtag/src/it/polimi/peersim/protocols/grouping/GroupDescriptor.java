@@ -17,7 +17,7 @@ public class GroupDescriptor implements Serializable{
 
 	private static final long serialVersionUID = 2887953880462731123L;
 
-	public static final String APPGROUP = "_APPGROUP";
+	//public static final String APPGROUP = "_APPGROUP";
 	
 	private UUID uniqueId;
 	
@@ -25,7 +25,7 @@ public class GroupDescriptor implements Serializable{
 	
 	private Node leader;
 	
-	private boolean appgroup = false;	
+	//private boolean appgroup = false;	
 	
 	private ArrayList<Node> followers = new ArrayList<Node>();
 	
@@ -44,14 +44,12 @@ public class GroupDescriptor implements Serializable{
 		this.uniqueId = uniqueId;
 		this.hierarchyName = friendlyName;
 		this.leader = leader;
-		this.appgroup = APPGROUP.equals(friendlyName);
 	}
 	
 	/**
 	 * @param uuid
 	 * @param friendlyName
 	 * @param description
-	 * @param universe
 	 * @param leader
 	 * @param parentLeader
 	 */
@@ -61,7 +59,6 @@ public class GroupDescriptor implements Serializable{
 		super();
 		this.uniqueId = uuid;
 		this.hierarchyName = friendlyName;
-		this.appgroup = APPGROUP.equals(friendlyName);
 		this.leader = leader;
 		this.parentLeader = parentLeader;
 	}
@@ -70,7 +67,6 @@ public class GroupDescriptor implements Serializable{
 		super();
 		this.uniqueId = oldDescriptor.uniqueId;
 		this.hierarchyName = oldDescriptor.hierarchyName;
-		this.appgroup = APPGROUP.equals(oldDescriptor.hierarchyName);
 		this.leader = oldDescriptor.leader;
 		this.parentLeader = oldDescriptor.parentLeader;
 		this.followers = new ArrayList<Node>(oldDescriptor.followers);
@@ -139,13 +135,6 @@ public class GroupDescriptor implements Serializable{
 	}
 	
 	/**
-	 * @return the universe
-	 */
-	public boolean isUniverse() {
-		return appgroup;
-	}
-	
-	/**
 	 * @return the followers
 	 */
 	public List<Node> getFollowers() {
@@ -178,10 +167,6 @@ public class GroupDescriptor implements Serializable{
 		members.add(leader);
 		return members;
 		
-	}
-	
-	public static GroupDescriptor createUniverse(Node node) {
-		return new GroupDescriptor(UUID.randomUUID(), APPGROUP, node, null);
 	}
 	
 	public boolean isSameHierarchy(GroupDescriptor remoteGroupDescriptor) {
@@ -232,8 +217,20 @@ public class GroupDescriptor implements Serializable{
 		return true;}
 		return false;
 	}
-	
 
+	@Override
+	public String toString() {
+		ArrayList<Long> ids = new ArrayList<Long>();
+		for (Node n: followers) {
+			ids.add(n.getID());
+		}
+		
+		return "GroupDescriptor [hierarchyName=" + hierarchyName + 
+				", leader=" + (leader != null ? leader.getID() : null) + 
+				" parentLeader=" + (parentLeader != null ? parentLeader.getID() : null) +
+				", followers=[" + ids + "]]";
+	}
+	
 	
 	
 }
