@@ -248,11 +248,11 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 		if (nodePositionInGroup < 0) {
 			throw new AssertionError("Node not in group?");
 		}
-		if (nodePositionInGroup < groupMaxSize) {
+		if (nodePositionInGroup < (groupMaxSize / 2)) {
 			return;
 		}
 		// Equally distribute the exceeding nodes between the ones who will stay
-		Node newLeader = followedGroup.getFollowers().get(nodePositionInGroup % groupMaxSize);
+		Node newLeader = followedGroup.getFollowers().get(nodePositionInGroup % (groupMaxSize / 2));
 		try {
 			System.out.println("handleCongestedLeader: " + currentNode.getID() +
 					" from: " + followedGroup.getLeader().getID() +
@@ -681,10 +681,8 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 		GroupingMessage message = GroupingMessage.createGroupCommand(
 				protocolId, currentNode,
 				GroupCommand.createJoinRequest(groupName));
-		//if(currentNode.getID()!=remoteLeader.getID()){
 		pushDownMessage(currentNode, remoteLeader, message);
 		manager.setLeaderBeingJoined(remoteLeader, CDState.getCycle());
-		//}
 	}
 
 	private void handlePrematurelyDiscardedBeacon(
