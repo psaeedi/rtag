@@ -5,16 +5,16 @@ random.seed 1234567890
 network.node.appgroup_protocol group
 network.node.universe_protocol universe
 
-CYCLES 600
-SIZE 100
+CYCLES 601
+SIZE 80
 CRASH 0
 CrashCycle 300
-StartGrouping 41
+StartGrouping 50
 LoadBalanceUniverse 8
-MAXGROUPSIZE MINGROUPSIZE+4
 MINGROUPSIZE 1
+MAXGROUPSIZE 15
 JOINTIMEOUT 10
-BeaconBroadcast StartGrouping*2
+BeaconBroadcast 100
 
 #####################################Protocol#################################
 
@@ -28,7 +28,7 @@ protocol.discovery it.polimi.peersim.protocols.DiscoveryProtocol
 	crash_cycle CrashCycle
 	
 	#the larger more neighbors
-	discovery_radius 3
+	discovery_radius 1
 	
 	# discovery listeners
 	universe_protocol universe
@@ -40,7 +40,7 @@ protocol.channel it.polimi.peersim.protocols.MockChannel
 	lower_protocol_id channel
 	discovery_protocol discovery
 	latency 5
-	throughput 20
+	throughput 10
 }
 
 protocol.tuplespace it.polimi.peersim.protocols.TupleSpaceProtocol

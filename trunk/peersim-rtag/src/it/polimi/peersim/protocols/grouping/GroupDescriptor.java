@@ -101,7 +101,7 @@ public class GroupDescriptor implements Serializable{
 	 */
 	public void setLeader(Node leader) {
 		if (followers.contains(leader)) {
-			followers.remove(leader);
+			throw new AssertionError("Cannot add a follower as leader.");
 		}
 		this.leader = leader;
 	}
@@ -171,7 +171,7 @@ public class GroupDescriptor implements Serializable{
 	
 	public boolean isSameHierarchy(GroupDescriptor remoteGroupDescriptor) {
 		if (remoteGroupDescriptor == null) {
-			throw new RuntimeException("Remote descriptor cannot be null.");
+			throw new AssertionError("Remote descriptor cannot be null.");
 		}
 		return hierarchyName.equals(remoteGroupDescriptor.hierarchyName);
 	}
@@ -212,12 +212,6 @@ public class GroupDescriptor implements Serializable{
 		return followers.remove(descriptor);
 	}
 
-	public boolean hierarchyNameExist(String name) {
-		if(this.hierarchyName.equals(name)){
-		return true;}
-		return false;
-	}
-
 	@Override
 	public String toString() {
 		ArrayList<Long> ids = new ArrayList<Long>();
@@ -228,7 +222,7 @@ public class GroupDescriptor implements Serializable{
 		return "GroupDescriptor [hierarchyName=" + hierarchyName + 
 				", leader=" + (leader != null ? leader.getID() : null) + 
 				" parentLeader=" + (parentLeader != null ? parentLeader.getID() : null) +
-				", followers=[" + ids + "]]";
+				", followers(" + ids.size() + ")=" + ids + "]";
 	}
 	
 	
