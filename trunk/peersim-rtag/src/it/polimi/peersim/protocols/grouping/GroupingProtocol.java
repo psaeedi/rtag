@@ -416,9 +416,9 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 			System.err.println(currentNode.getID() + 
 					" not following: " + descriptor);
 			return;
-		}
-		if (manager.getFollowedGroup().getLeader().getID() != remoteLeader.getID()) {
-			System.err.println(currentNode.getID() + 
+		} else if (manager.getFollowedGroup().getLeader().getID() != remoteLeader.getID()) {
+			System.err.println(currentNode.getID() + " following: " + 
+					manager.getFollowedGroup().getLeader().getID() +
 					" wrong follower leader for update: " + descriptor);
 			return;
 		}
