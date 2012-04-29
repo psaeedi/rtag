@@ -46,6 +46,9 @@ public class GroupManager {
 		GroupDescriptor leadedGroup = getLeadedGroup();
 		if (leadedGroup == null) {
 			leadedGroup = new GroupDescriptor(UUID.randomUUID(), name, ownerNode);
+			if (followedGroup != null) {
+				leadedGroup.setParentLeader(followedGroup.getLeader());
+			}
 		}
 		return leadedGroup;
 	}

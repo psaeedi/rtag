@@ -558,22 +558,21 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 			}
 		} else {
 			GroupDescriptor leadedGroup = manager.getOrCreateLeadedGroup();
-			if (leadedGroup != null
-					&& !leadedGroup.isFollower(sender)) {
+			if (!leadedGroup.isFollower(sender)) {
+				leadedGroup.addFollower(sender);
 				
-					leadedGroup.addFollower(sender);
-					
-					GroupingMessage message = GroupingMessage.createGroupCommand(
-							protocolId, currentNode,
-							GroupCommand.createJoinResponseYes(leadedGroup));
-					try {
-						pushDownMessage(currentNode, sender, message);
-						pushUpdatedDescriptorToFollowers(currentNode, leadedGroup);
-					} catch (UndeliverableMessageException e) {
-						// Nothing to be done
-					}
-				
+				GroupingMessage message = GroupingMessage.createGroupCommand(
+						protocolId, currentNode,
+						GroupCommand.createJoinResponseYes(leadedGroup));
+				try {
+					pushDownMessage(currentNode, sender, message);
+					pushUpdatedDescriptorToFollowers(currentNode, leadedGroup);
+				} catch (UndeliverableMessageException e) {
+					leadedGroup.removeFollower(sender);
+					// Nothing to be done
 				}
+			
+			}
 		}
 	}
 
