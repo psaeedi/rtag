@@ -11,7 +11,7 @@ CRASH 0
 CrashCycle 300
 StartGrouping 50
 LoadBalanceUniverse 8
-MINGROUPSIZE 1
+MINGROUPSIZE 3
 MAXGROUPSIZE 15
 JOINTIMEOUT 10
 BeaconBroadcast 100
