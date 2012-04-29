@@ -3,8 +3,10 @@
  */
 package it.polimi.peersim.prtag;
 
+import it.polimi.peersim.messages.RoutingMessage;
 import it.polimi.peersim.messages.UniverseMessage;
 import it.polimi.peersim.protocols.UniverseCommand;
+import it.polimi.peersim.protocols.grouping.GroupCommand;
 import it.polimi.peersim.protocols.grouping.GroupingMessage;
 
 import java.util.HashMap;
@@ -44,10 +46,21 @@ public class UniverseMessageCounter {
 			head = head + "-" +((UniverseCommand)message.getContent()).getCommand();
 		} else if (UniverseMessage.BROADCAST.equals(head)) {			
 			if (message.getContent() instanceof GroupingMessage) {
-				head = head + "-" + ((GroupingMessage)message.getContent()).getHead();
+				GroupingMessage groupingMessage = (GroupingMessage)message.getContent();
+				head = head + "-" + (groupingMessage).getHead();
+				if (groupingMessage.getContent() instanceof GroupCommand) {
+					head = head + "-" + ((GroupCommand)groupingMessage.getContent()).getCommand();
+				}
 			}
 		} else if (UniverseMessage.SINGLECAST.equals(head)) {
 			// TODO 
+			if (message.getContent() instanceof RoutingMessage) {
+				GroupingMessage groupingMessage = (GroupingMessage)((RoutingMessage)message.getContent()).getContent();
+				head = head + "-" + (groupingMessage).getHead();
+				if (groupingMessage.getContent() instanceof GroupCommand) {
+					head = head + "-" + ((GroupCommand)groupingMessage.getContent()).getCommand();
+				}
+			}
 		}
 		
 		if (currentCycleCount.containsKey(head)) {

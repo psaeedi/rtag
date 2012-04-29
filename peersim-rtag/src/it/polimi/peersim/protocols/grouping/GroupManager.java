@@ -14,6 +14,8 @@ import peersim.core.Node;
  */
 public class GroupManager {
 
+	private final GroupingProtocol protocol;
+	
 	private String name;
 	private Node ownerNode;
 	private GroupDescriptor followedGroup;
@@ -22,16 +24,11 @@ public class GroupManager {
 	private Node leaderBeingJoined;
 	private int leaderBeingJoinedCycle = -1;
 	
-	public GroupManager(String name, Node ownerNode) {
+	public GroupManager(String name, Node ownerNode, GroupingProtocol protocol) {
 		super();
 		this.name = name;
 		this.ownerNode = ownerNode;
-		
-	}
-
-	public GroupManager(GroupManager oldgroupmanager) {
-		this.name = oldgroupmanager.name;
-		this.ownerNode = oldgroupmanager.ownerNode;
+		this.protocol = protocol;
 	}
 
 	public GroupDescriptor getFollowedGroup() {
@@ -39,7 +36,23 @@ public class GroupManager {
 	}
 	
 	public void setFollowedGroup(GroupDescriptor followedGroup) {
+		if (followedGroup == null) {
+			throw new AssertionError("Cannot follow null group.");
+		}
+		if (this.followedGroup != null &&
+				this.followedGroup.getLeader().getID() != followedGroup.getLeader().getID()) {
+			throw new AssertionError("Already following " + this.followedGroup + 
+					" while setting " + followedGroup);
+		}
 		this.followedGroup = followedGroup;
+		if (leadedGroup != null) {
+			leadedGroup.setParentLeader(this.followedGroup.getLeader());
+			
+		}
+	}
+	
+	public void resetFollowedGroup() {
+		this.followedGroup = null;
 	}
 	
 	public GroupDescriptor getOrCreateLeadedGroup() {
@@ -58,7 +71,17 @@ public class GroupManager {
 	}
 	
 	public void setLeadedGroup(GroupDescriptor leadedGroup) {
+		if (this.leadedGroup != null && this.leadedGroup != leadedGroup) {
+			throw new AssertionError("Already leading another group.");
+		}
+		if (leadedGroup == null) {
+			throw new AssertionError("Cannot lead null group.");
+		}
 		this.leadedGroup = leadedGroup;
+	}
+	
+	public void resetLeadedGroup() {
+		this.leadedGroup = null;
 	}
 
 	public Node getLeaderBeingJoined() {
@@ -66,6 +89,12 @@ public class GroupManager {
 	}
 
 	public void setLeaderBeingJoined(Node leaderBeingJoined, int cycle) {
+		if (this.leaderBeingJoined != null) {
+			throw new AssertionError("Already joining another leader.");
+		}
+		if (leaderBeingJoined == null) {
+			throw new AssertionError("Cannot follow null leader.");
+		}
 		this.leaderBeingJoined = leaderBeingJoined;
 		this.leaderBeingJoinedCycle = cycle;
 	}
