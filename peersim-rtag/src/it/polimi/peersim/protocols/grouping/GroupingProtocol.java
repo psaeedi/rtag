@@ -214,6 +214,9 @@ public class GroupingProtocol extends ForwardingProtocol<GroupingMessage>
 			System.out.println("handleUnderpopulatedGroup: " + currentNode.getID() +
 					" from: " + followedGroup.getLeader().getID() +
 					" to: " + parentLeader.getID());
+			if (currentNode.getID() == parentLeader.getID()) {
+				return;
+			}
 			pushJoinRequest(currentNode, parentLeader, groupName);
 		} catch (UndeliverableMessageException e) {
 			// TODO Shall we retry?
