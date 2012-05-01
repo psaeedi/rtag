@@ -265,19 +265,54 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 		return lessCongested;
 	}
 
-	public boolean isCongested() {
-		return (followers.size() > followerThreshold) && (followers.size() / 
+	public boolean isCongested(Node currentNode) {
+		int followerSize = getAverageFollowerSize(currentNode);
+		if(followerSize == -1){
+			return false;
+		}
+		return (followers.size() > 1.2*followerSize) && (followers.size() / 
 				followerLeaderRate > leaders.size()); 
 	}
 	
-    public boolean hasNoLeader() {
+    private int getAverageFollowerSize(Node currentNode) {
+    	
+    	int averageFollower;
+    	int sum = 0 ;
+    	int total = 0;
+    	ArrayList<Integer> numFollowers = new ArrayList<Integer>();
+    	
+    	for (Node follower: followers) {
+			LocalUniverseDescriptor descriptor = 
+					followerUniverseDescriptors.get(follower);
+			if(descriptor!=null){
+	    		int followerSize = descriptor.getMembers().size();
+	    		sum = sum + followerSize;
+	    	    total++;
+			}
+			
+			
+    		
+    	}
+    	
+    	if(sum!=0 && total!=0){
+    	averageFollower = sum/total;
+    	//System.err.println("average follower size " + 
+			//	averageFollower);
+    	return averageFollower;
+    	}
+    	
+    	return -1;
+	}
+
+	public boolean hasNoLeader() {
     	//System.out.println("node "+ localNode.getID()+ " the leaders size is:" + leaders.size());
 		return leaders.isEmpty();
 	}
+    
 
 	public void handleCongestion(Node currentNode) {
 		//System.out.println("Starting congestion control loop.");
-		if (isCongested()) {
+		if (isCongested(currentNode)) {
 			Node follower = getLessCongestedFollower();
 			if (follower == null) {
 				//System.out.println("handleCongestion() no folllower found.");
@@ -363,7 +398,7 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 	public void nextCycle(Node currentNode, int pid) {
 		// Every loadBalanceCycle cyles the universe is load-balanced
 		if (CDState.getCycle() % loadBalanceCycle == 0){
-	        if (isCongested() || hasNoLeader()) {
+	        if (isCongested(currentNode) || hasNoLeader()) {
 	        	handleCongestion(currentNode);
 	        }
 		}
