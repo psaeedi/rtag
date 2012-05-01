@@ -4,6 +4,8 @@
 package it.polimi.peersim.controls;
 
 import it.polimi.peersim.prtag.UniverseMessageCounter;
+import peersim.cdsim.CDState;
+import peersim.config.Configuration;
 import peersim.core.Control;
 
 /**
@@ -11,6 +13,9 @@ import peersim.core.Control;
  *
  */
 public class MessageCountingControl implements Control {
+	
+	private static final String LAST_CYCLE = "last_cycle";
+	protected final int lastCycle;
 
 	UniverseMessageCounter messageCounter = UniverseMessageCounter.createInstance();
 	
@@ -18,7 +23,8 @@ public class MessageCountingControl implements Control {
 	 * 
 	 */
 	public MessageCountingControl(String prefix) {
-		// TODO Auto-generated constructor stub
+		lastCycle = Configuration.getInt(
+				prefix + "." + LAST_CYCLE, 10);
 	}
 
 	/* (non-Javadoc)
@@ -27,7 +33,8 @@ public class MessageCountingControl implements Control {
 	@Override
 	public boolean execute() {
 		messageCounter.nextCycle();
-    	messageCounter.printAll();
+		if(CDState.getCycle()==lastCycle-1){
+    	messageCounter.printAll();}
     	return false;
 	}
 

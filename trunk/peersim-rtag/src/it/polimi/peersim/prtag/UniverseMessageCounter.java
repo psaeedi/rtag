@@ -12,6 +12,7 @@ import it.polimi.peersim.protocols.grouping.GroupingMessage;
 import java.util.HashMap;
 
 import peersim.cdsim.CDState;
+import peersim.core.Network;
 
 /**
  * @author pani
@@ -94,6 +95,7 @@ public class UniverseMessageCounter {
 
 			}
 		}
+		System.out.println("network size" +  Network.size());
 		System.out.println("-------------------------------------------- ");
 	}
 }
