@@ -1,0 +1,154 @@
+
+simulation.cycles CYCLES 
+network.size SIZE
+random.seed 1234567890
+network.node.appgroup_protocol group
+network.node.universe_protocol universe
+
+CYCLES 100
+SIZE 200
+CRASH 0.8
+CrashCycle 153
+StartGrouping 500
+LoadBalanceUniverse 5
+MINGROUPSIZE 2
+MAXGROUPSIZE 5
+JOINTIMEOUT 10
+BeaconBroadcast 10
+
+#####################################Protocol#################################
+
+protocol.geolocation it.polimi.peersim.protocols.GeoLocation
+
+protocol.capacitygenerator it.polimi.peersim.protocols.CapacityGenerator
+
+protocol.link IdleProtocol
+
+protocol.discovery it.polimi.peersim.protocols.DiscoveryProtocol
+{
+	geolocation_protocol geolocation
+	crash_cycle CrashCycle
+	
+	#the larger more neighbors
+	discovery_radius 1
+	
+	# discovery listeners
+	universe_protocol universe
+}
+
+protocol.channel it.polimi.peersim.protocols.MockChannel
+{
+	protocol_id channel
+	lower_protocol_id channel
+	discovery_protocol discovery
+	latency 5
+	throughput 5
+}
+
+protocol.tuplespace it.polimi.peersim.protocols.TupleSpaceProtocol
+{
+	protocol_id tuplespace
+	lower_protocol_id channel
+}
+
+protocol.universe it.polimi.peersim.protocols.UniverseProtocol
+{
+	protocol_id universe
+	lower_protocol_id tuplespace
+	discovery_protocol discovery
+	follower_threshold 3
+	follower_thresholdrate 2
+	load_balance_cycle LoadBalanceUniverse
+	broadcast_size 2
+	capacitygenerator_protocol capacitygenerator
+}
+
+protocol.routing it.polimi.peersim.protocols.RoutingProtocol
+{
+	protocol_id routing
+	lower_protocol_id universe
+}
+
+protocol.grouping it.polimi.peersim.protocols.grouping.GroupingProtocol
+{
+	protocol_id grouping
+	lower_protocol_id routing
+	universe_protocol universe
+	broadcast_beacon BeaconBroadcast
+	#print the groups in the last cycle
+	last_cycle CYCLES-1
+	group_min_size MINGROUPSIZE
+	group_max_size MAXGROUPSIZE
+	join_time_out JOINTIMEOUT
+	load_balance_cycle StartGrouping+10
+}
+
+
+protocol.app it.polimi.peersim.protocols.AppProtocol
+{
+	grouping_protocol grouping
+	start_group_cycle StartGrouping
+}
+
+
+##########################################Initializer###########################
+
+
+
+#init.geoinit it.polimi.peersim.initializers.GeoInitializer
+#{
+#	geolocation_protocol geolocation
+#	plot_protocol geolocation
+#}
+
+#init.universeinit it.polimi.peersim.initializers.UniverseInitializer
+#{
+#	universe_protocol universe 
+#	discovery_protocol discovery
+#}
+
+init.protocolinit it.polimi.peersim.initializers.ProtocolStackInitializer
+{
+	universe_protocol universe 
+	discovery_protocol discovery
+	geolocation_protocol geolocation
+	capacitygenerator_protocol capacitygenerator
+}
+
+############################################Control############################
+
+#control.crash DynamicNetwork
+
+
+control.implementedcrash it.polimi.peersim.controls.CrashControl
+{
+  RandNI
+  add -CRASH*SIZE
+  add CRASH*SIZE
+  crash_cycle CrashCycle
+  minsize 20
+  universe_protocol universe 
+  discovery_protocol discovery
+  geolocation_protocol geolocation
+}
+
+
+
+control.io it.polimi.peersim.observers.GeoObserver
+{
+	plot_protocol geolocation
+	protocol link
+	discovery_protocol discovery
+	universe_protocol universe
+	file_base graph
+	include degree
+}
+
+control.counting it.polimi.peersim.controls.MessageCountingControl
+{
+
+last_cycle CYCLES-1
+}
+
+
+#order.control congestion crash io
