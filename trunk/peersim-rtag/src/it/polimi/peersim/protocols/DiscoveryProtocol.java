@@ -40,6 +40,7 @@ public class DiscoveryProtocol extends DaemonProtocol {
 	private ArrayList<Node> neighbors = new ArrayList<Node>();
 	
 	private Node currentNode;
+	private int Neighbor_Threshold = 40;
 	
 
 	public DiscoveryProtocol(String prefix) {
@@ -123,6 +124,9 @@ public class DiscoveryProtocol extends DaemonProtocol {
 			universeProtocol.notifyRemovedNodes(currentNode, removed);
 		}
 		//System.out.println("Node "+currentNode.getID() + " neighbors: " + neighbors.size()); 
+		if(neighbors.size()> Neighbor_Threshold){
+			throw new RuntimeException("PASSS the maximum number of neighbors plz reduce the discovery radius!");
+		}
 	}
 
 	
