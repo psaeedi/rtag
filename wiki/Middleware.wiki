@@ -29,9 +29,7 @@ For more information about A-3 please read the A-3 papers:
 
  * L. Baresi, S. Guinea, A-3: an Architectural Style for Coordinating Distributed Components. In Proceedings of IEEE/IFIP Conference on Software Architecture (WICSA), Colorado, 2011
 
- * S. Guinea, P. Saeedi: Coordination of Distributed Systems through Self-
-Organizing Group Topologies, In: Proc. ACM/IEEE Inter. Symposium of Software
-Eng. for Self-Adaptive Systems (SEAMS), 2012. (to appear)
+ * S. Guinea, P. Saeedi: Coordination of Distributed Systems through Self-Organizing Group Topologies, In: Proc. ACM/IEEE Inter. Symposium of Software Eng. for Self-Adaptive Systems (SEAMS), 2012. (to appear)
 
 
 
