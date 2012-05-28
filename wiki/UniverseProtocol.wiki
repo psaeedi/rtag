@@ -31,4 +31,5 @@ We have 5 protocols and the protocol stack is:
  * 2 - TupleSpaceProtocol
  * 1 - MockChannel
 
+*[http://peersim.sourceforge.net/ PeerSim-based] protocols*
 
