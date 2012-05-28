@@ -6,7 +6,7 @@ network.node.appgroup_protocol group
 network.node.universe_protocol universe
 
 CYCLES 100
-SIZE 200
+SIZE 2000
 CRASH 0.8
 CrashCycle 153
 StartGrouping 500
@@ -30,7 +30,7 @@ protocol.discovery it.polimi.peersim.protocols.DiscoveryProtocol
 	crash_cycle CrashCycle
 	
 	#the larger more neighbors
-	discovery_radius 1
+	discovery_radius 0.2
 	
 	# discovery listeners
 	universe_protocol universe
