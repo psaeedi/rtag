@@ -3,7 +3,7 @@
 = Introduction =
 
 Our Universe overlay management protocols are inspired by proximity-based
-groups and by the group abstractions developed within the A-3 initiative [14].
+groups and by the group abstractions developed within the A-3 initiative.
 A-3 provides an architectural style and a supporting middleware for the development of high-volume and highly-volatile distributed component-based systems.
 A-3 allows designers to concentrate on groups of components instead of on single
 components, so that they can reason on entities that are less dynamic, and less
