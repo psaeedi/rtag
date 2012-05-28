@@ -1,3 +1,4 @@
+#labels Featured,Phase-Implementation
 #Overlay Network
 = Introduction =
 
@@ -29,4 +30,3 @@ We have 5 protocols and the protocol stack is:
  * 3 - UniverseProtocol
  * 2 - TupleSpaceProtocol
  * 1 - MockChannel
-
