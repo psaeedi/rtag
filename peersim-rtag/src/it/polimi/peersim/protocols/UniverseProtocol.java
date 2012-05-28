@@ -34,9 +34,14 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 	private final int followerThreshold;
 	private static final String FOLLOWER_THRESHOLD_RATE = "follower_thresholdrate";
 	private final int followerLeaderRate;
-	
+	//private static final String CAPACITY = "capacity";
+	//private final int capacity;
+	private static final String CAPACITYGENERATOR_PROTOCOL = "capacitygenerator_protocol";
+	private final int capacitygeneratorId;
 	
 	private static final String LOAD_BALANCE_CYCLE = "load_balance_cycle";
+
+	private static int MAX_VALUE = -1;
 	protected final int loadBalanceCycle;
 	
 	ProtocolStackInitializer initializer ;
@@ -63,6 +68,9 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 				prefix + "." + FOLLOWER_THRESHOLD_RATE, 2);
 		loadBalanceCycle = Configuration.getInt(
 				prefix + "." +  LOAD_BALANCE_CYCLE, 50);
+		//capacity = Configuration.getInt(
+			//	prefix + "." +  CAPACITY, 50);
+		capacitygeneratorId = Configuration.getPid(prefix + "." + CAPACITYGENERATOR_PROTOCOL);
 	}
 	
 	@Override
@@ -96,7 +104,20 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 	 * 		the give one, <code>false</code> if the other way around.
 	 */
 	public boolean shouldLead(Node currentNode, Node remoteNode) {
-		return currentNode.getID() < remoteNode.getID();
+		CapacityGenerator cap_current = (CapacityGenerator) currentNode.getProtocol(capacitygeneratorId);
+		int capacity_current = cap_current.getCapacity(currentNode);
+		//System.out.println("*************node "+ currentNode.getID()+ " the capacity is:" + capacity_current);
+		CapacityGenerator cap_remote = (CapacityGenerator) remoteNode.getProtocol(capacitygeneratorId);
+		int capacity_remote = cap_remote.getCapacity(remoteNode);
+		if(capacity_current < capacity_remote){
+			return false;
+		}
+		
+		else if(capacity_current > capacity_remote){
+			return true;
+		}
+		
+		else return currentNode.getID() < remoteNode.getID();
 	}
 	
 	/* (non-Javadoc)
@@ -397,13 +418,77 @@ public class UniverseProtocol extends ForwardingProtocol<UniverseMessage>
 	@Override
 	public void nextCycle(Node currentNode, int pid) {
 		// Every loadBalanceCycle cyles the universe is load-balanced
-		if (CDState.getCycle() % loadBalanceCycle == 0){
+		if ( CDState.getCycle() > 30  && CDState.getCycle() % loadBalanceCycle == 0){
 	        if (isCongested(currentNode) || hasNoLeader()) {
 	        	handleCongestion(currentNode);
 	        }
+	        
+	        else if(isOverLoaded(currentNode)){
+	        	handleOverLoaded(currentNode);
+	        }
 		}
+		if(followers.size()> MAX_VALUE){
+			MAX_VALUE = followers.size();
+		}
+	//	System.out.println("max number of followers"+ MAX_VALUE );
 	}
 
+
+	private void handleOverLoaded(Node currentNode) {
+		Node follower= getUnderLoadedFollower();
+		if (follower == null) {
+			return;
+		}
+		followerToLeader(currentNode, follower);
+		
+	}
+	
+	private Node getUnderLoadedFollower() {
+		Node lessLoaded = null;
+		int capacity = 0;
+		int cap = 0;
+		for (Node follower: followers) {
+			LocalUniverseDescriptor descriptor = 
+					followerUniverseDescriptors.get(follower);
+			if(descriptor!=null){
+				isOverLoaded(follower);
+				cap = calculateCapacity(follower);
+			}
+			if (capacity < cap) {
+				capacity = cap;
+				lessLoaded = follower;
+			}
+		}
+		return lessLoaded;
+	}
+
+	private boolean isOverLoaded(Node currentNode) {
+		//CapacityGenerator cap = (CapacityGenerator) currentNode.getProtocol(capacitygeneratorId);
+		//int capacity = cap.getCapacity(currentNode);
+		int capacity_now = calculateCapacity(currentNode);
+		//System.out.println("$$$$$$$$$$$$$$$$4capacity "+ capacity);
+		if(capacity_now < 1 && localUniverse.isLeader(currentNode)){
+			System.out.println("&&&&&&&&&&&&&&&&&&&&&&&&&&capacity_now "+ 
+		      capacity_now+ " it is over loaded");
+			return true;
+		}
+		
+		return false;
+	}
+
+	private int calculateCapacity(Node currentNode) {
+			//we set the capacity only according to the followers that the manage,
+			//and how many supervisors it has
+			//however in real world scenario this should set according to battery,...
+		    CapacityGenerator cap = (CapacityGenerator) currentNode.getProtocol(capacitygeneratorId);
+		    int capacity = cap.getCapacity(currentNode);
+		    int A =  (int) ((leaders.size()*0.5+followers.size()));
+		    if(capacity< A){
+		    	throw new RuntimeException("PASSS the capacity, plz check the setting!");
+		    }
+			int capacity_now =  capacity-A;
+			return capacity_now;
+	}
 
 	@Override
 	public UniverseMessage handlePushDownMessage(

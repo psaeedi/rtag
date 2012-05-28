@@ -33,7 +33,7 @@ public class MessageCountingControl implements Control {
 	@Override
 	public boolean execute() {
 		messageCounter.nextCycle();
-		if(CDState.getCycle()==lastCycle-1){
+		if(CDState.getCycle()==lastCycle){
     	messageCounter.printAll();}
     	return false;
 	}
